@@ -88,7 +88,7 @@ with net.as_default():
                     folder_name_r = "../data/img/img"+str(j)
                     folder_name_m = "../data/img/img"+str(1001-j)
                     print(folder_name_r)
-                    x, y = sess.run([output_r, output_m], feed_dict={img_path_r: folder_name_r, img_path_m: folder_name_m})
+                    x, y = sess.run([pred_list_r,pred_list_m], feed_dict={img_path_r: folder_name_r, img_path_m: folder_name_m})
                     stop = timeit.default_timer()
                     time += stop - start
                     #label_map = imagenet.create_readable_names_for_imagenet_labels()
@@ -113,7 +113,7 @@ with net.as_default():
                     start = timeit.default_timer()
                     folder_name_r = "../data/img/img"+str(j)
                     folder_name_m = "../data/img/img"+str(1001-j)
-                    x, y = sess.run([output_r, output_m], feed_dict={img_path_r: folder_name_r, img_path_m: folder_name_m})
+                    x, y = sess.run([pred_list_r,pred_list_m], feed_dict={img_path_r: folder_name_r, img_path_m: folder_name_m})
                     stop = timeit.default_timer()
                     time += stop - start
                     #label_map = imagenet.create_readable_names_for_imagenet_labels()
