@@ -7,6 +7,14 @@ from nets import resnet_v2
 from datasets import imagenet
 import timeit
 
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-g", "--grow", action="store_true", help="Allowing GPU memory growth")
+args = parser.parse_args()
+
+tf.reset_default_graph()
+
 file_input = tf.placeholder(tf.string, ())
 
 image = tf.image.decode_jpeg(tf.read_file(file_input))
@@ -23,12 +31,22 @@ saver = tf.train.Saver()
 
 checkpoint = "/home/ruiliu/Development/tf-exp/ckpts/resnet2/resnet_v2_50.ckpt"
 
-with tf.Session() as sess:
-    saver.restore(sess, checkpoint)
-    start = timeit.default_timer()
-    x = endpoints['predictions'].eval(feed_dict={file_input: '../data/airplane224.jpg'})
-    stop = timeit.default_timer()
-    print('Inference Time: ', stop - start)
+if args.grow:
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    with tf.Session(config=config) as sess:
+        saver.restore(sess, checkpoint)
+        start = timeit.default_timer()
+        x = endpoints['predictions'].eval(feed_dict={file_input: '../data/img.jpg'})
+        stop = timeit.default_timer()
+        print('Inference Time: ', stop - start)
+else: 
+    with tf.Session() as sess:
+        saver.restore(sess,  checkpoint)
+        start = timeit.default_timer()
+        x = endpoints['Predictions'].eval(feed_dict={file_input: '../data/img.jpg'})
+        stop = timeit.default_timer()
+        print('Inference Time: ', stop - start)
 
 label_map = imagenet.create_readable_names_for_imagenet_labels()
 print("Top 1 prediction: ", x.argmax(),label_map[x.argmax()], x.max())
