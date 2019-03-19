@@ -35,9 +35,7 @@ plt.bar([p + width*2 for p in pos], pack, width,edgecolor='k',
                  label=labels[2])
 
 
-# Setting axis labels and ticks
-ax.set_ylabel('Latency',fontsize=14)
-ax.set_xlabel('Batch size',fontsize=14)
+
 ax.set_xticks([p + 1 * width for p in pos])
 ax.set_xticklabels(labels, fontsize=14)
 #plt.ylabel('Fraction of correctly complete the schema', )
@@ -48,6 +46,10 @@ plt.xlim([-0.2,2.7])
 plt.ylim([0,160])
 #plt.yticks()
 ax.set_yticklabels(ylabels, fontsize=14)
+
+# Setting axis labels and ticks
+ax.set_ylabel('Latency',fontsize=16)
+ax.set_xlabel('Batch size',fontsize=16)
 
 plt.tick_params(axis='x',bottom='off')
 
