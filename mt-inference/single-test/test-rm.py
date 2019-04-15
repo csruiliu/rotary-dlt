@@ -1,6 +1,6 @@
 import sys
-sys.path.append('/home/ruiliu/Development/tf-exp/models/research/slim')
-sys.path.append('/home/ruiliu/Development/tf-exp/models/official')
+sys.path.append('/home/ruiliu/Development/mtml-tf/models/research/slim')
+sys.path.append('/home/ruiliu/Development/mtml-tf/models/official')
 
 import tensorflow as tf
 from nets.mobilenet import mobilenet_v2
