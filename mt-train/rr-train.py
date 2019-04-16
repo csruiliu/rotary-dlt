@@ -5,7 +5,6 @@ sys.path.append('/home/ruiliu/Development/mtml-tf/models/official')
 import tensorflow as tf
 from rr_model import rr_net
 
-
 dataset_size = 1000
 loop_num = 1
 batch_size = 10
@@ -43,32 +42,16 @@ with net.as_default():
     for j in range(batch_size):
         images_r1 = batch_r1[j]
         images_r2 = batch_r2[j]
-        output_r1, output_r2 = rr_net(images_r1, images_r2)
-        pred_list_r1.append(output_r1)
-        pred_list_r2.append(output_r2)
+        net1, net2 = rr_net(images_r1, images_r2)
 
+    loss1 = tf.losses.softmax_cross_entropy(output_r1, net1)
+    loss2 = tf.losses.softmax_cross_entropy(output_r2, net2)
 
+    train1 = tf.train.AdamOptimizer(learning_rate=1e-3).minimize(loss1)
+    train2 = tf.train.AdamOptimizer(learning_rate=1e-3).minimize(loss2)
 
     with tf.Session(graph=net) as sess:
-
-        classification_loss = slim.losses.softmax_cross_entropy(
-            predict_values, im_label)
-
-        regularization_loss = tf.add_n(slim.losses.get_regularization_losses())
-        total_loss = classification_loss + regularization_loss
-
-        train_op = slim.learning.create_train_op(classification_loss, optimizer)
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate)
-
-        slim.learning.train(
-            train_op,
-            logdir='/tmp/',
-            number_of_steps=1000,
-            save_summaries_secs=300,
-            save_interval_secs=600)
-
-
-        pred_r, pred_m = sess.run([pred_list_r, pred_list_m], feed_dict={img_path_r: '../data/img/img1', img_path_m: '../data/img/img2'})
+        pred_r, pred_m = sess.run([train1, train2], feed_dict={img_path_r: '../data/img', img_path_m: '../data/img'})
 
         time = 0
         for i in range(loop_num):
