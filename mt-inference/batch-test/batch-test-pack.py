@@ -65,7 +65,7 @@ with net.as_default():
         pred_list_m.append(output_m)
             
     saver_r = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='resnet_v2_50'))
-    saver_m = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='MobilenetV2') )
+    saver_m = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='MobilenetV2'))
 
     if args.grow:
         config = tf.ConfigProto()
