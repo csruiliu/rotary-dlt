@@ -1,10 +1,11 @@
 import tensorflow as tf
 
 from img_utils import *
+from timeit import default_timer as timer
 
 img_h = 224
 img_w = 224
-mini_batches = 32
+mini_batches = 500
 
 class ResNet(object):
     def __init__(self):
@@ -129,16 +130,18 @@ class ResNet(object):
 
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
-            #X_mini_batch = [mini_batches, 64, 64, 3]
-            #Y_mini_batch = [mini_batches, 6]
-            for i in range(100):
-                X_mini_batch, Y_mini_batch = mini_batches[np.random.randint(0, len(mini_batches))]
-                train_step.run(feed_dict={features: X_mini_batch, labels: Y_mini_batch, keep_prob: 0.5, train_mode: True})
 
-                if i % 20 == 0:
-                    train_cost = sess.run(cross_entropy, feed_dict={features: X_mini_batch,
-                                          labels: Y_mini_batch, keep_prob: 1.0, train_mode: False})
-                    print('step %d, training cost %g' % (i, train_cost))
+            num_batch = Y_train.get_shape().as_list()[0] // mini_batches
+            start_time = timer()
+            for i in range(num_batch):
+                print('step %d starts' %i)
+                X_mini_batch = X_train[num_batch:num_batch + mini_batches,:,:,:]
+                Y_mini_batch = Y_train[num_batch:num_batch + mini_batches,:]
+                X_mini_batch_feed = X_mini_batch.eval()
+                Y_mini_batch_feed = Y_mini_batch.eval()
+                train_step.run(feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed, keep_prob: 0.5, train_mode: True})
+            end_time = timer()
+            print("training time for 1 epoch:",end_time-start_time)
 
     def cost(self, logits, labels):
         with tf.name_scope('loss'):
@@ -155,18 +158,11 @@ class ResNet(object):
 def main(_):
     data_dir = '/home/rui/Development/mtml-tf/dataset/imagenet'
     label_path = '/home/rui/Development/mtml-tf/dataset/ILSVRC2010_validation_ground_truth.txt'
-    X_train = load_images(data_dir)
-    Y_train = load_labels_onehot(label_path)
+    X_data = load_images_tf(data_dir)
+    Y_data = load_labels_onehot_tf(label_path)
 
-    #orig_data = load_dataset(data_dir)
-    #X_train, Y_train, X_test, Y_test = process_orig_datasets(orig_data)
-
-    #X_train = np.ones(shape=(24, 224, 224, 3))
-    #Y_train = np.ones(shape=(2, 224, 224, 3))
-    #print(X_train.shape)
-    #print(Y_train.shape)
     resnet = ResNet()
-    resnet.train(X_train, Y_train)
+    resnet.train(X_data, Y_data)
     #resnet.evaluate(X_test, Y_test)
     #resnet.evaluate(X_train, Y_train, 'training data')
 
