@@ -83,24 +83,27 @@ class MobileNet(object):
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
 
-            num_batch = Y_train.get_shape().as_list()[0] // mini_batches
-            start_time = timer()
+            #num_batch = Y_train.get_shape().as_list()[0] // mini_batches
+            num_batch = Y_train.shape[0] // mini_batches
+            total_time = 0
             for i in range(num_batch):
-                print('step %d starts' %i)
-                X_mini_batch = X_train[num_batch:num_batch + mini_batches,:,:,:]
-                Y_mini_batch = Y_train[num_batch:num_batch + mini_batches,:]
-                X_mini_batch_feed = X_mini_batch.eval()
-                Y_mini_batch_feed = Y_mini_batch.eval()
+                start_time = timer()
+                print('step %d / %d' %(i+1, num_batch))
+                X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
+                Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
+                #X_mini_batch_feed = X_mini_batch.eval()
+                #Y_mini_batch_feed = Y_mini_batch.eval()
                 train_step.run(feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-            end_time = timer()
-            print("training time for 1 epoch:",end_time-start_time)
+                end_time = timer()
+                total_time += end_time - start_time
+            print("training time for 1 epoch:",total_time)
 
 def main(_):
     data_dir = '/home/rui/Development/mtml-tf/dataset/test'
     label_path = '/home/rui/Development/mtml-tf/dataset/test-gt.txt'
-    X_data = load_images_tf(data_dir)
-    Y_data = load_labels_onehot_tf(label_path)
-
+    X_data = load_images(data_dir)
+    Y_data = load_labels_onehot(label_path)
+    #print(Y_data.shape[0])
     mobilenet = MobileNet()
     mobilenet.train(X_data, Y_data)
 

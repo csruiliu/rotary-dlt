@@ -1,5 +1,6 @@
 import tensorflow as tf
 import cv2
+import numpy as np
 
 def load_images(path):
     images = tf.gfile.ListDirectory(path)
@@ -11,11 +12,11 @@ def load_images(path):
         res_exp = np.expand_dims(res, axis=0)
         img_list.append(res_exp)
     img_data = np.concatenate(img_list, axis=0)
-    return img_data_batch
+    return img_data
 
 def load_labels_onehot(path):
     lines = open(path).readlines()
-    labels_array = np.zeros((50000, 1000))
+    labels_array = np.zeros((len(lines), 1000))
     for idx, val in enumerate(lines):
         hot = int(val.rstrip("\n"))
         labels_array[idx,hot-1] = 1
