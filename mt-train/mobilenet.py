@@ -1,53 +1,51 @@
 
 import tensorflow as tf
 import tensorflow.contrib as tc
+from img_utils import *
 
 import numpy as np
-import time
+from timeit import default_timer as timer
+
+
+mini_batches=10
+img_h=224
+img_w=224
 
 #MobileNetV2
 class MobileNet(object):
     def __init__(self, is_training=True, input_size=224):
-        self.input_size = input_size
         self.is_training = is_training
         self.normalizer = tc.layers.batch_norm
         self.bn_params = {'is_training': self.is_training}
 
-        with tf.variable_scope('MobileNetV2'):
-            self._create_placeholders()
-            self._build_model()
-
-    def _create_placeholders(self):
-        self.input = tf.placeholder(dtype=tf.float32, shape=[None, self.input_size, self.input_size, 3])
-
-
-    def _build_model(self):
+    def build_model(self, input):
         self.i = 0
         with tf.variable_scope('init_conv'):
-            output = tc.layers.conv2d(self.input, 32, 3, 2,normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
+            output = tc.layers.conv2d(input, 32, 3, 2,normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
 
-        self.output = self._inverted_bottleneck(output, 1, 16, 0)
-        self.output = self._inverted_bottleneck(self.output, 6, 24, 1)
-        self.output = self._inverted_bottleneck(self.output, 6, 24, 0)
-        self.output = self._inverted_bottleneck(self.output, 6, 32, 1)
-        self.output = self._inverted_bottleneck(self.output, 6, 32, 0)
-        self.output = self._inverted_bottleneck(self.output, 6, 32, 0)
-        self.output = self._inverted_bottleneck(self.output, 6, 64, 1)
-        self.output = self._inverted_bottleneck(self.output, 6, 64, 0)
-        self.output = self._inverted_bottleneck(self.output, 6, 64, 0)
-        self.output = self._inverted_bottleneck(self.output, 6, 64, 0)
-        self.output = self._inverted_bottleneck(self.output, 6, 96, 0)
-        self.output = self._inverted_bottleneck(self.output, 6, 96, 0)
-        self.output = self._inverted_bottleneck(self.output, 6, 96, 0)
-        self.output = self._inverted_bottleneck(self.output, 6, 160, 1)
-        self.output = self._inverted_bottleneck(self.output, 6, 160, 0)
-        self.output = self._inverted_bottleneck(self.output, 6, 160, 0)
-        self.output = self._inverted_bottleneck(self.output, 6, 320, 0)
+        net = self._inverted_bottleneck(output, 1, 16, 0)
+        net = self._inverted_bottleneck(net, 6, 24, 1)
+        net = self._inverted_bottleneck(net, 6, 24, 0)
+        net = self._inverted_bottleneck(net, 6, 32, 1)
+        net = self._inverted_bottleneck(net, 6, 32, 0)
+        net = self._inverted_bottleneck(net, 6, 32, 0)
+        net = self._inverted_bottleneck(net, 6, 64, 1)
+        net = self._inverted_bottleneck(net, 6, 64, 0)
+        net = self._inverted_bottleneck(net, 6, 64, 0)
+        net = self._inverted_bottleneck(net, 6, 64, 0)
+        net = self._inverted_bottleneck(net, 6, 96, 0)
+        net = self._inverted_bottleneck(net, 6, 96, 0)
+        net = self._inverted_bottleneck(net, 6, 96, 0)
+        net = self._inverted_bottleneck(net, 6, 160, 1)
+        net = self._inverted_bottleneck(net, 6, 160, 0)
+        net = self._inverted_bottleneck(net, 6, 160, 0)
+        net = self._inverted_bottleneck(net, 6, 320, 0)
 
-        self.output = tc.layers.conv2d(self.output, 1280, 1, normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
-        self.output = tc.layers.avg_pool2d(self.output, 7)
-        self.output = tc.layers.conv2d(self.output, 1000, 1, activation_fn=None)
-
+        net = tc.layers.conv2d(net, 1280, 1, normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
+        net = tc.layers.avg_pool2d(net, 7)
+        net = tc.layers.conv2d(net, 1000, 1, activation_fn=None)
+        logits = tf.squeeze(net)
+        return logits
 
     def _inverted_bottleneck(self, input, up_sample_rate, channels, subsample):
         with tf.variable_scope('inverted_bottleneck{}_{}_{}'.format(self.i, up_sample_rate, subsample)):
@@ -71,26 +69,40 @@ class MobileNet(object):
         cross_entropy_cost = tf.reduce_mean(cross_entropy)
         return cross_entropy_cost
 
-    def train():
+    def train(self, X_train, Y_train):
         features = tf.placeholder(tf.float32, [None, img_h, img_w, 3])
-        labels = tf.placeholder(tf.int64, [None, 6])
+        labels = tf.placeholder(tf.int64, [None, 1000])
+
+        logits = self.build_model(features)
         cross_entropy = self.cost(logits, labels)
+        with tf.name_scope('optimizer'):
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            with tf.control_dependencies(update_ops):
+                train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+
+            num_batch = Y_train.get_shape().as_list()[0] // mini_batches
+            start_time = timer()
+            for i in range(num_batch):
+                print('step %d starts' %i)
+                X_mini_batch = X_train[num_batch:num_batch + mini_batches,:,:,:]
+                Y_mini_batch = Y_train[num_batch:num_batch + mini_batches,:]
+                X_mini_batch_feed = X_mini_batch.eval()
+                Y_mini_batch_feed = Y_mini_batch.eval()
+                train_step.run(feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+            end_time = timer()
+            print("training time for 1 epoch:",end_time-start_time)
+
+def main(_):
+    data_dir = '/home/rui/Development/mtml-tf/dataset/test'
+    label_path = '/home/rui/Development/mtml-tf/dataset/test-gt.txt'
+    X_data = load_images_tf(data_dir)
+    Y_data = load_labels_onehot_tf(label_path)
+
+    mobilenet = MobileNet()
+    mobilenet.train(X_data, Y_data)
 
 if __name__ == '__main__':
-    mobilenet = MobileNet()
-    #print(model.output.get_shape())
-    #board_writer = tf.summary.FileWriter(logdir='./', graph=tf.get_default_graph())
-
-    fake_data = np.ones(shape=(2, 224, 224, 3))
-
-    #sess_config = tf.ConfigProto(device_count={'GPU':0})
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-
-        cnt = 0
-        for i in range(101):
-            t1 = time.time()
-            output = sess.run(mobilenet.output, feed_dict={mobilenet.input: fake_data})
-            if i != 0:
-                cnt += time.time() - t1
-        print(cnt / 100)
+    tf.app.run(main=main)
