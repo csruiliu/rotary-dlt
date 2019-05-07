@@ -65,7 +65,7 @@ class ResNet(object):
         return add_result
 
 
-    def build(self, input, training=True):
+    def build(self, input, training=True, keep_prob=0.5):
         print("building resnet...")
         x = tf.pad(input, tf.constant([[0, 0], [3, 3, ], [3, 3], [0, 0]]), "CONSTANT")
         #assert(x.shape == (x.shape[0],70,70,3))
@@ -107,13 +107,13 @@ class ResNet(object):
             x = tf.layers.dense(flatten, units=50, activation=tf.nn.relu)
 
             with tf.name_scope('dropout'):
-                keep_prob = tf.placeholder(tf.float32)
+                #keep_prob = tf.placeholder(tf.float32)
                 x = tf.nn.dropout(x, keep_prob)
 
             logits = tf.layers.dense(x, units=1000, activation=tf.nn.softmax)
 
         print("build resnet-50 successufully")
-        return logits, keep_prob
+        return logits
 
 
     def train(self, X_train, Y_train):

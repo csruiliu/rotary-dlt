@@ -8,7 +8,7 @@ img_w = 224
 img_h = 224
 mini_batches = 10
 
-class Seq(object):
+class Pack(object):
     def __init__(self):
         pass
 
@@ -34,6 +34,7 @@ class Seq(object):
                 train_step_resnet = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy_resnet)
                 train_step_mobilenet = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy_mobilenet)
 
+
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
 
@@ -45,8 +46,9 @@ class Seq(object):
                 X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
                 Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
                 start_time = timer()
-                train_step_resnet.run(feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-                train_step_mobilenet.run(feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                sess.run([train_step_resnet, train_step_mobilenet], feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                #train_step_resnet.run(feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                #train_step_mobilenet.run(feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                 end_time = timer()
                 total_time += end_time - start_time
             print("training time for 1 epoch:", total_time)
@@ -56,8 +58,8 @@ def main(_):
     label_path = '/home/rui/Development/mtml-tf/dataset/test.txt'
     X_data = load_images(data_dir)
     Y_data = load_labels_onehot(label_path)
-    seq = Seq()
-    seq.train(X_data,Y_data)
+    pack = Pack()
+    pack.train(X_data,Y_data)
 
 if __name__ == '__main__':
     tf.app.run(main=main)
