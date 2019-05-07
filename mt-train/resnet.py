@@ -65,7 +65,7 @@ class ResNet(object):
         return add_result
 
 
-    def build(self, input, training):
+    def build(self, input, training=True):
         print("building resnet...")
         x = tf.pad(input, tf.constant([[0, 0], [3, 3, ], [3, 3], [0, 0]]), "CONSTANT")
         #assert(x.shape == (x.shape[0],70,70,3))
@@ -121,7 +121,7 @@ class ResNet(object):
         labels = tf.placeholder(tf.int64, [None, 1000])
         train_mode = tf.placeholder(tf.bool, name='training')
 
-        logits, keep_prob = self.build(features, train_mode)
+        logits, keep_prob = self.build(features)
         cross_entropy = self.cost(logits, labels)
         with tf.name_scope('optimizer'):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
