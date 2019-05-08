@@ -13,8 +13,8 @@ class Pack(object):
         pass
 
     def build(self):
-        resnet = ResNet()
-        mobilenet = MobileNet()
+        resnet = ResNet('resnet')
+        mobilenet = MobileNet('mobilenet')
         return resnet, mobilenet
 
     def train(self, X_train, Y_train):

@@ -5,10 +5,11 @@ from timeit import default_timer as timer
 
 img_h = 224
 img_w = 224
-mini_batches = 500
+mini_batches = 10
 
 class ResNet(object):
-    def __init__(self):
+    def __init__(self, net_name):
+        self.net_name = net_name
         pass
 
     def conv_block(self, X_input, kernel_size, in_filter, out_filters, stage, block, training, stride):
@@ -67,9 +68,10 @@ class ResNet(object):
 
     def build(self, input, training=True, keep_prob=0.5):
         print("building resnet...")
-        x = tf.pad(input, tf.constant([[0, 0], [3, 3, ], [3, 3], [0, 0]]), "CONSTANT")
+
         #assert(x.shape == (x.shape[0],70,70,3))
-        with tf.variable_scope('resnet_instance'):
+        with tf.variable_scope(self.net_name + '_instance'):
+            x = tf.pad(input, tf.constant([[0, 0], [3, 3, ], [3, 3], [0, 0]]), "CONSTANT")
             #training = tf.placeholder(tf.bool, name='training')
             w_conv1 = self.weight_variable([7, 7, 3, 64])
             x = tf.nn.conv2d(x, w_conv1, strides=[1, 2, 2, 1], padding='VALID')
@@ -121,7 +123,7 @@ class ResNet(object):
         labels = tf.placeholder(tf.int64, [None, 1000])
         train_mode = tf.placeholder(tf.bool, name='training')
 
-        logits, keep_prob = self.build(features)
+        logits = self.build(features)
         cross_entropy = self.cost(logits, labels)
         with tf.name_scope('optimizer'):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -140,7 +142,7 @@ class ResNet(object):
                 #X_mini_batch_feed = X_mini_batch.eval()
                 #Y_mini_batch_feed = Y_mini_batch.eval()
                 start_time = timer()
-                train_step.run(feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed, keep_prob: 0.5, train_mode: True})
+                train_step.run(feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                 end_time = timer()
                 total_time += end_time - start_time
             print("training time for 1 epoch:", total_time)
@@ -151,7 +153,6 @@ class ResNet(object):
         cross_entropy_cost = tf.reduce_mean(cross_entropy)
         return cross_entropy_cost
 
-
     def weight_variable(self, shape):
         initial = tf.truncated_normal(shape, stddev=0.1)
         return tf.Variable(initial)
@@ -161,12 +162,12 @@ def main(_):
     #data_dir = '/home/rui/Development/mtml-tf/dataset/imagenet'
     #label_path = '/home/rui/Development/mtml-tf/dataset/ILSVRC2010_validation_ground_truth.txt'
     data_dir = '/home/rui/Development/mtml-tf/dataset/test'
-    label_path = '/home/rui/Development/mtml-tf/dataset/test-gt.txt'
+    label_path = '/home/rui/Development/mtml-tf/dataset/test.txt'
     X_data = load_images(data_dir)
     Y_data = load_labels_onehot(label_path)
 
     #print(type(X_data))
-    resnet = ResNet()
+    resnet = ResNet('ResNet1')
     resnet.train(X_data, Y_data)
     #resnet.evaluate(X_test, Y_test)
     #resnet.evaluate(X_train, Y_train, 'training data')

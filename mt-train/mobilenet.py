@@ -19,33 +19,33 @@ class MobileNet(object):
         self.bn_params = {'is_training': self.is_training}
 
     def build_model(self, input):
-        self.i = 0
         with tf.variable_scope('init_conv'):
+            self.i = 0
             output = tc.layers.conv2d(input, 32, 3, 2,normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
 
-        net = self._inverted_bottleneck(output, 1, 16, 0)
-        net = self._inverted_bottleneck(net, 6, 24, 1)
-        net = self._inverted_bottleneck(net, 6, 24, 0)
-        net = self._inverted_bottleneck(net, 6, 32, 1)
-        net = self._inverted_bottleneck(net, 6, 32, 0)
-        net = self._inverted_bottleneck(net, 6, 32, 0)
-        net = self._inverted_bottleneck(net, 6, 64, 1)
-        net = self._inverted_bottleneck(net, 6, 64, 0)
-        net = self._inverted_bottleneck(net, 6, 64, 0)
-        net = self._inverted_bottleneck(net, 6, 64, 0)
-        net = self._inverted_bottleneck(net, 6, 96, 0)
-        net = self._inverted_bottleneck(net, 6, 96, 0)
-        net = self._inverted_bottleneck(net, 6, 96, 0)
-        net = self._inverted_bottleneck(net, 6, 160, 1)
-        net = self._inverted_bottleneck(net, 6, 160, 0)
-        net = self._inverted_bottleneck(net, 6, 160, 0)
-        net = self._inverted_bottleneck(net, 6, 320, 0)
+            net = self._inverted_bottleneck(output, 1, 16, 0)
+            net = self._inverted_bottleneck(net, 6, 24, 1)
+            net = self._inverted_bottleneck(net, 6, 24, 0)
+            net = self._inverted_bottleneck(net, 6, 32, 1)
+            net = self._inverted_bottleneck(net, 6, 32, 0)
+            net = self._inverted_bottleneck(net, 6, 32, 0)
+            net = self._inverted_bottleneck(net, 6, 64, 1)
+            net = self._inverted_bottleneck(net, 6, 64, 0)
+            net = self._inverted_bottleneck(net, 6, 64, 0)
+            net = self._inverted_bottleneck(net, 6, 64, 0)
+            net = self._inverted_bottleneck(net, 6, 96, 0)
+            net = self._inverted_bottleneck(net, 6, 96, 0)
+            net = self._inverted_bottleneck(net, 6, 96, 0)
+            net = self._inverted_bottleneck(net, 6, 160, 1)
+            net = self._inverted_bottleneck(net, 6, 160, 0)
+            net = self._inverted_bottleneck(net, 6, 160, 0)
+            net = self._inverted_bottleneck(net, 6, 320, 0)
 
-        net = tc.layers.conv2d(net, 1280, 1, normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
-        net = tc.layers.avg_pool2d(net, 7)
-        net = tc.layers.conv2d(net, 1000, 1, activation_fn=None)
-        logits = tf.squeeze(net)
-        return logits
+            net = tc.layers.conv2d(net, 1280, 1, normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
+            net = tc.layers.avg_pool2d(net, 7)
+            net = tc.layers.conv2d(net, 1000, 1, activation_fn=None)
+            logits = tf.squeeze(net)
+            return logits
 
     def _inverted_bottleneck(self, input, up_sample_rate, channels, subsample):
         with tf.variable_scope('inverted_bottleneck{}_{}_{}'.format(self.i, up_sample_rate, subsample)):
@@ -100,7 +100,7 @@ class MobileNet(object):
 
 def main(_):
     data_dir = '/home/rui/Development/mtml-tf/dataset/test'
-    label_path = '/home/rui/Development/mtml-tf/dataset/test-gt.txt'
+    label_path = '/home/rui/Development/mtml-tf/dataset/test.txt'
     X_data = load_images(data_dir)
     Y_data = load_labels_onehot(label_path)
     #print(Y_data.shape[0])
