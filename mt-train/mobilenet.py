@@ -13,13 +13,14 @@ img_w=224
 
 #MobileNetV2
 class MobileNet(object):
-    def __init__(self, is_training=True, input_size=224):
+    def __init__(self, net_name, is_training=True, input_size=224):
+        self.net_name = net_name
         self.is_training = is_training
         self.normalizer = tc.layers.batch_norm
         self.bn_params = {'is_training': self.is_training}
 
     def build_model(self, input):
-        with tf.variable_scope('init_conv'):
+        with tf.variable_scope(self.net_name + '_instance'):
             self.i = 0
             output = tc.layers.conv2d(input, 32, 3, 2,normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
 
@@ -104,7 +105,7 @@ def main(_):
     X_data = load_images(data_dir)
     Y_data = load_labels_onehot(label_path)
     #print(Y_data.shape[0])
-    mobilenet = MobileNet()
+    mobilenet = MobileNet('mobilenet')
     mobilenet.train(X_data, Y_data)
 
 if __name__ == '__main__':
