@@ -45,7 +45,7 @@ class MobileNet(object):
             net = tc.layers.avg_pool2d(net, 7)
             net = tc.layers.conv2d(net, 1000, 1, activation_fn=None)
             logits = tf.squeeze(net)
-            return logits
+        return logits
 
     def _inverted_bottleneck(self, input, up_sample_rate, channels, subsample):
         with tf.variable_scope('inverted_bottleneck{}_{}_{}'.format(self.i, up_sample_rate, subsample)):
