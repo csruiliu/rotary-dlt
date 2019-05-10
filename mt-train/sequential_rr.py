@@ -6,15 +6,19 @@ from img_utils import *
 
 img_w = 224
 img_h = 224
-mini_batches = 10
+parser = argparse.ArgumentParser()
+parser.add_argument("-b", "--batch", type=int, default=10, help="batch size")
+args = parser.parse_args()
+
+mini_batches = args.batch
 
 class Seq(object):
     def __init__(self):
         pass
 
     def build(self):
-        resnet1 = ResNet('resnet1')
-        resnet2 = ResNet('resnet2')
+        resnet1 = ResNet('resnet1_'+str(mini_batches))
+        resnet2 = ResNet('resnet2_'+str(mini_batches))
         return resnet1, resnet2
 
     def train(self, X_train, Y_train):

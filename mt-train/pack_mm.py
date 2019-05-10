@@ -4,17 +4,24 @@ from mobilenet import *
 from resnet import *
 from img_utils import *
 
+import argparse
+
 img_w = 224
 img_h = 224
-mini_batches = 10
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-b", "--batch", type=int, default=10, help="batch size")
+args = parser.parse_args()
+
+mini_batches = args.batch
 
 class Pack(object):
     def __init__(self):
         pass
 
     def build(self):
-        mobilenet1 = MobileNet('mobilenet1')
-        mobilenet2 = MobileNet('mobilenet2')
+        mobilenet1 = MobileNet('mobilenet1_'+str(mini_batches))
+        mobilenet2 = MobileNet('mobilenet2_'+str(mini_batches))
         #mobilenet = MobileNet()
         #return resnet, mobilenet
         return mobilenet1, mobilenet2
