@@ -6,7 +6,6 @@ from img_utils import *
 import numpy as np
 from timeit import default_timer as timer
 
-
 mini_batches=10
 img_h=224
 img_w=224
