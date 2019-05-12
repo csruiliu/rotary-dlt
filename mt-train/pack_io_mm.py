@@ -15,6 +15,8 @@ args = parser.parse_args()
 
 mini_batches = args.batch
 
+print(training)
+
 class Pack(object):
     def __init__(self):
         pass
