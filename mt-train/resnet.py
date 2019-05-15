@@ -1,11 +1,16 @@
 import tensorflow as tf
-
 from img_utils import *
 from timeit import default_timer as timer
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-b", "--batch", type=int, default=10, help="batch size")
+args = parser.parse_args()
+
+mini_batches = args.batch
 
 img_h = 224
 img_w = 224
-mini_batches = 10
 
 class ResNet(object):
     def __init__(self, net_name):

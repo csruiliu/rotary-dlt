@@ -2,11 +2,16 @@
 import tensorflow as tf
 import tensorflow.contrib as tc
 from img_utils import *
-
 import numpy as np
 from timeit import default_timer as timer
+import argparse
 
-mini_batches=10
+parser = argparse.ArgumentParser()
+parser.add_argument("-b", "--batch", type=int, default=10, help="batch size")
+args = parser.parse_args()
+
+mini_batches = args.batch
+
 img_h=224
 img_w=224
 
