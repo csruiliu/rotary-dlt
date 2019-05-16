@@ -65,8 +65,10 @@ class PackIO(object):
                 total_step = 0
                 for i in range(num_batch):
                     print('step %d / %d' %(i+1, num_batch))
-                    X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
-                    Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
+                    X_mini_batch_feed_a = X_train_a[num_batch:num_batch + mini_batches,:,:,:]
+                    Y_mini_batch_feed_a = Y_train_a[num_batch:num_batch + mini_batches,:]
+                    X_mini_batch_feed_b = X_train_b[num_batch:num_batch + mini_batches,:,:,:]
+                    Y_mini_batch_feed_b = Y_train_b[num_batch:num_batch + mini_batches,:]
                     start_time = timer()
                     sess.run([train_step_resnet1, train_step_resnet2], feed_dict={features_a: X_mini_batch_feed_a, labels_a: Y_mini_batch_feed_a, features_b: X_mini_batch_feed_b, labels_b: Y_mini_batch_feed_b})
                     end_time = timer()
