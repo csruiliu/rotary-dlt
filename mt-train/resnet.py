@@ -1,13 +1,5 @@
 import tensorflow as tf
 from img_utils import *
-from timeit import default_timer as timer
-import argparse
-
-parser = argparse.ArgumentParser()
-parser.add_argument("-b", "--batch", type=int, default=10, help="batch size")
-args = parser.parse_args()
-
-mini_batches = args.batch
 
 img_h = 224
 img_w = 224
@@ -144,8 +136,6 @@ class ResNet(object):
                 print('step %d / %d' %(i+1, num_batch))
                 X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
                 Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
-                #X_mini_batch_feed = X_mini_batch.eval()
-                #Y_mini_batch_feed = Y_mini_batch.eval()
                 start_time = timer()
                 train_step.run(feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                 end_time = timer()
@@ -171,8 +161,7 @@ def main(_):
     X_data = load_images(data_dir)
     Y_data = load_labels_onehot(label_path)
 
-    #print(type(X_data))
-    resnet = ResNet('ResNet1')
+    resnet = ResNet('resnet_'+str(mini_batches))
     resnet.train(X_data, Y_data)
     #resnet.evaluate(X_test, Y_test)
     #resnet.evaluate(X_train, Y_train, 'training data')
