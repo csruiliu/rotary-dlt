@@ -1,5 +1,4 @@
 import tensorflow as tf
-from img_utils import *
 
 img_h = 224
 img_w = 224

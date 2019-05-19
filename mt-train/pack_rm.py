@@ -1,6 +1,7 @@
 import tensorflow as tf
 from mobilenet import *
 from resnet import *
+from img_utils import *
 from timeit import default_timer as timer
 import argparse
 

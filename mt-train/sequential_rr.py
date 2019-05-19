@@ -1,5 +1,6 @@
 import tensorflow as tf
 from resnet import *
+from img_utils import *
 from timeit import default_timer as timer
 import argparse
 
