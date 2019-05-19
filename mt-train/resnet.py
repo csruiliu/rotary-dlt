@@ -115,56 +115,13 @@ class ResNet(object):
         return logits
 
 
-    def train(self, X_train, Y_train):
-        features = tf.placeholder(tf.float32, [None, img_h, img_w, 3])
-        labels = tf.placeholder(tf.int64, [None, 1000])
-        train_mode = tf.placeholder(tf.bool, name='training')
-
-        logits = self.build(features)
-        cross_entropy = self.cost(logits, labels)
-        with tf.name_scope('optimizer'):
-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-            with tf.control_dependencies(update_ops):
-                train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
-
-        with tf.Session() as sess:
-            sess.run(tf.global_variables_initializer())
-
-            num_batch = Y_train.shape[0] // mini_batches
-            total_time = 0
-            for i in range(num_batch):
-                print('step %d / %d' %(i+1, num_batch))
-                X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
-                Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
-                start_time = timer()
-                train_step.run(feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-                end_time = timer()
-                total_time += end_time - start_time
-            print("training time for 1 epoch:", total_time)
-
     def cost(self, logits, labels):
         with tf.name_scope('loss'):
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
         cross_entropy_cost = tf.reduce_mean(cross_entropy)
         return cross_entropy_cost
 
+
     def weight_variable(self, shape):
         initial = tf.truncated_normal(shape, stddev=0.1)
         return tf.Variable(initial)
-
-
-def main(_):
-    #data_dir = '/home/rui/Development/mtml-tf/dataset/imagenet'
-    #label_path = '/home/rui/Development/mtml-tf/dataset/ILSVRC2010_validation_ground_truth.txt'
-    data_dir = '/home/rui/Development/mtml-tf/dataset/test'
-    label_path = '/home/rui/Development/mtml-tf/dataset/test.txt'
-    X_data = load_images(data_dir)
-    Y_data = load_labels_onehot(label_path)
-
-    resnet = ResNet('resnet_'+str(mini_batches))
-    resnet.train(X_data, Y_data)
-    #resnet.evaluate(X_test, Y_test)
-    #resnet.evaluate(X_train, Y_train, 'training data')
-
-if __name__ == '__main__':
-    tf.app.run(main=main)
