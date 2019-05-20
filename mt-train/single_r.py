@@ -72,8 +72,8 @@ class Single(object):
 
 
 def main(_):
-    data_dir = '/home/rui/Development/mtml-tf/dataset/test'
-    label_path = '/home/rui/Development/mtml-tf/dataset/test.txt'
+    data_dir = '/home/ruiliu/Development/mtml-tf/dataset/test'
+    label_path = '/home/ruiliu/Development/mtml-tf/dataset/test-label.txt'
     X_data = load_images(data_dir)
     Y_data = load_labels_onehot(label_path)
     single_r = Single()

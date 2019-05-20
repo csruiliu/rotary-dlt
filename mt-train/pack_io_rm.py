@@ -82,8 +82,8 @@ class PackIO(object):
                 print("training time for 1 step:", step_time)
 
 def main(_):
-    data_dir = '/home/rui/Development/mtml-tf/dataset/test'
-    label_path = '/home/rui/Development/mtml-tf/dataset/test.txt'
+    data_dir = '/home/ruiliu/Development/mtml-tf/dataset/test'
+    label_path = '/home/ruiliu/Development/mtml-tf/dataset/test-label.txt'
     X_data_a = load_images(data_dir)
     Y_data_a = load_labels_onehot(label_path)
     X_data_b = load_images(data_dir)
