@@ -3,10 +3,9 @@ import tensorflow as tf
 img_h = 224
 img_w = 224
 
-class ResNet(object):
+class resnet(object):
     def __init__(self, net_name):
         self.net_name = net_name
-        pass
 
     def conv_block(self, X_input, kernel_size, in_filter, out_filters, stage, block, training, stride):
         block_name = 'resnet' + stage + block
@@ -114,13 +113,16 @@ class ResNet(object):
         return logits
 
 
+
     def cost(self, logits, labels):
         with tf.name_scope('loss'):
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
         cross_entropy_cost = tf.reduce_mean(cross_entropy)
         return cross_entropy_cost
 
-
     def weight_variable(self, shape):
         initial = tf.truncated_normal(shape, stddev=0.1)
         return tf.Variable(initial)
+
+    def printName(self):
+        print("this a resnet")

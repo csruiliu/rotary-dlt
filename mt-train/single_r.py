@@ -41,7 +41,7 @@ class Single(object):
             sess.run(tf.global_variables_initializer())
 
             num_batch = Y_train.shape[0] // mini_batches
-
+            
             total_time = 0
             if eval_options == "epoch":
                 for i in range(num_batch):

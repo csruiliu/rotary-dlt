@@ -5,8 +5,8 @@ img_h=224
 img_w=224
 
 #MobileNetV2
-class MobileNet(object):
-    def __init__(self, net_name, is_training=True, input_size=224):
+class mobilenet(object):
+    def __init__(self, net_name, is_training=True):
         self.net_name = net_name
         self.is_training = is_training
         self.normalizer = tc.layers.batch_norm
@@ -62,3 +62,6 @@ class MobileNet(object):
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
         cross_entropy_cost = tf.reduce_mean(cross_entropy)
         return cross_entropy_cost
+
+    def printName(self):
+        print("this is a mobilenet")
