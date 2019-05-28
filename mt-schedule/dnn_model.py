@@ -1,7 +1,12 @@
 import sys
+import random
+from datetime import datetime 
 
 class DnnModel(object):
     def __init__(self, model_name, model_layer, batch_size_range, desired_accuracy):
+        
+        random.seed(datetime.now())
+        rd_name = random.randint(1,1024)
         self.modelName = model_name
         self.modelLayer = model_layer
         self.batchSizeRange = batch_size_range
@@ -10,7 +15,7 @@ class DnnModel(object):
         
         #the imported module and the regarding class name have to be the same
         clazz = getattr(import_model, self.modelName)
-        self.modelEntity = clazz(self.modelName)
+        self.modelEntity = clazz(self.modelName+str(rd_name))
 
     def getModelLayer(self):
         return self.modelLayer
