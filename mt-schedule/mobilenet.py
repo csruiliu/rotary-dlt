@@ -63,5 +63,5 @@ class mobilenet(object):
         cross_entropy_cost = tf.reduce_mean(cross_entropy)
         return cross_entropy_cost
 
-    def printName(self):
-        print("this is a mobilenet")
+    def getModelInstanceName(self):
+        return self.net_name

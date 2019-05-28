@@ -112,8 +112,6 @@ class resnet(object):
         print("build resnet-50 successufully")
         return logits
 
-
-
     def cost(self, logits, labels):
         with tf.name_scope('loss'):
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
@@ -124,5 +122,5 @@ class resnet(object):
         initial = tf.truncated_normal(shape, stddev=0.1)
         return tf.Variable(initial)
 
-    def printName(self):
-        print("this a resnet")
+    def getModelInstanceName(self):
+        return self.net_name
