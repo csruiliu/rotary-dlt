@@ -20,38 +20,51 @@ class Schedule(object):
         for idx in self.modelCollection:
             print(idx.getModelEntity().getModelInstanceName())
 
-    def packModels(self, ready_pack_model_collection):
-        packedModelCollection = []
+    def packModelForTrain(self, ready_pack_model_collection):
+        packedModelTrainUnit = []
         for idx in ready_pack_model_collection:
             modelEntity = idx.getModelEntity()
-            self.modelEntityCollection.append(idx.getModelEntity())
+            self.modelEntityCollection.append(modelEntity)
             modelLogit = modelEntity.build(self.features)
             self.logitCollection.append(modelLogit)
             modelCrossEntropy = modelEntity.cost(modelLogit, self.labels)
             self.crossEntropyCollection.append(modelCrossEntropy)
-            with tf.name_scope('optimizer'):
+            with tf.name_scope('optimizer_packed'):
                 update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
                 with tf.control_dependencies(update_ops):
                     modelTrainStep = tf.train.AdamOptimizer(1e-4).minimize(modelCrossEntropy)
-                    packedModelCollection.append(modelTrainStep)
+                    packedModelTrainUnit.append(modelTrainStep)
 
-        return packedModelCollection
+        return packedModelTrainUnit
+
+    def singleModelForTrain(self, single_pack_model):
+        singleModelTrainUnit = []
+        modelEntity = single_pack_model.getModelEntity()
+        self.modelEntityCollection.append(modelEntity)
+        modelLogit = modelEntity.build(self.features)
+        self.logitCollection.append(modelLogit)
+        modelCrossEntropy = modelEntity.cost(modelLogit, self.labels)
+        self.crossEntropyCollection.append(modelCrossEntropy)
+        with tf.name_scope('optimizer_single'):
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            with tf.control_dependencies(update_ops):
+                modelTrainStep = tf.train.AdamOptimizer(1e-4).minimize(modelCrossEntropy)
+                singleModelTrainUnit.append(modelTrainStep)
+
+        return singleModelTrainUnit
+
 
     def schedule(self):
 
-        
-
         scheduleUnit1 = []
-
-
         scheduleUnit1.append(self.modelCollection[0])
         scheduleUnit1.append(self.modelCollection[1])
-        ss = self.packModels(scheduleUnit)
-        scheduleUnit2 = []
-        scheduleUnit2.append(self.modelCollection[2])
+        packedScheduleUnit1 = self.packModelForTrain(scheduleUnit1)
 
-        self.scheduleCollection.append(scheduleUnit1)
-        self.scheduleCollection.append(scheduleUnit2)
+        singleScheduleUnit2 = self.singleModelForTrain(self.modelCollection[2])
+
+        self.scheduleCollection.append(packedScheduleUnit1)
+        self.scheduleCollection.append(singleScheduleUnit2)
 
     def executeSch(self, X_train, Y_train):
         with tf.Session() as sess:
@@ -68,7 +81,7 @@ class Schedule(object):
                     Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
                     start_time = timer()
 
-                    sess.run(ops_list, feed_dict={self.features: X_mini_batch_feed, self.labels: Y_mini_batch_feed})
+                    sess.run(schUntit, feed_dict={self.features: X_mini_batch_feed, self.labels: Y_mini_batch_feed})
                     end_time = timer()
                     total_time += end_time - start_time
                 print("training time for 1 epoch:", total_time)

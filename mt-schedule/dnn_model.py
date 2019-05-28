@@ -1,10 +1,10 @@
 import sys
 import random
-from datetime import datetime 
+from datetime import datetime
 
 class DnnModel(object):
     def __init__(self, model_name, model_layer, batch_size_range, desired_accuracy):
-        
+
         random.seed(datetime.now())
         rd_name = random.randint(1,1024)
         self.modelName = model_name
@@ -31,6 +31,3 @@ class DnnModel(object):
 
     def getDesiredAccuracy(self):
         return self.desiredAccuracy
-
-
-

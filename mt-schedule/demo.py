@@ -19,9 +19,8 @@ def main(_):
     model_list.append(mobilenetModel2)
     sch = Schedule(model_list)
     sch.showAllModelInstances()
-    #ss = sch.packModels(model_list)
-
-    #sch.executeSch(ss, X_data, Y_data)
+    sch.schedule()
+    sch.executeSch(X_data, Y_data)
 
 if __name__ == '__main__':
     tf.app.run(main=main)
