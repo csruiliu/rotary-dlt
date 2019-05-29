@@ -62,8 +62,6 @@ class resnet(object):
 
 
     def build(self, input, training=True, keep_prob=0.5):
-        print("building resnet...")
-
         #assert(x.shape == (x.shape[0],70,70,3))
         with tf.variable_scope(self.net_name + '_instance'):
             x = tf.pad(input, tf.constant([[0, 0], [3, 3, ], [3, 3], [0, 0]]), "CONSTANT")
@@ -109,7 +107,6 @@ class resnet(object):
 
             logits = tf.layers.dense(x, units=1000, activation=tf.nn.softmax)
 
-        print("build resnet-50 successufully")
         return logits
 
     def cost(self, logits, labels):

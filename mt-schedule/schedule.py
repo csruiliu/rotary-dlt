@@ -85,3 +85,32 @@ class Schedule(object):
                     end_time = timer()
                     total_time += end_time - start_time
                 print("training time for 1 epoch:", total_time)
+
+    def testSingleModel(self, model, X_train, Y_train):
+        modelEntity = model.getModelEntity()
+        modelLogit = modelEntity.build(self.features)
+        modelCrossEntropy = modelEntity.cost(modelLogit, self.labels)
+
+        with tf.name_scope('optimizer_test'):
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            with tf.control_dependencies(update_ops):
+                modelTrainStep = tf.train.AdamOptimizer(1e-4).minimize(modelCrossEntropy)
+
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+            mini_batches = 10
+            num_batch = Y_train.shape[0] // mini_batches
+
+            total_time = 0
+
+            for schUntit in self.scheduleCollection:
+                for i in range(num_batch):
+                    print('step %d / %d' %(i+1, num_batch))
+                    X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
+                    Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
+                    start_time = timer()
+
+                    sess.run(modelTrainStep, feed_dict={self.features: X_mini_batch_feed, self.labels: Y_mini_batch_feed})
+                    end_time = timer()
+                    total_time += end_time - start_time
+                print("training time for 1 epoch:", total_time)
