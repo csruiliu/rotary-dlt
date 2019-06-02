@@ -4,24 +4,24 @@ img_h = 224
 img_w = 224
 channel_num = 3
 
-filter_size_conv1 = 3 
-num_filters_conv1 = 64
+conv1_filter_size = 7 
+conv1_num_filters = 64
 
-filter_size_conv2 = 3
-num_filters_conv2 = 64
+conv2_filter_size = 3
+conv2_num_filters = 64
 
 filter_size_conv3 = 3
-num_filters_conv3 = 128
-
-fc_layer_size = 256
+num_filters_conv3 = 64
 
 input_size = img_h * img_w * channel_num
 classes_num = 1000
 
 
 class convnet(object):
-    def __init__(self, net_name):
+    def __init__(self, net_name, model_layer):
         self.net_name = net_name
+        self.model_layer_num = model_layer
+        print("model layer num:", self.model_layer_num)
 
     def create_weights(self, shape):
         return tf.Variable(tf.truncated_normal(shape, stddev=0.05))
@@ -29,51 +29,38 @@ class convnet(object):
     def create_biases(self, size):
         return tf.Variable(tf.constant(0.05, shape=[size]))
     
-    def create_convolutional_layer(self, input, channel_num, conv_filter_size, num_filters):  
-        weights = self.create_weights(shape=[conv_filter_size, conv_filter_size, channel_num, num_filters])
+    def create_convolutional_layer(self, input, conv_filter_size, num_filters, in_filter, conv_stride, pool_stride, conv_padding, pool_padding):  
+        weights = self.create_weights(shape=[conv_filter_size, conv_filter_size, in_filter, num_filters])
         biases = self.create_biases(num_filters)
 
-        layer = tf.nn.conv2d(input=input, filter=weights, strides=[1, 1, 1, 1],padding='SAME')
+        layer = tf.nn.conv2d(input=input, filter=weights, strides=[1, conv_stride, conv_stride, 1], padding=conv_padding)
         layer += biases
-        layer = tf.nn.max_pool(value=layer, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+        layer = tf.nn.max_pool(value=layer, ksize=[1, 3, 3, 1], strides=[1, pool_stride, pool_stride, 1], padding=pool_padding)
         layer = tf.nn.relu(layer)
-
-        return layer
-
-    def create_flatten_layer(self, layer):
-        layer = tf.reshape(layer, [-1, input_size])
-        return layer
-
-    def create_fc_layer(self, input, num_inputs, num_outputs, use_relu=True):
-        weights = self.create_weights(shape=[num_inputs, num_outputs])
-        biases = self.create_biases(num_outputs)
-
-        layer = tf.matmul(input, weights) + biases
-        if use_relu:
-            layer = tf.nn.relu(layer)
 
         return layer
 
     def build(self, input):
         with tf.variable_scope(self.net_name + '_instance'):
-            layer_conv1 = self.create_convolutional_layer(input=input, channel_num=channel_num,
-                                                          conv_filter_size=filter_size_conv1,
-                                                          num_filters=num_filters_conv1)
-            layer_conv2 = self.create_convolutional_layer(input=layer_conv1, channel_num=channel_num, 
-                                                          conv_filter_size=filter_size_conv2, 
-                                                          num_filters=num_filters_conv2)
-            layer_conv3= self.create_convolutional_layer(input=layer_conv2, channel_num=channel_num,
-                                                         conv_filter_size=filter_size_conv3,
-                                                         num_filters=num_filters_conv3)
-            layer_flat = self.create_flatten_layer(layer_conv3)
 
-            layer_fc1 = self.create_fc_layer(input=layer_flat, num_inputs=input_size, 
-                                             num_outputs=fc_layer_size, use_relu=True)
+            layer_conv = self.create_convolutional_layer(input=input, in_filter=3,
+                                                          conv_filter_size=conv1_filter_size,
+                                                          num_filters=conv1_num_filters, conv_stride=1, 
+                                                          pool_stride=2, conv_padding='SAME', pool_padding='SAME')
 
-            layer_fc2 = self.create_fc_layer(input=layer_fc1, num_inputs=fc_layer_size,
-                                             num_outputs=classes_num, use_relu=False) 
+            for _ in range(self.model_layer_num):
+                layer_conv = self.create_convolutional_layer(input=layer_conv, in_filter=64, 
+                                                          conv_filter_size=conv2_filter_size, 
+                                                          num_filters=conv2_num_filters, conv_stride=1,
+                                                          pool_stride=2, conv_padding='SAME', pool_padding='SAME')
 
-            logits = tf.nn.softmax(layer_fc2)
+            layer_flat = tf.layers.flatten(layer_conv)
+            x = tf.layers.dense(layer_flat, units=50, activation=tf.nn.relu)
+        
+            logits = tf.layers.dense(x, units=classes_num, activation=tf.nn.softmax)
+            
+            print(logits)
+
         return logits
 
     def cost(self, logits, labels):

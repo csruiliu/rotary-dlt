@@ -10,12 +10,14 @@ classes_num = 1000
 class perceptron(object):
     def __init__(self, net_name):
         self.net_name = net_name
-        
+    
     def build(self, input):
         with tf.variable_scope(self.net_name + '_instance'):
+            input_image = tf.reshape(input, [-1, input_size])
+
             weights = tf.Variable(tf.random_normal([input_size, classes_num]))
             biases = tf.Variable(tf.random_normal([classes_num]))
-            input_image = tf.reshape(input, [-1, input_size])
+            
             logits = tf.matmul(input_image, weights) + biases
 
         return logits
