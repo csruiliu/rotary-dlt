@@ -54,6 +54,7 @@ class convnet(object):
                                                           num_filters=conv2_num_filters, conv_stride=1,
                                                           pool_stride=2, conv_padding='SAME', pool_padding='SAME')
 
+
             layer_flat = tf.layers.flatten(layer_conv)
             x = tf.layers.dense(layer_flat, units=50, activation=tf.nn.relu)
         
