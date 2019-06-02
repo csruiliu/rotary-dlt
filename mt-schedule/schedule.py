@@ -103,14 +103,14 @@ class Schedule(object):
 
             total_time = 0
 
-            for schUntit in self.scheduleCollection:
-                for i in range(num_batch):
-                    print('step %d / %d' %(i+1, num_batch))
-                    X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
-                    Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
-                    start_time = timer()
+            for i in range(num_batch):
+                print('step %d / %d' %(i+1, num_batch))
+                X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
+                Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
+                start_time = timer()
 
-                    sess.run(modelTrainStep, feed_dict={self.features: X_mini_batch_feed, self.labels: Y_mini_batch_feed})
-                    end_time = timer()
-                    total_time += end_time - start_time
-                print("training time for 1 epoch:", total_time)
+                sess.run(modelTrainStep, feed_dict={self.features: X_mini_batch_feed, self.labels: Y_mini_batch_feed})
+                end_time = timer()
+                total_time += end_time - start_time
+            print("training time for 1 epoch:", total_time)
+                
