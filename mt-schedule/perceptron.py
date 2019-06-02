@@ -8,19 +8,25 @@ input_size = img_h * img_w * channel_num
 classes_num = 1000
 
 class perceptron(object):
-    def __init__(self, net_name):
+    def __init__(self, net_name, model_layer):
         self.net_name = net_name
+        self.model_layer_num = model_layer
     
+    def perceptron_layer(self, input):
+        weights = tf.Variable(tf.random_normal([int(input.shape[1]), classes_num]))
+        biases = tf.Variable(tf.random_normal([classes_num]))
+        layer = tf.matmul(input, weights) + biases
+
+        return layer
+
     def build(self, input):
         with tf.variable_scope(self.net_name + '_instance'):
             input_image = tf.reshape(input, [-1, input_size])
-
-            weights = tf.Variable(tf.random_normal([input_size, classes_num]))
-            biases = tf.Variable(tf.random_normal([classes_num]))
+            layer = self.perceptron_layer(input = input_image)
+            for _ in range(self.model_layer_num):
+                layer = self.perceptron_layer(input = layer)
             
-            logits = tf.matmul(input_image, weights) + biases
-
-        return logits
+        return layer
 
     def cost(self, logits, labels):
         with tf.name_scope('loss'):

@@ -9,8 +9,8 @@ def main(_):
     X_data = load_images(data_dir)
     Y_data = load_labels_onehot(label_path)
 
-    #mp = DnnModel("perceptron", 3, {10,20}, 0.9)
-    mp = DnnModel("convnet", 3, {10,20}, 0.9)
+    mp = DnnModel("perceptron", 2, {10,20}, 0.9)
+    #mp = DnnModel("convnet", 3, {10,20}, 0.9)
 
     #resnetModel = DnnModel("resnet",  50, {10,20}, 0.9)
     #mobilenetModel1 = DnnModel("mobilenet", 40, {20,40}, 0.8)

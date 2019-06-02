@@ -21,7 +21,6 @@ class convnet(object):
     def __init__(self, net_name, model_layer):
         self.net_name = net_name
         self.model_layer_num = model_layer
-        print("model layer num:", self.model_layer_num)
 
     def create_weights(self, shape):
         return tf.Variable(tf.truncated_normal(shape, stddev=0.05))
@@ -53,7 +52,6 @@ class convnet(object):
                                                           conv_filter_size=conv2_filter_size, 
                                                           num_filters=conv2_num_filters, conv_stride=1,
                                                           pool_stride=2, conv_padding='SAME', pool_padding='SAME')
-
 
             layer_flat = tf.layers.flatten(layer_conv)
             x = tf.layers.dense(layer_flat, units=50, activation=tf.nn.relu)
