@@ -1,20 +1,18 @@
 import tensorflow as tf
 from timeit import default_timer as timer
 
-img_w = 224
-img_h = 224
 
 class Schedule(object):
-    def __init__(self, model_collection):
+    def __init__(self, model_collection, img_w, img_h, num_classes):
         self.modelCollection = model_collection
         self.modelEntityCollection = []
         self.logitCollection = []
         self.crossEntropyCollection = []
         self.trainStepColllection = []
         self.scheduleCollection = []
-
-        self.features = tf.placeholder(tf.float32, [None, img_h, img_w, 3])
-        self.labels = tf.placeholder(tf.int64, [None, 1000])
+    
+        self.features = tf.placeholder(tf.float32, [None, img_w, img_h, 3])
+        self.labels = tf.placeholder(tf.int64, [None, num_classes])
 
     def showAllModelInstances(self):
         for idx in self.modelCollection:

@@ -1,7 +1,5 @@
 import tensorflow as tf
 
-img_h = 224
-img_w = 224
 channel_num = 3
 
 conv1_filter_size = 7 
@@ -13,14 +11,14 @@ conv2_num_filters = 64
 filter_size_conv3 = 3
 num_filters_conv3 = 64
 
-input_size = img_h * img_w * channel_num
-classes_num = 1000
-
-
 class convnet(object):
-    def __init__(self, net_name, model_layer):
+    def __init__(self, net_name, model_layer, input_h, input_w, num_classes):
         self.net_name = net_name
         self.model_layer_num = model_layer
+        self.img_h = input_h
+        self.img_w = input_w
+        self.input_size = input_h * input_w * channel_num
+        self.num_classes = num_classes
 
     def create_weights(self, shape):
         return tf.Variable(tf.truncated_normal(shape, stddev=0.05))
@@ -56,7 +54,7 @@ class convnet(object):
             layer_flat = tf.layers.flatten(layer_conv)
             x = tf.layers.dense(layer_flat, units=50, activation=tf.nn.relu)
         
-            logits = tf.layers.dense(x, units=classes_num, activation=tf.nn.softmax)
+            logits = tf.layers.dense(x, units=self.num_classes, activation=tf.nn.softmax)
             
             print(logits)
 

@@ -1,13 +1,17 @@
 import tensorflow as tf
 import tensorflow.contrib as tc
 
-img_h=224
-img_w=224
+channel_num = 3
 
 #MobileNetV2
 class mobilenet(object):
-    def __init__(self, net_name, is_training=True):
+    def __init__(self, net_name, model_layer, input_h, input_w, num_classes, is_training=True):
         self.net_name = net_name
+        self.model_layer_num = model_layer
+        self.img_h = input_h
+        self.img_w = input_w
+        self.input_size = input_h * input_w * channel_num
+        self.num_classes = num_classes
         self.is_training = is_training
         self.normalizer = tc.layers.batch_norm
         self.bn_params = {'is_training': self.is_training}
@@ -15,7 +19,7 @@ class mobilenet(object):
     def build(self, input):
         with tf.variable_scope(self.net_name + '_instance'):
             self.i = 0
-            output = tc.layers.conv2d(input, 32, 3, 2,normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
+            output = tc.layers.conv2d(input, 32, 3, 2, normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
 
             net = self._inverted_bottleneck(output, 1, 16, 0)
             net = self._inverted_bottleneck(net, 6, 24, 1)
@@ -35,9 +39,10 @@ class mobilenet(object):
             net = self._inverted_bottleneck(net, 6, 160, 0)
             net = self._inverted_bottleneck(net, 6, 320, 0)
 
-            net = tc.layers.conv2d(net, 1280, 1, normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
-            net = tc.layers.avg_pool2d(net, 7)
-            net = tc.layers.conv2d(net, 1000, 1, activation_fn=None)
+            net = tc.layers.conv2d(net, 1280, 1, normalizer_fn=self.normalizer, normalizer_params=self.bn_params) 
+            avg_num = int(self.img_h // 32)
+            net = tc.layers.avg_pool2d(net, avg_num)
+            net = tc.layers.conv2d(net, self.num_classes, 1, activation_fn=None)
             logits = tf.squeeze(net)
         return logits
 

@@ -1,11 +1,15 @@
 import tensorflow as tf
 
-img_h = 224
-img_w = 224
+channel_num = 3
 
 class resnet(object):
-    def __init__(self, net_name):
+    def __init__(self, net_name, model_layer, input_h, input_w, num_classes):
         self.net_name = net_name
+        self.model_layer_num = model_layer
+        self.img_h = input_h
+        self.img_w = input_w
+        self.input_size = input_h * input_w * channel_num
+        self.num_classes = num_classes
 
     def conv_block(self, X_input, kernel_size, in_filter, out_filters, stage, block, training, stride):
         block_name = 'resnet' + stage + block
@@ -97,7 +101,9 @@ class resnet(object):
             x = self.identity_block(x, 3, 2048, [512, 512, 2048], stage='stage512', block='identity_block1', training=training)
             x = self.identity_block(x, 3, 2048, [512, 512, 2048], stage='stage512', block='identity_block2', training=training)
 
-            x = tf.nn.avg_pool(x, [1, 2, 2, 1], strides=[1,1,1,1], padding='VALID')
+            avg_pool_size = int(self.img_h // 32)
+
+            x = tf.nn.avg_pool(x, [1, avg_pool_size, avg_pool_size, 1], strides=[1,1,1,1], padding='VALID')
             flatten = tf.layers.flatten(x)
             x = tf.layers.dense(flatten, units=50, activation=tf.nn.relu)
 
@@ -105,7 +111,7 @@ class resnet(object):
                 #keep_prob = tf.placeholder(tf.float32)
                 x = tf.nn.dropout(x, keep_prob)
 
-            logits = tf.layers.dense(x, units=1000, activation=tf.nn.softmax)
+            logits = tf.layers.dense(x, units=self.num_classes, activation=tf.nn.softmax)
 
         return logits
 

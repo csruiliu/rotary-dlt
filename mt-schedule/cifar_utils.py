@@ -44,7 +44,7 @@ class cifar_utils(object):
         images = self.convert_image(raw_images, self.num_channels, self.img_w, self.img_h)
         return images, labels
 
-    def load_training_data(self, num_images_train):
+    def load_training_data(self):
         images = np.zeros(shape=[self.num_images_train, self.img_w, self.img_h, self.num_channels], dtype=float)
         labels = np.zeros(shape=[self.num_images_train], dtype=int)
         begin = 0
@@ -59,4 +59,5 @@ class cifar_utils(object):
 
     def load_evaluation_data(self):
         images, labels = self.load_data(filename="test_batch")
+        print(images.shape)
         return images, labels, self.one_hot_encoded(class_numbers=labels, num_classes=self.num_classes)
