@@ -53,7 +53,6 @@ class Schedule(object):
 
 
     def schedule(self):
-
         scheduleUnit1 = []
         scheduleUnit1.append(self.modelCollection[0])
         scheduleUnit1.append(self.modelCollection[1])
