@@ -3,15 +3,15 @@ from timeit import default_timer as timer
 
 
 class Schedule(object):
-    def __init__(self, model_collection, img_w, img_h, num_classes):
+    def __init__(self, model_collection, input_w, input_h, num_classes):
         self.modelCollection = model_collection
         self.modelEntityCollection = []
         self.logitCollection = []
         self.crossEntropyCollection = []
         self.trainStepColllection = []
         self.scheduleCollection = []
-    
-        self.features = tf.placeholder(tf.float32, [None, img_w, img_h, 3])
+
+        self.features = tf.placeholder(tf.float32, [None, input_w, input_h, 3])
         self.labels = tf.placeholder(tf.int64, [None, num_classes])
 
     def showAllModelInstances(self):
@@ -51,8 +51,19 @@ class Schedule(object):
 
         return singleModelTrainUnit
 
+    def buildModelsForSchedule(self):
+        for midx in self.modelCollection:
+            modelEntity = midx.getModelEntity()
+            self.modelEntityCollection.append(modelEntity) 
+            modelLogit = modelEntity.build(self.features)
+            self.logitCollection.append(modelLogit)
+
+        for lidx in self.modelEntityCollection:
+            print(lidx.getModelInstanceName())
+            print(lidx.getModelMemSize())
 
     def schedule(self):
+        
         scheduleUnit1 = []
         scheduleUnit1.append(self.modelCollection[0])
         scheduleUnit1.append(self.modelCollection[1])
