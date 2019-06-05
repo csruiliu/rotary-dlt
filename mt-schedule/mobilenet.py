@@ -21,7 +21,7 @@ class mobilenet(object):
         with tf.variable_scope(self.net_name + '_instance'):
             self.i = 0
             output = tc.layers.conv2d(input, 32, 3, 2, normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
-            self.model_size += (3 * 3 * channel_num + 1) * 32
+            self.model_size += (3 * 3 * channel_num * int(input.shape[1]) + 1) * 32
 
             net, net_size = self._inverted_bottleneck(output, 1, 16, 0)
             self.model_size += net_size
@@ -59,12 +59,12 @@ class mobilenet(object):
             self.model_size += net_size
 
             net = tc.layers.conv2d(net, 1280, 1, normalizer_fn=self.normalizer, normalizer_params=self.bn_params) 
-            self.model_size += (1 * 1*channel_num + 1) * 1280
+            self.model_size += (1 * 1 * int(net.shape[1]) + 1) * 1280
 
             avg_num = int(self.img_h // 32)
             net = tc.layers.avg_pool2d(net, avg_num)
             net = tc.layers.conv2d(net, self.num_classes, 1, activation_fn=None)
-            self.model_size += (1 * 1*channel_num + 1) * self.num_classes
+            self.model_size += (1 * 1 * int(net.shape[1]) + 1) * self.num_classes
 
             logits = tf.squeeze(net)
         return logits
@@ -78,15 +78,17 @@ class mobilenet(object):
             output = tc.layers.conv2d(input, num_outputs, 1,
                                       activation_fn=tf.nn.relu6,
                                       normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
-            layer_size += (1*1*channel_num + 1) * num_outputs
+            layer_size += (1 * 1 * int(input.shape[1]) + 1) * num_outputs
 
             output = tc.layers.separable_conv2d(output, None, 3, 1, stride=stride,
                                                 activation_fn=tf.nn.relu6,
                                                 normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
-    
+
+            layer_size += (3 * 3 * int(output.shape[1]) + 1) * channels
+
             output = tc.layers.conv2d(output, channels, 1, activation_fn=None,
                                       normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
-            layer_size += (1*1*channel_num + 1) * channels
+            layer_size += (1 * 1 * int(output.shape[1]) + 1) * channels
 
             if input.get_shape().as_list()[-1] == channels:
                 output = tf.add(input, output)
