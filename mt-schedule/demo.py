@@ -4,6 +4,7 @@ from dnn_model import DnnModel
 from img_utils import *
 from cifar_utils import *
 import numpy as np
+from datetime import datetime
 
 
 img_w = 224
@@ -24,31 +25,29 @@ def main(_):
     
     #model_class_num = random.sample(xrange(10), 4)
     model_class_num = [3, 5, 7, 10]
-    model_class = ["resnet", "mobilenet", "convnet", "perceptron"]
+    model_class_total = sum(model_class_num)
+    model_name_abbr = np.random.choice(100000, model_class_total, replace=False).tolist()
     
+    model_class = ["resnet", "mobilenet", "convnet", "perceptron"]
     all_batch_list = [10, 20, 40, 50, 80, 100]
-
     model_collection = []
 
-    #for idx, mls in enumerate(model_class):
-    #    for _ in range(model_class_num[idx]):
-    #        batch_num = np.random.randint(1, len(all_batch_list))
-    #        batch_set = np.random.choice(all_batch_list, size=batch_num, replace=False)  
-    #        layer_num = np.random.randint(1, 10)
-    #        dm = DnnModel(mls, model_layer=layer_num, input_w=img_w, input_h=img_h,  
-    #                      num_classes=num_classes, batch_size_range=batch_set, desired_accuracy=0.9)
-    #        model_collection.append(dm)
+    for idx, mls in enumerate(model_class):
+        for _ in range(model_class_num[idx]):
+            batch_num = np.random.randint(1, len(all_batch_list))
+            batch_set = np.random.choice(all_batch_list, size=batch_num, replace=False)  
+            layer_num = np.random.randint(1, 10)
+            
+            dm = DnnModel(mls, str(model_name_abbr.pop()), model_layer=layer_num, input_w=img_w, input_h=img_h,  
+                          num_classes=num_classes, batch_size_range=batch_set, desired_accuracy=0.9)
+            model_collection.append(dm)
 
-    mp = DnnModel(model_name="mobilenet", model_layer=4, input_w=img_w, input_h=img_h, num_classes=num_classes, batch_size_range={10,20}, desired_accuracy=0.9)
-    #print(mp.getModelEntity().getModelMemSize())
-    #resnetModel = DnnModel("resnet",  50, {10,20}, 0.9)
-    #mobilenetModel1 = DnnModel("mobilenet", 40, {20,40}, 0.8)
-    #mobilenetModel2 = DnnModel("mobilenet", 40, {20,40}, 0.8)
-
-    model_collection.append(mp)
+    #mp = DnnModel(model_name="mobilenet", model_layer=4, input_w=img_w, input_h=img_h, num_classes=num_classes, batch_size_range={10,20}, desired_accuracy=0.9)
+    #model_collection.append(mp)
+    
     sch = Schedule(model_collection, img_w, img_h, num_classes)
-    #sch.showAllModelInstances()
-    sch.buildModelsForSchedule()
+    sch.showAllModelInstances()
+    #sch.buildModelsForSchedule()
     #sch.schedule()
     #sch.executeSch(X_data, Y_data)
     #sch.testSingleModel(mp, X_data, Y_data)

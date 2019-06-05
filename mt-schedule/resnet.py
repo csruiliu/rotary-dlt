@@ -60,7 +60,6 @@ class resnet(object):
             X = tf.nn.relu(X)
             layer_size += (1 * 1 * in_filter + 1) * f1
 
-
             W_conv2 = self.weight_variable([kernel_size, kernel_size, f1, f2])
             X = tf.nn.conv2d(X, W_conv2, strides=[1, 1, 1, 1], padding='SAME')
             X = tf.layers.batch_normalization(X, axis=3, training=training)

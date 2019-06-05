@@ -14,9 +14,11 @@ class Schedule(object):
         self.features = tf.placeholder(tf.float32, [None, input_w, input_h, 3])
         self.labels = tf.placeholder(tf.int64, [None, num_classes])
 
+
     def showAllModelInstances(self):
         for idx in self.modelCollection:
             print(idx.getModelEntity().getModelInstanceName())
+
 
     def packModelForTrain(self, ready_pack_model_collection):
         packedModelTrainUnit = []
@@ -35,6 +37,7 @@ class Schedule(object):
 
         return packedModelTrainUnit
 
+
     def singleModelForTrain(self, single_pack_model):
         singleModelTrainUnit = []
         modelEntity = single_pack_model.getModelEntity()
@@ -51,6 +54,7 @@ class Schedule(object):
 
         return singleModelTrainUnit
 
+
     def buildModelsForSchedule(self):
         for midx in self.modelCollection:
             modelEntity = midx.getModelEntity()
@@ -61,6 +65,7 @@ class Schedule(object):
         for lidx in self.modelEntityCollection:
             print(lidx.getModelInstanceName())
             print(lidx.getModelMemSize())
+
 
     def schedule(self):
         
@@ -73,6 +78,7 @@ class Schedule(object):
 
         self.scheduleCollection.append(packedScheduleUnit1)
         self.scheduleCollection.append(singleScheduleUnit2)
+
 
     def executeSch(self, X_train, Y_train):
         with tf.Session() as sess:
@@ -93,6 +99,7 @@ class Schedule(object):
                     end_time = timer()
                     total_time += end_time - start_time
                 print("training time for 1 epoch:", total_time)
+
 
     def testSingleModel(self, model, X_train, Y_train):
         modelEntity = model.getModelEntity()
