@@ -54,8 +54,6 @@ class Schedule(object):
                 
                 print("training time for 1 epoch:", total_time)  
 
-    def execute
-
     def testSingleModel(self, model, X_train, Y_train):
         modelEntity = model.getModelEntity()
         modelLogit = modelEntity.build(self.features)
