@@ -55,11 +55,13 @@ def buildModels():
         print(lidx.getModelInstanceName())
         print(lidx.getModelMemSize())
 
+
 def scheduleNaive():
     for lit in logitCollection:
         scheduleUnit = []
         scheduleUnit.append(lit)
         scheduleCollection.append(lit)
+
 
 def executeSch(sch_unit, X_train, Y_train):
     total_time = 0

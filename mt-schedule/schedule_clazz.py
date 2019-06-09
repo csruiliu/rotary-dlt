@@ -14,7 +14,6 @@ class Schedule(object):
         self.features = tf.placeholder(tf.float32, [None, input_w, input_h, 3])
         self.labels = tf.placeholder(tf.int64, [None, num_classes])
 
-
     def buildModels(self):
         for midx in self.modelCollection:
             modelEntity = midx.getModelEntity()
