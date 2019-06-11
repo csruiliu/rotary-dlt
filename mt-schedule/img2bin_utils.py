@@ -5,19 +5,27 @@ import os
 import cv2
 import matplotlib.image as plimg
 
+
+
 def image_input(imgDir, img_w, img_h):
     all_arr = []
     for filename in os.listdir(imgDir):    
         arr_single = read_single_image(imgDir + '/'+ filename, img_w, img_h)
-        if all_arr == []:
-            all_arr = arr_single
-        else:
-            all_arr = np.concatenate((all_arr, arr_single))
+        if arr_single != []:    
+            if all_arr == []:
+                all_arr = arr_single
+            else:
+                all_arr = np.concatenate((all_arr, arr_single))
     return all_arr
 
 def read_single_image(img_name, img_w, img_h):
     img = Image.open(img_name)
     img = img.resize((img_w,img_h))
+    rgb = img.split()
+    if len(rgb) == 1:
+        print(img_name)
+        return []
+
     r, g, b = img.split()
     img_size = img_w * img_h
     r_arr = plimg.pil_to_array(r)
@@ -49,8 +57,8 @@ def unpickle_load_images(imgbinDir, num_images_train, num_channels, img_w, img_h
     
     
 if __name__ == '__main__':
-    imgDir = '/home/ruiliu/Development/mtml-tf/dataset/test'
-    outDir = '/home/ruiliu/Development/mtml-tf/dataset/test.bin'
+    imgDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
+    outDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
     arr_input = image_input(imgDir, 224, 224)
     pickle_save(arr_input, outDir)
     #print(arr.size)
