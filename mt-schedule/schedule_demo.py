@@ -2,6 +2,8 @@ import tensorflow as tf
 from dnn_model import DnnModel
 from img_utils import *
 from cifar_utils import *
+from tfrecord_utils import *
+from img2bin_utils import *
 import numpy as np
 from datetime import datetime
 from multiprocessing import Process
@@ -12,6 +14,7 @@ img_w = 224
 img_h = 224
 num_channel = 3
 num_classes = 1000
+num_images = 10 
 
 modelCollection = []
 modelEntityCollection = []
@@ -20,11 +23,21 @@ scheduleCollection = []
 
 features = tf.placeholder(tf.float32, [None, img_w, img_h, num_channel])
 labels = tf.placeholder(tf.int64, [None, num_classes])
+    
+#cifar10_dir = '/home/ruiliu/Development/mtml-tf/dataset/cifar-10'
+#cifar = cifar_utils(cifar10_dir)
+#X_data, _, Y_data = cifar.load_evaluation_data()
 
-data_dir = '/home/ruiliu/Development/mtml-tf/dataset/test'
-label_path = '/home/ruiliu/Development/mtml-tf/dataset/test-label.txt'
-X_data = load_images(data_dir)
+#data_dir = '/home/ruiliu/Development/mtml-tf/dataset/test'
+#label_path = '/home/ruiliu/Development/mtml-tf/dataset/test-label.txt'
+#X_data = load_images(data_dir)
+#Y_data = load_labels_onehot(label_path)
+
+bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
+label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+X_data = unpickle_load_images(bin_dir, num_images, num_channel, img_w, img_h)
 Y_data = load_labels_onehot(label_path)
+
 
 model_class_num = [3, 2, 1]
 model_class_total = sum(model_class_num)
