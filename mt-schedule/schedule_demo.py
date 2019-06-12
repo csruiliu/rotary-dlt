@@ -99,6 +99,49 @@ def buildModels():
     #    print(lidx[1])
     #    print(lidx.getModelMemSize())
 
+def scheduleGreedy():
+    schUnit1 = []
+    logitUnit1 = []
+    logitUnit1.append(logitCollection[0][0])
+    logitUnit1.append(logitCollection[2][0])
+    logitUnit1.append(logitCollection[7][0])
+    schUnit1.append(logitUnit1)
+    schUnit1.append(logitCollection[0][1])
+    scheduleCollection.append(schUnit1)
+
+    schUnit2 = []
+    logitUnit2 = []
+    logitUnit2.append(logitCollection[1][0])
+    logitUnit2.append(logitCollection[6][0])
+    logitUnit2.append(logitCollection[9][0])
+    schUnit2.append(logitUnit2)
+    schUnit2.append(logitCollection[1][1])
+    scheduleCollection.append(schUnit2)
+
+    schUnit3 = []
+    logitUnit3 = []
+    batchUnit3 = []
+    logitUnit3.append(logitCollection[3][0])
+    logitUnit3.append(logitCollection[4][0])
+    batchUnit3.append(logitCollection[3][1])
+    batchUnit3.append(logitCollection[4][1])
+    schUnit3.append(logitUnit3)
+    schUnit3.append(batchUnit3)
+    scheduleCollection.append(schUnit3)
+
+    schUnit4 = []
+    logitUnit4 = []
+    batchUnit4 = []
+    logitUnit4.append(logitCollection[5][0])
+    logitUnit4.append(logitCollection[8][0])
+    batchUnit4.append(logitCollection[5][1])
+    batchUnit4.append(logitCollection[8][1])
+    schUnit4.append(logitUnit4)
+    schUnit4.append(batchUnit4)
+    scheduleCollection.append(schUnit4)
+
+    
+
 def scheduleNaive():
     for lit in logitCollection:
         schUnit = []
@@ -111,29 +154,47 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
     total_time = 0
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
-    with tf.Session(config=config) as sess:
-        sess.run(tf.global_variables_initializer())
-        mini_batches = batch_unit    
-        num_batch = Y_train.shape[0] // mini_batches            
-        for i in range(num_batch):
-            print('step %d / %d' %(i+1, num_batch))
-            X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
-            Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
-            start_time = timer()
-            sess.run(sch_unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-            end_time = timer()
-            total_time += end_time - start_time
-            print("training time for 1 epoch:", total_time)  
+    if len(batch_unit) == 1:
+        with tf.Session(config=config) as sess:
+            sess.run(tf.global_variables_initializer())
+            mini_batches = batch_unit    
+            num_batch = Y_train.shape[0] // mini_batches            
+            for i in range(num_batch):
+                print('step %d / %d' %(i+1, num_batch))
+                X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
+                Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
+                start_time = timer()
+                sess.run(sch_unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                end_time = timer()
+                total_time += end_time - start_time
+                print("training time for 1 epoch:", total_time)  
+
+    else:
+        for idx, batch in enumerate(batch_unit):
+            with tf.Session(config=config) as sess:
+                sess.run(tf.global_variables_initializer())
+                mini_batches = batch    
+                num_batch = Y_train.shape[0] // mini_batches            
+                for i in range(num_batch):
+                    print('step %d / %d' %(i+1, num_batch))
+                    X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
+                    Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
+                    start_time = timer()
+                    sess.run(sch_unit[idx], feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    end_time = timer()
+                    total_time += end_time - start_time
+                    print("training time for 1 epoch:", total_time)  
 
 if __name__ == '__main__':
     #prepareModels()
     prepareModelsFix()
     saveModelDes()
-    #buildModels()
+    buildModels()
     #scheduleNaive()
-    
-    #for sit in scheduleCollection:
-    #    p = Process(target=executeSch, args=(sit[0], sit[1], X_data, Y_data,))
-    #    p.start()
-    #    print(p.pid)
-    #    p.join()
+    scheduleGreedy()
+
+    for sit in scheduleCollection:
+        p = Process(target=executeSch, args=(sit[0], sit[1], X_data, Y_data,))
+        p.start()
+        print(p.pid)
+        p.join()
