@@ -34,8 +34,8 @@ labels = tf.placeholder(tf.int64, [None, num_classes])
 #X_data = load_images(data_dir)
 #Y_data = load_labels_onehot(label_path)
 
-bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
+label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k-label.txt'
 X_data = unpickle_load_images(bin_dir, num_images, num_channel, img_w, img_h)
 Y_data = load_labels_onehot(label_path)
 
@@ -102,20 +102,24 @@ def buildModels():
 def scheduleGreedy():
     schUnit1 = []
     logitUnit1 = []
+    batchUnit1 = []
     logitUnit1.append(logitCollection[0][0])
     logitUnit1.append(logitCollection[2][0])
     logitUnit1.append(logitCollection[7][0])
+    batchUnit1.append(logitCollection[0][1])
     schUnit1.append(logitUnit1)
-    schUnit1.append(logitCollection[0][1])
+    schUnit1.append(batchUnit1)
     scheduleCollection.append(schUnit1)
 
     schUnit2 = []
     logitUnit2 = []
+    batchUnit2 = []
     logitUnit2.append(logitCollection[1][0])
     logitUnit2.append(logitCollection[6][0])
     logitUnit2.append(logitCollection[9][0])
+    batchUnit2.append(logitCollection[1][1])
     schUnit2.append(logitUnit2)
-    schUnit2.append(logitCollection[1][1])
+    schUnit2.append(batchUnit2)
     scheduleCollection.append(schUnit2)
 
     schUnit3 = []
@@ -157,7 +161,7 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
     if len(batch_unit) == 1:
         with tf.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
-            mini_batches = batch_unit    
+            mini_batches = batch_unit[0]    
             num_batch = Y_train.shape[0] // mini_batches            
             for i in range(num_batch):
                 print('step %d / %d' %(i+1, num_batch))
