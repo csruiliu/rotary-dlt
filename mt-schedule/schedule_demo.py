@@ -8,6 +8,7 @@ import numpy as np
 from datetime import datetime
 from multiprocessing import Process
 from timeit import default_timer as timer
+import GPUtil
 import os
 
 img_w = 224
@@ -34,10 +35,11 @@ labels = tf.placeholder(tf.int64, [None, num_classes])
 #X_data = load_images(data_dir)
 #Y_data = load_labels_onehot(label_path)
 
-bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
+label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k-label.txt'
 X_data = unpickle_load_images(bin_dir, num_images, num_channel, img_w, img_h)
 Y_data = load_labels_onehot(label_path)
+
 
 def prepareModels():
     model_class_num = (np.random.choice(5, 4, replace=False)+1).tolist()
@@ -59,6 +61,7 @@ def prepareModels():
                             num_classes=num_classes, batch_size=batch_size, desired_accuracy=0.9)
                 modelCollection.append(dm)
 
+
 def printAllModels():
     for idm in modelCollection:
         print(idm.getInstanceName())
@@ -66,6 +69,7 @@ def printAllModels():
         print(idm.getModelLayer())
         print(idm.getBatchSize())
         print("===============")
+
 
 def prepareModelsFix():
     model_class_num = [2, 4, 3, 1]
@@ -81,7 +85,7 @@ def prepareModelsFix():
 
 
 def saveModelDes():
-    with open('models_des.txt', 'a') as file:
+    with open('models_des.txt', 'w') as file:
         file.write("Workload:\n")
         for idx in modelCollection:
             modelName = idx.getModelName()
@@ -94,6 +98,7 @@ def saveModelDes():
             file.write('input batch size: '+ str(batchSize)+ '\n')
             file.write('=======================\n')
 
+
 def buildModels():
     for midx in modelCollection:
         modelEntity = midx.getModelEntity()
@@ -104,11 +109,13 @@ def buildModels():
         logitUnit.append(midx.getBatchSize())
         logitCollection.append(logitUnit)
 
-    #for lidx in logitCollection:
-    #    print(lidx[1])
-    #    print(lidx.getModelMemSize())
-
 def scheduleGreedy():
+    GPUtil.showUtilization()
+    #for midx in modelCollection:
+
+
+
+def scheduleNaive():
     schUnit1 = []
     logitUnit1 = []
     batchUnit1 = []
@@ -152,13 +159,16 @@ def scheduleGreedy():
     schUnit4.append(logitUnit4)
     schUnit4.append(batchUnit4)
     scheduleCollection.append(schUnit4)
-
     
-def scheduleNaive():
+def scheduleNo():
     for lit in logitCollection:
         schUnit = []
-        schUnit.append(lit[0])
-        schUnit.append(lit[1])
+        logitUnit = []
+        batchUnit = []
+        logitUnit.append(lit[0])
+        batchUnit.append(lit[1])
+        schUnit.append(logitUnit)
+        schUnit.append(batchUnit)
         scheduleCollection.append(schUnit)
 
 
@@ -199,16 +209,17 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
 
 
 if __name__ == '__main__':
-    prepareModels()
-    printAllModels()
-    #prepareModelsFix()
-    #saveModelDes()
-    #buildModels()
-    #scheduleNaive()
+    #prepareModels()
+    #printAllModels()
+    prepareModelsFix()
+    saveModelDes()
+    #scheduleGreedy()
+    buildModels()
+    scheduleNaive()
     #scheduleGreedy()
 
-    #for sit in scheduleCollection:
-    #    p = Process(target=executeSch, args=(sit[0], sit[1], X_data, Y_data,))
-    #    p.start()
-    #    print(p.pid)
-    #    p.join()
+    for sit in scheduleCollection:
+        p = Process(target=executeSch, args=(sit[0], sit[1], X_data, Y_data,))
+        p.start()
+        print(p.pid)
+        p.join()
