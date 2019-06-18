@@ -34,10 +34,11 @@ labels = tf.placeholder(tf.int64, [None, num_classes])
 #X_data = load_images(data_dir)
 #Y_data = load_labels_onehot(label_path)
 
-bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
+label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k-label.txt'
 X_data = unpickle_load_images(bin_dir, num_images, num_channel, img_w, img_h)
 Y_data = load_labels_onehot(label_path)
+
 
 def prepareModelsFix():
     model_class_num = [2, 4, 3, 1]
@@ -55,7 +56,7 @@ def prepareMobilenetFix():
     model_class_num = [8]
     model_class = ["mobilenet"]
     
-    layer_list = [5, 2, 8, 4, 1, 1, 1, 1, 1, 1]
+    layer_list = [1, 1, 1, 1, 1, 1, 1, 1]
     model_name_abbr = np.random.choice(100000, 10, replace=False).tolist()    
     
     all_batch_list = [200, 125, 100, 80, 50, 40, 20, 10]
@@ -65,6 +66,38 @@ def prepareMobilenetFix():
             dm = DnnModel(mls, str(model_name_abbr.pop()), model_layer=layer_list.pop(), input_w=img_w, input_h=img_h,  
                             num_classes=num_classes, batch_size=all_batch_list.pop(), desired_accuracy=0.9)
             modelCollection.append(dm)
+
+def prepareResnetFix():
+    model_class_num = [8]
+    model_class = ["resnet"]
+    
+    layer_list = [1, 1, 1, 1, 1, 1, 1, 1]
+    model_name_abbr = np.random.choice(100000, 10, replace=False).tolist()    
+    
+    all_batch_list = [200, 125, 100, 80, 50, 40, 20, 10]
+
+    for idx, mls in enumerate(model_class):
+        for _ in range(model_class_num[idx]):
+            dm = DnnModel(mls, str(model_name_abbr.pop()), model_layer=layer_list.pop(), input_w=img_w, input_h=img_h,  
+                            num_classes=num_classes, batch_size=all_batch_list.pop(), desired_accuracy=0.9)
+            modelCollection.append(dm)
+
+
+def prepareConvnetFix():
+    model_class_num = [8]
+    model_class = ["convnet"]
+    
+    layer_list = [4, 4, 4, 4, 4, 4, 4, 4]
+    model_name_abbr = np.random.choice(100000, 10, replace=False).tolist()    
+    
+    all_batch_list = [200, 125, 100, 80, 50, 40, 20, 10]
+
+    for idx, mls in enumerate(model_class):
+        for _ in range(model_class_num[idx]):
+            dm = DnnModel(mls, str(model_name_abbr.pop()), model_layer=layer_list.pop(), input_w=img_w, input_h=img_h,  
+                            num_classes=num_classes, batch_size=all_batch_list.pop(), desired_accuracy=0.9)
+            modelCollection.append(dm)
+
 
 def saveModelDes():
     with open('models_des.txt', 'a') as file:
@@ -182,8 +215,10 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
                     total_time += end_time - start_time
                     print("training time for 1 epoch:", total_time)  
 
+
 if __name__ == '__main__':
-    prepareModelsFix()
+    
+    prepareConvnetFix()
     saveModelDes()
     buildModels()
     scheduleNo()

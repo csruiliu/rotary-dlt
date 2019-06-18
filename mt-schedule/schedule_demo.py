@@ -40,23 +40,32 @@ X_data = unpickle_load_images(bin_dir, num_images, num_channel, img_w, img_h)
 Y_data = load_labels_onehot(label_path)
 
 def prepareModels():
-    model_class_num = [3, 2, 1]
+    model_class_num = (np.random.choice(5, 4, replace=False)+1).tolist()
     model_class_total = sum(model_class_num)
 
-    model_class = ["resnet", "mobilenet", "perceptron"]
+    model_class = ["resnet", "mobilenet", "perceptron", "convnet"]
     all_batch_list = [10, 20, 40, 50, 80, 100]
-    batch_size_total = sum(all_batch_list)
+    batch_size_total = len(all_batch_list)
 
     model_name_abbr = np.random.choice(100000, model_class_total*batch_size_total, replace=False).tolist()
+    
     for idx, mls in enumerate(model_class):
         for _ in range(model_class_num[idx]):
             batch_num = np.random.randint(1, len(all_batch_list))
             batch_set = np.random.choice(all_batch_list, size=batch_num, replace=False)  
-            layer_num = np.random.randint(1, 10)
+            layer_num = np.random.randint(1, 8)
             for batch_size in batch_set:
                 dm = DnnModel(mls, str(model_name_abbr.pop()), model_layer=layer_num, input_w=img_w, input_h=img_h,  
                             num_classes=num_classes, batch_size=batch_size, desired_accuracy=0.9)
                 modelCollection.append(dm)
+
+def printAllModels():
+    for idm in modelCollection:
+        print(idm.getInstanceName())
+        print(idm.getModelName())
+        print(idm.getModelLayer())
+        print(idm.getBatchSize())
+        print("===============")
 
 def prepareModelsFix():
     model_class_num = [2, 4, 3, 1]
@@ -145,7 +154,6 @@ def scheduleGreedy():
     scheduleCollection.append(schUnit4)
 
     
-
 def scheduleNaive():
     for lit in logitCollection:
         schUnit = []
@@ -189,16 +197,18 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
                     total_time += end_time - start_time
                     print("training time for 1 epoch:", total_time)  
 
-if __name__ == '__main__':
-    #prepareModels()
-    prepareModelsFix()
-    saveModelDes()
-    buildModels()
-    #scheduleNaive()
-    scheduleGreedy()
 
-    for sit in scheduleCollection:
-        p = Process(target=executeSch, args=(sit[0], sit[1], X_data, Y_data,))
-        p.start()
-        print(p.pid)
-        p.join()
+if __name__ == '__main__':
+    prepareModels()
+    printAllModels()
+    #prepareModelsFix()
+    #saveModelDes()
+    #buildModels()
+    #scheduleNaive()
+    #scheduleGreedy()
+
+    #for sit in scheduleCollection:
+    #    p = Process(target=executeSch, args=(sit[0], sit[1], X_data, Y_data,))
+    #    p.start()
+    #    print(p.pid)
+    #    p.join()
