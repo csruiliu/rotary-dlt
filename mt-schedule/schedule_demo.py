@@ -15,7 +15,6 @@ img_w = 224
 img_h = 224
 num_channel = 3
 num_classes = 1000
-num_images = 10
 
 modelCollection = []
 modelEntityCollection = []
@@ -37,7 +36,7 @@ labels = tf.placeholder(tf.int64, [None, num_classes])
 
 bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
 label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k-label.txt'
-X_data = unpickle_load_images(bin_dir, num_images, num_channel, img_w, img_h)
+X_data = unpickle_load_images(bin_dir, num_channel, img_w, img_h)
 Y_data = load_labels_onehot(label_path)
 
 

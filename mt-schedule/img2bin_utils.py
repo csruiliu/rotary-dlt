@@ -6,7 +6,6 @@ import cv2
 import matplotlib.image as plimg
 
 
-
 def image_input(imgDir, img_w, img_h):
     all_arr = []
     for filename in os.listdir(imgDir):    
@@ -45,7 +44,7 @@ def pickle_save(arr, output_file):
     pickle.dump(img_data, f)
     f.close()
 
-def unpickle_load_images(imgbinDir, num_images_train, num_channels, img_w, img_h):
+def unpickle_load_images(imgbinDir, num_channels, img_w, img_h):
     with open(imgbinDir, mode='rb') as file:
         data = pickle.load(file, encoding='bytes')
     raw_images = data['image']
