@@ -1,4 +1,6 @@
 import tensorflow as tf
+from tensorflow.python.client import device_lib
+
 from dnn_model import DnnModel
 
 from img_utils import *
@@ -46,12 +48,12 @@ def prepareModelsFix():
     model_name_abbr = np.random.choice(100000, 4, replace=False).tolist()
 
     dm1 = DnnModel("mobilenet", str(model_name_abbr.pop()), model_layer=1, input_w=img_w, input_h=img_h,  
-                            num_classes=num_classes, batch_size=40, desired_accuracy=0.9)
+                            num_classes=num_classes, batch_size=200, desired_accuracy=0.9)
     dm2 = DnnModel("resnet", str(model_name_abbr.pop()), model_layer=1, input_w=img_w, input_h=img_h,  
                             num_classes=num_classes, batch_size=20, desired_accuracy=0.9)
     
     modelCollection.append(dm1)
-    modelCollection.append(dm2)
+    #modelCollection.append(dm2)
     
 def printAllModels():
     for idm in modelCollection:
@@ -136,15 +138,19 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
 
 
 if __name__ == '__main__':
-    prepareModelsFix()
-    printAllModels()
-    #saveModelDes()
-    buildModels()
-    scheduleNo()
-    #scheduleGreedy()
+    with tf.device('/device:GPU:0'):
+        prepareModelsFix()
+		#printAllModels()
+    	#saveModelDes()
+        buildModels()
+        scheduleNo()
+        #scheduleGreedy() 
+        for sit in scheduleCollection:
+    	    p = Process(target=executeSch, args=(sit[0], sit[1], X_data, Y_data,))
+    	    p.start()
+    	    print(p.pid)
+    	    p.join()
+	
+	#print(device_lib.list_local_devices())
 
-    for sit in scheduleCollection:
-        p = Process(target=executeSch, args=(sit[0], sit[1], X_data, Y_data,))
-        p.start()
-        print(p.pid)
-        p.join()
+
