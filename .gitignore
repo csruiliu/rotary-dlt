@@ -1,5 +1,7 @@
 *.txt
 *.csv
+*.md
 
 dataset/
 **/__pycache__/
+**/tf-venv/
