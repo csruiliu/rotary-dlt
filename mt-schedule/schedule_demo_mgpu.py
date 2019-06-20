@@ -137,33 +137,46 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
                     print("training time for 1 epoch:", total_time)  
 
 
-def getAvailableGPUs():
-    local_device_protos = device_lib.list_local_devices()
-    return [x.name for x in local_device_protos if x.device_type == 'GPU']
+def getGPUs():
+    local_devices = device_lib.list_local_devices()
+    return [x.name for x in local_device if x.device_type == 'GPU']
+    
+def getGPUsAndMemlimit():
+    gmCollection = []
+    local_devices = device_lib.list_local_devices()
+    gpu_devices = [x for x in local_devices if x.device_type == 'GPU']
+    for d in gpu_devices:
+        gmUnit = []
+        gmUnit.append(d.name)
+        gmUnit.append(d.memory_limit)
+        gmCollection.append(gmUnit)
+    print(gmCollection)
+    #return 
 
 
-def getNumAvailableGPUs():
+def getGPUsNum():
     local_devices = device_lib.list_local_devices()
     return len([x.name for x in local_devices if x.device_type == 'GPU'])
 
 
 if __name__ == '__main__':
-    with tf.device('/device:GPU:0'):
-        prepareModelsFix()
+    #with tf.device('/device:GPU:0'):
+    #    prepareModelsFix()
 		#printAllModels()
     	#saveModelDes()
-        buildModels()
-        scheduleNo()
+    #    buildModels()
+    #    scheduleNo()
         #scheduleGreedy() 
-        for idx, sit in enumerate(scheduleCollection):
-            print(idx)
-            print(sit[0])
-            print(sit[1])
+    #    for idx, sit in enumerate(scheduleCollection):
+    #        print(idx)
+    #        print(sit[0])
+    #        print(sit[1])
             #p = Process(target=executeSch, args=(sit[0], sit[1], X_data, Y_data,))
     	    #p.start()
     	    #print(p.pid)
     	    #p.join()
-    
+
+    getGPUsAndMemlimit()
     #list = getAvailableGPUs()
     #print(list)
     #num = getNumAvailableGPUs()
