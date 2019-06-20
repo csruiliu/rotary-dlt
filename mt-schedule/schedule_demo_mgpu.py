@@ -53,7 +53,7 @@ def prepareModelsFix():
                             num_classes=num_classes, batch_size=20, desired_accuracy=0.9)
     
     modelCollection.append(dm1)
-    #modelCollection.append(dm2)
+    modelCollection.append(dm2)
     
 def printAllModels():
     for idm in modelCollection:
@@ -104,7 +104,7 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
     total_time = 0
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
-    config.log_device_placement = True
+    #config.log_device_placement = True
     if len(batch_unit) == 1:
         with tf.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
@@ -137,6 +137,16 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
                     print("training time for 1 epoch:", total_time)  
 
 
+def getAvailableGPUs():
+    local_device_protos = device_lib.list_local_devices()
+    return [x.name for x in local_device_protos if x.device_type == 'GPU']
+
+
+def getNumAvailableGPUs():
+    local_devices = device_lib.list_local_devices()
+    return len([x.name for x in local_devices if x.device_type == 'GPU'])
+
+
 if __name__ == '__main__':
     with tf.device('/device:GPU:0'):
         prepareModelsFix()
@@ -145,12 +155,19 @@ if __name__ == '__main__':
         buildModels()
         scheduleNo()
         #scheduleGreedy() 
-        for sit in scheduleCollection:
-    	    p = Process(target=executeSch, args=(sit[0], sit[1], X_data, Y_data,))
-    	    p.start()
-    	    print(p.pid)
-    	    p.join()
-	
-	#print(device_lib.list_local_devices())
+        for idx, sit in enumerate(scheduleCollection):
+            print(idx)
+            print(sit[0])
+            print(sit[1])
+            #p = Process(target=executeSch, args=(sit[0], sit[1], X_data, Y_data,))
+    	    #p.start()
+    	    #print(p.pid)
+    	    #p.join()
+    
+    #list = getAvailableGPUs()
+    #print(list)
+    #num = getNumAvailableGPUs()
+    #print("num:",num)
+    #print("sss:",len(device_lib.list_local_devices()))
 
 
