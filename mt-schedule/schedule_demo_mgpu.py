@@ -1,21 +1,28 @@
+# -*- coding: utf-8 -*-
+
 import tensorflow as tf
 from tensorflow.python.client import device_lib
-
-from dnn_model import DnnModel
-
-from img_utils import *
-from cifar_utils import *
-from tfrecord_utils import *
-from img2bin_utils import *
 
 import numpy as np
 from datetime import datetime
 from multiprocessing import Process
+import os
 from timeit import default_timer as timer
 
+from dnn_model import DnnModel
+from img_utils import *
+from cifar_utils import *
+from tfrecord_utils import *
+from img2bin_utils import *
 import GPUtil
 
-import os
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('-g', '--gpuid', type=int, help='identify a GPU to run')
+args = parser.parse_args()
+
+gpuId = args.gpuid
+
 
 img_w = 224
 img_h = 224
@@ -45,7 +52,6 @@ labels = tf.placeholder(tf.int64, [None, num_classes])
 #X_data = unpickle_load_images(bin_dir, num_channel, img_w, img_h)
 #Y_data = load_labels_onehot(label_path)
 
-
 def prepareModelsFix():   
     model_name_abbr = np.random.choice(100000, 4, replace=False).tolist()
 
@@ -56,7 +62,8 @@ def prepareModelsFix():
     
     modelCollection.append(dm1)
     modelCollection.append(dm2)
-    
+
+
 def printAllModels():
     for idm in modelCollection:
         print(idm.getInstanceName())
@@ -64,6 +71,7 @@ def printAllModels():
         print(idm.getModelLayer())
         print(idm.getBatchSize())
         print("===============")
+
 
 def saveModelDes():
     with open('models_des.txt', 'w') as file:
@@ -137,17 +145,15 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
                     end_time = timer()
                     total_time += end_time - start_time
                     print("training time for 1 epoch:", total_time)  
-
-    
-def getGPUsNum():
-    local_devices = device_lib.list_local_devices()
-    return len([x.name for x in local_devices if x.device_type == 'GPU'])
-
+                    
 
 if __name__ == '__main__':
-    #with tf.device('/device:GPU:0'):
-    #    prepareModelsFix()
-		#printAllModels()
+    print("dediciated gpuid:", gpuId)
+    deviceId = '/device:GPU:' + str(gpuId)
+    print(deviceId)
+    with tf.device(deviceId):
+        prepareModelsFix()
+        printAllModels()
     	#saveModelDes()
     #    buildModels()
     #    scheduleNo()
@@ -161,12 +167,14 @@ if __name__ == '__main__':
     	    #print(p.pid)
     	    #p.join()
 
-    
-    print(GPUtil.getAllGPUsAndMemFree())
-    print(GPUtil.getAllGPUsAndMemLimit())
-    print(GPUtil.getAllGPUsAndMemUtil())
-    print(GPUtil.getGPUMemFree(0))
-    print(GPUtil.getGPUMemLimit(0))
-    print(GPUtil.getGPUMemUtil(0))
+    # ==============================
+    # Test of getting GPU info
+    # ==============================
+    #print(GPUtil.getAllGPUsAndMemFree())
+    #print(GPUtil.getAllGPUsAndMemLimit())
+    #print(GPUtil.getAllGPUsAndMemUtil())
+    #print(GPUtil.getGPUMemFree(0))
+    #print(GPUtil.getGPUMemLimit(0))
+    #print(GPUtil.getGPUMemUtil(0))
     
 

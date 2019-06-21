@@ -2,10 +2,11 @@
 #
 # A Python module for programmically getting the GPU utilization from NVIDA GPUs using nvidia-smi
 #
-# Author: Anders Krogh Mortensen (anderskm)
+# Author: Anders Krogh Mortensen (anderskm), Updated by Rui Liu (csruiliu)
 # Date:   16 January 2017
-# Web:    https://github.com/anderskm/gputil
-#
+# Web:    https://github.com/anderskm/gputil (original version)
+# 
+# 
 # LICENSE
 #
 # MIT License
