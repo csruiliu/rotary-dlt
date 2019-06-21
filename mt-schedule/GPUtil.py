@@ -205,22 +205,65 @@ def getFirstAvailable(order = 'first', maxLoad=0.5, maxMemory=0.5, attempts=1, i
     # Return found GPU
     return available
 
-def getAvailableGPUId():
+
+def getAllGPUsId():
     GPUs = getGPUs()
     GPUIds = []
     for gpu in GPUs:
         GPUIds.append(gpu.id)
     return GPUIds
 
-def getAvailableGPUsAndMem():
+
+def getAllGPUsAndMemFree():
     GPUs = getGPUs()
-    GPUMem = []
+    GPUMemFree = []
     for gpu in GPUs:
         gpuMemUnit = []
         gpuMemUnit.append(gpu.id)
         gpuMemUnit.append(gpu.memoryFree)
-        GPUMem.append(gpuMemUnit)
-    return GPUMem
+        GPUMemFree.append(gpuMemUnit)
+    return GPUMemFree
+
+
+def getAllGPUsAndMemLimit():
+    GPUs = getGPUs()
+    GPUMemLimit = []
+    for gpu in GPUs:
+        gpuMemUnit = []
+        gpuMemUnit.append(gpu.id)
+        gpuMemUnit.append(gpu.memoryTotal)
+        GPUMemLimit.append(gpuMemUnit)
+    return GPUMemLimit
+
+
+def getAllGPUsAndMemUtil():
+    GPUs = getGPUs()
+    GPUMemUtil = []
+    for gpu in GPUs:
+        gpuMemUnit = []
+        gpuMemUnit.append(gpu.id)
+        gpuMemUnit.append(round(gpu.memoryUtil,2))
+        GPUMemUtil.append(gpuMemUnit)
+    return GPUMemUtil
+
+
+def getGPUMemFree(gpuId):
+    GPUs = getGPUs()
+    gpu = [g for g in GPUs if g.id == gpuId]
+    return gpu[0].memoryFree
+
+
+def getGPUMemLimit(gpuId):
+    GPUs = getGPUs()
+    gpu = [g for g in GPUs if g.id == gpuId]
+    return gpu[0].memoryTotal
+
+
+def getGPUMemUtil(gpuId):
+    GPUs = getGPUs()
+    gpu = [g for g in GPUs if g.id == gpuId]
+    return round(gpu[0].memoryUtil,2)
+
 
 def showUtilization(all=False, attrList=None, useOldCode=False):
     GPUs = getGPUs()

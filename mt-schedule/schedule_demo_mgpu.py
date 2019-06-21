@@ -139,18 +139,6 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
                     print("training time for 1 epoch:", total_time)  
 
     
-def getGPUsAndMemlimit():
-    gmCollection = []
-    local_devices = device_lib.list_local_devices()
-    gpu_devices = [x for x in local_devices if x.device_type == 'GPU']
-    for d in gpu_devices:
-        gmUnit = []
-        gmUnit.append(d.name)
-        gmUnit.append(d.memory_limit)
-        gmCollection.append(gmUnit)
-    print(gmCollection)
-
-
 def getGPUsNum():
     local_devices = device_lib.list_local_devices()
     return len([x.name for x in local_devices if x.device_type == 'GPU'])
@@ -174,15 +162,11 @@ if __name__ == '__main__':
     	    #p.join()
 
     
-    #print(GPUtil.getAvailableGPUId())
-    print(GPUtil.getAvailableGPUsAndMem())
-
-
-    #getGPUsAndMemlimit()
-    #list = getAvailableGPUs()
-    #print(list)
-    #num = getNumAvailableGPUs()
-    #print("num:",num)
-    #print("sss:",len(device_lib.list_local_devices()))
-
+    print(GPUtil.getAllGPUsAndMemFree())
+    print(GPUtil.getAllGPUsAndMemLimit())
+    print(GPUtil.getAllGPUsAndMemUtil())
+    print(GPUtil.getGPUMemFree(0))
+    print(GPUtil.getGPUMemLimit(0))
+    print(GPUtil.getGPUMemUtil(0))
+    
 
