@@ -13,6 +13,8 @@ from datetime import datetime
 from multiprocessing import Process
 from timeit import default_timer as timer
 
+import GPUtil
+
 import os
 
 img_w = 224
@@ -38,10 +40,10 @@ labels = tf.placeholder(tf.int64, [None, num_classes])
 #X_data = load_images(data_dir)
 #Y_data = load_labels_onehot(label_path)
 
-bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
-label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k-label.txt'
-X_data = unpickle_load_images(bin_dir, num_channel, img_w, img_h)
-Y_data = load_labels_onehot(label_path)
+#bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
+#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k-label.txt'
+#X_data = unpickle_load_images(bin_dir, num_channel, img_w, img_h)
+#Y_data = load_labels_onehot(label_path)
 
 
 def prepareModelsFix():   
@@ -136,10 +138,6 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
                     total_time += end_time - start_time
                     print("training time for 1 epoch:", total_time)  
 
-
-def getGPUs():
-    local_devices = device_lib.list_local_devices()
-    return [x.name for x in local_device if x.device_type == 'GPU']
     
 def getGPUsAndMemlimit():
     gmCollection = []
@@ -151,7 +149,6 @@ def getGPUsAndMemlimit():
         gmUnit.append(d.memory_limit)
         gmCollection.append(gmUnit)
     print(gmCollection)
-    #return 
 
 
 def getGPUsNum():
@@ -176,7 +173,12 @@ if __name__ == '__main__':
     	    #print(p.pid)
     	    #p.join()
 
-    getGPUsAndMemlimit()
+    
+    #print(GPUtil.getAvailableGPUId())
+    print(GPUtil.getAvailableGPUsAndMem())
+
+
+    #getGPUsAndMemlimit()
     #list = getAvailableGPUs()
     #print(list)
     #num = getNumAvailableGPUs()
