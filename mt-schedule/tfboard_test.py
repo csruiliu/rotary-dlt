@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import tensorflow as tf
-from tensorflow.python.client import device_lib
 
 import numpy as np
 from datetime import datetime
@@ -18,11 +17,10 @@ import GPUtil
 
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument('-g', '--gpuid', type=int, help='identify a GPU to run')
+parser.add_argument('-g', '--gpuid', type=int, default = 0, help='identify a GPU to run')
 args = parser.parse_args()
 
 gpuId = args.gpuid
-
 
 img_w = 224
 img_h = 224
@@ -47,25 +45,24 @@ labels = tf.placeholder(tf.int64, [None, num_classes])
 #X_data = load_images(data_dir)
 #Y_data = load_labels_onehot(label_path)
 
-#bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
-#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k-label.txt'
-#X_data = unpickle_load_images(bin_dir, num_channel, img_w, img_h)
-#Y_data = load_labels_onehot(label_path)
+bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
+label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+X_data = unpickle_load_images(bin_dir, num_channel, img_w, img_h)
+Y_data = load_labels_onehot(label_path)
 
 def prepareModelsFix():   
-    model_class = ["resnet", "mobilenet", "perceptron", "convnet"]
-
-    model_num = [3,4,1,2]
-
     model_name_abbr = np.random.choice(100000, 4, replace=False).tolist()
     
     dm1 = DnnModel("mobilenet", str(model_name_abbr.pop()), model_layer=1, input_w=img_w, input_h=img_h,  
-                            num_classes=num_classes, batch_size=200, desired_accuracy=0.9)
+                            num_classes=num_classes, batch_size=10, desired_accuracy=0.9)
     dm2 = DnnModel("resnet", str(model_name_abbr.pop()), model_layer=1, input_w=img_w, input_h=img_h,  
-                            num_classes=num_classes, batch_size=20, desired_accuracy=0.9)
-    
+                            num_classes=num_classes, batch_size=10, desired_accuracy=0.9)
+    dm3 = DnnModel("convnet", str(model_name_abbr.pop()), model_layer=4, input_w=img_w, input_h=img_h,  
+                            num_classes=num_classes, batch_size=10, desired_accuracy=0.9)
+
     modelCollection.append(dm1)
     modelCollection.append(dm2)
+    modelCollection.append(dm3)
 
 
 def printAllModels():
@@ -91,6 +88,7 @@ def saveModelDes():
             file.write('input batch size: '+ str(batchSize)+ '\n')
             file.write('=======================\n')
 
+
 def buildModels():
     for midx in modelCollection:
         modelEntity = midx.getModelEntity()
@@ -100,6 +98,19 @@ def buildModels():
         logitUnit.append(modelLogit)
         logitUnit.append(midx.getBatchSize())
         logitCollection.append(logitUnit)
+
+def scheduleMan():
+    schUnit = []
+    logitUnit = []
+    batchUnit = []
+
+    logitUnit.append(logitCollection[0][0])
+    logitUnit.append(logitCollection[1][0])
+    logitUnit.append(logitCollection[2][0])
+    batchUnit.append(logitCollection[0][1])
+    schUnit.append(logitUnit)
+    schUnit.append(batchUnit)
+    scheduleCollection.append(schUnit)
 
 
 def scheduleNo():
@@ -122,6 +133,9 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
     if len(batch_unit) == 1:
         with tf.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
+            # for tensorboard
+            writer = tf.summary.FileWriter("logs/", sess.graph)
+            
             mini_batches = batch_unit[0]    
             num_batch = Y_train.shape[0] // mini_batches            
             for i in range(num_batch):
@@ -159,26 +173,17 @@ if __name__ == '__main__':
         prepareModelsFix()
         printAllModels()
     	#saveModelDes()
-    #    buildModels()
-    #    scheduleNo()
-        #scheduleGreedy() 
-    #    for idx, sit in enumerate(scheduleCollection):
-    #        print(idx)
-    #        print(sit[0])
-    #        print(sit[1])
-            #p = Process(target=executeSch, args=(sit[0], sit[1], X_data, Y_data,))
-    	    #p.start()
-    	    #print(p.pid)
-    	    #p.join()
+        buildModels()
+        #scheduleNo()
+        scheduleMan() 
+        for idx, sit in enumerate(scheduleCollection):
+            #print(idx)
+            #print(sit[0])
+            #print(sit[1])
+            p = Process(target=executeSch, args=(sit[0], sit[1], X_data, Y_data,))
+            p.start()
+            print(p.pid)
+            p.join()
 
-    # ==============================
-    # Test of getting GPU info
-    # ==============================
-    #print(GPUtil.getAllGPUsAndMemFree())
-    #print(GPUtil.getAllGPUsAndMemLimit())
-    #print(GPUtil.getAllGPUsAndMemUtil())
-    #print(GPUtil.getGPUMemFree(0))
-    #print(GPUtil.getGPUMemLimit(0))
-    #print(GPUtil.getGPUMemUtil(0))
     
 
