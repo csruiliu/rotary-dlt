@@ -5,12 +5,11 @@ import os
 import cv2
 import matplotlib.image as plimg
 
-
 def image_input(imgDir, img_w, img_h):
     all_arr = []
-    for filename in os.listdir(imgDir):    
+    for filename in os.listdir(imgDir):
         arr_single = read_single_image(imgDir + '/'+ filename, img_w, img_h)
-        if arr_single != []:    
+        if arr_single != []:
             if all_arr == []:
                 all_arr = arr_single
             else:
@@ -44,17 +43,14 @@ def pickle_save(arr, output_file):
     pickle.dump(img_data, f)
     f.close()
 
-def unpickle_load_images(imgbinDir, num_channels, img_w, img_h):
-    with open(imgbinDir, mode='rb') as file:
-        data = pickle.load(file, encoding='bytes')
-    raw_images = data['image']
-    
-    raw_float = np.array(raw_images, dtype=float) / 255.0
-    images = raw_float.reshape([-1, num_channels, img_w, img_h])
-    images = images.transpose([0, 2, 3, 1])
-    return images
-    
-    
+def load_labels_onehot(path, num_classes):
+    lines = open(path).readlines()
+    labels_array = np.zeros((len(lines), num_classes))
+    for idx, val in enumerate(lines):
+        hot = int(val.rstrip('\n'))
+        labels_array[idx, hot-1] = 1
+    return labels_array
+
 if __name__ == '__main__':
     imgDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
     outDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'

@@ -6,3 +6,4 @@ dataset/
 **/__pycache__/
 **/tf-venv/
 **/tf-venv-dlrs/
+**/logs/
