@@ -10,9 +10,6 @@ from timeit import default_timer as timer
 
 from dnn_model import DnnModel
 from img_utils import *
-from cifar_utils import *
-from tfrecord_utils import *
-from img2bin_utils import *
 import GPUtil
 
 import argparse

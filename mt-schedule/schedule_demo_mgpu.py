@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import tensorflow as tf
-from tensorflow.python.client import device_lib
 
 import numpy as np
 from datetime import datetime
@@ -11,9 +10,6 @@ from timeit import default_timer as timer
 
 from dnn_model import DnnModel
 from img_utils import *
-from cifar_utils import *
-from tfrecord_utils import *
-from img2bin_utils import *
 import GPUtil
 
 import argparse
