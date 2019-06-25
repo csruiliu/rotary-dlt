@@ -32,18 +32,28 @@ batchCollection = []
 features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
 labels = tf.placeholder(tf.int64, [None, numClasses])
 
-bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
+label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k-label.txt'
 X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
 Y_data = load_labels_onehot(label_path, numClasses)
 
 def prepareModelsMan():
-    modelClass = ["resnet", "mobilenet", "perceptron", "convnet"]
-    modelNum = [1,1,1,1]
-    modelNameAddr = np.random.choice(100000, 4, replace=False).tolist()
-    dm1 = DnnModel("mobilenet", str(modelNameAddr.pop()), model_layer=1, input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=10, desired_accuracy=0.9)
-    dm2 = DnnModel("resnet",str(modelNameAddr.pop()), model_layer=1, input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=10, desired_accuracy=0.9)
-    modelCollection.append(dm1)
+    model_class_num = [2, 4, 3, 1]
+    model_class = ["resnet", "mobilenet", "perceptron", "convnet"]
+    all_batch_list = [40, 50, 20, 40, 100, 80, 10, 20, 40, 20]
+    layer_list = [5, 2, 8, 4, 1, 1, 1, 1, 1, 1]
+    model_name_abbr = np.random.choice(100000, 10, replace=False).tolist()    
+    for idx, mls in enumerate(model_class):
+        for _ in range(model_class_num[idx]):
+            dm = DnnModel(mls, str(model_name_abbr.pop()), model_layer=layer_list.pop(), input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=all_batch_list.pop(), desired_accuracy=0.9)
+            modelCollection.append(dm)
+    
+    #modelClass = ["resnet", "mobilenet", "perceptron", "convnet"]
+    #modelNum = [1,1,1,1]
+    #modelNameAddr = np.random.choice(100000, 4, replace=False).tolist()
+    #dm1 = DnnModel("mobilenet", str(modelNameAddr.pop()), model_layer=1, input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=10, desired_accuracy=0.9)
+    #dm2 = DnnModel("resnet",str(modelNameAddr.pop()), model_layer=1, input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=10, desired_accuracy=0.9)
+    #modelCollection.append(dm1)
     #modelCollection.append(dm2)
 
 def printAllModels():
@@ -90,7 +100,50 @@ def scheduleNo():
         scheduleCollection.append(schUnit)
 
 def scheduleMan():
-    pass
+    schUnit1 = []
+    logitUnit1 = []
+    batchUnit1 = []
+    logitUnit1.append(logitCollection[0][0])
+    logitUnit1.append(logitCollection[2][0])
+    logitUnit1.append(logitCollection[7][0])
+    batchUnit1.append(logitCollection[0][1])
+    schUnit1.append(logitUnit1)
+    schUnit1.append(batchUnit1)
+    scheduleCollection.append(schUnit1)
+
+    schUnit2 = []
+    logitUnit2 = []
+    batchUnit2 = []
+    logitUnit2.append(logitCollection[1][0])
+    logitUnit2.append(logitCollection[6][0])
+    logitUnit2.append(logitCollection[9][0])
+    batchUnit2.append(logitCollection[1][1])
+    schUnit2.append(logitUnit2)
+    schUnit2.append(batchUnit2)
+    scheduleCollection.append(schUnit2)
+
+    schUnit3 = []
+    logitUnit3 = []
+    batchUnit3 = []
+    logitUnit3.append(logitCollection[3][0])
+    logitUnit3.append(logitCollection[4][0])
+    batchUnit3.append(logitCollection[3][1])
+    batchUnit3.append(logitCollection[4][1])
+    schUnit3.append(logitUnit3)
+    schUnit3.append(batchUnit3)
+    scheduleCollection.append(schUnit3)
+
+    schUnit4 = []
+    logitUnit4 = []
+    batchUnit4 = []
+    logitUnit4.append(logitCollection[5][0])
+    logitUnit4.append(logitCollection[8][0])
+    batchUnit4.append(logitCollection[5][1])
+    batchUnit4.append(logitCollection[8][1])
+    schUnit4.append(logitUnit4)
+    schUnit4.append(batchUnit4)
+    scheduleCollection.append(schUnit4)
+
 
 def executeSch(sch_unit, batch_unit, X_train, Y_train):
     total_time = 0
@@ -139,7 +192,7 @@ if __name__ == '__main__':
         prepareModelsMan()
         printAllModels()
         buildModels()
-        scheduleNo()
+        scheduleMan()
         for idx, sit in enumerate(scheduleCollection):
             p = Process(target=executeSch, args=(sit[0], sit[1], X_data, Y_data,))
             p.start()

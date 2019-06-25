@@ -33,8 +33,8 @@ labels = tf.placeholder(tf.int64, [None, num_classes])
 
 bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
 label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k-label.txt'
-X_data = unpickle_load_images(bin_dir, num_channel, img_w, img_h)
-Y_data = load_labels_onehot(label_path)
+X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
+Y_data = load_labels_onehot(label_path, numClasses)
 
 
 def prepareModelsFix():
