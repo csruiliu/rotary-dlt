@@ -32,8 +32,8 @@ batchCollection = []
 features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
 labels = tf.placeholder(tf.int64, [None, numClasses])
 
-bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
-label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k-label.txt'
+bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
+label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
 X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
 Y_data = load_labels_onehot(label_path, numClasses)
 
@@ -44,7 +44,7 @@ def prepareModelsMan():
     dm1 = DnnModel("mobilenet", str(modelNameAddr.pop()), model_layer=1, input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=10, desired_accuracy=0.9)
     dm2 = DnnModel("resnet",str(modelNameAddr.pop()), model_layer=1, input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=10, desired_accuracy=0.9)
     modelCollection.append(dm1)
-    modelCollection.append(dm2)
+    #modelCollection.append(dm2)
 
 def printAllModels():
     for idm in modelCollection:
