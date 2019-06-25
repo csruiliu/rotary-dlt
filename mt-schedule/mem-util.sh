@@ -12,8 +12,10 @@ checkret()
 datetime=$(date +%Y%m%d%H%M)
 timestamp=$(date +%Y%m%d%H%M%S.%3N)
 echo "Expertiment starts $timestamp" > /home/ruiliu/Development/mtml-tf/mt-schedule/mem-monitor-$datetime.txt
-RET=100
-checkret $RET & nvidia-smi --query-gpu=timestamp,utilization.memory --format=csv --loop-ms=100 >> /home/ruiliu/Development/mtml-tf/mt-schedule/mem-monitor-$datetime.txt & python3 benchmark_packed.py ; RET=$? 
+python3 benchmark_packed.py & nvidia-smi --query-gpu=timestamp,utilization.memory --format=csv --loop-ms=100 >> /home/ruiliu/Development/mtml-tf/mt-schedule/mem-monitor-$datetime.csv
+
+#RET=100
+#checkret $RET & nvidia-smi --query-gpu=timestamp,utilization.memory --format=csv --loop-ms=100 >> /home/ruiliu/Development/mtml-tf/mt-schedule/mem-monitor-$datetime.txt & python3 benchmark_packed.py ; RET=$? 
 
 
 #
