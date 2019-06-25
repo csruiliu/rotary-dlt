@@ -45,7 +45,7 @@ def prepareModelsMan():
     #all_batch_list = [20, 20, 20, 20]
     #layer_list = [4, 8, 1, 1]
     layer_list = [5, 2, 8, 4, 1, 1, 1, 1, 1, 1]
-    model_name_abbr = np.random.choice(100000, 4, replace=False).tolist()    
+    model_name_abbr = np.random.choice(100000, sum(model_class_num), replace=False).tolist()    
     for idx, mls in enumerate(model_class):
         for _ in range(model_class_num[idx]):
             dm = DnnModel(mls, str(model_name_abbr.pop()), model_layer=layer_list.pop(), input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=all_batch_list.pop(), desired_accuracy=0.9)
