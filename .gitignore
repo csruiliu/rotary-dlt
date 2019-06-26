@@ -1,6 +1,9 @@
 *.txt
 *.csv
 *.md
+*.png
+*.pdf
+*.jpg
 
 dataset/
 **/__pycache__/

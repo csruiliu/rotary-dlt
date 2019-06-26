@@ -38,21 +38,22 @@ X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
 Y_data = load_labels_onehot(label_path, numClasses)
 
 def prepareModelsMan():
-    model_class_num = [2, 4, 3, 1]
-    #model_class_num = [1, 1, 1, 1]
-    model_class = ["resnet", "mobilenet", "perceptron", "convnet"]
-    all_batch_list = [40, 50, 20, 40, 100, 80, 10, 20, 40, 20]
-    #all_batch_list = [20, 20, 20, 20]
-    #layer_list = [4, 8, 1, 1]
-    layer_list = [5, 2, 8, 4, 1, 1, 1, 1, 1, 1]
+    
+    #Generate all same models 
+    model_class_num = [10]
+    model_class = ["perceptron"]
+    all_batch_list = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
+    layer_list = [5, 2, 8, 4, 9, 12, 14, 20, 3, 17]
     model_name_abbr = np.random.choice(100000, sum(model_class_num), replace=False).tolist()    
     for idx, mls in enumerate(model_class):
         for _ in range(model_class_num[idx]):
             dm = DnnModel(mls, str(model_name_abbr.pop()), model_layer=layer_list.pop(), input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=all_batch_list.pop(), desired_accuracy=0.9)
             modelCollection.append(dm)
-    
+
     #modelClass = ["resnet", "mobilenet", "perceptron", "convnet"]
     #modelNum = [1,1,1,1]
+    #all_batch_list = [20, 20, 20, 20]
+    #layer_list = [4, 8, 1, 1]
     #modelNameAddr = np.random.choice(100000, 4, replace=False).tolist()
     #dm1 = DnnModel("mobilenet", str(modelNameAddr.pop()), model_layer=1, input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=10, desired_accuracy=0.9)
     #dm2 = DnnModel("resnet",str(modelNameAddr.pop()), model_layer=1, input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=10, desired_accuracy=0.9)
@@ -102,6 +103,17 @@ def scheduleNo():
         schUnit.append(batchUnit)
         scheduleCollection.append(schUnit)
 
+def schedulePack():
+    schUnit = []
+    logitUnit = []
+    batchUnit = []
+    for lit in logitCollection:
+        logitUnit.append(lit[0])
+    batchUnit.append(logitCollection[0][1])
+    schUnit.append(logitUnit)
+    schUnit.append(batchUnit)
+    scheduleCollection.append(schUnit)
+
 def scheduleMan():
     schUnit1 = []
     logitUnit1 = []
@@ -146,7 +158,6 @@ def scheduleMan():
     schUnit4.append(logitUnit4)
     schUnit4.append(batchUnit4)
     scheduleCollection.append(schUnit4)
-
 
 def executeSch(sch_unit, batch_unit, X_train, Y_train):
     total_time = 0
@@ -195,7 +206,8 @@ if __name__ == '__main__':
         prepareModelsMan()
         printAllModels()
         buildModels()
-        scheduleMan()
+        schedulePack()
+        #scheduleMan()
         for idx, sit in enumerate(scheduleCollection):
             p = Process(target=executeSch, args=(sit[0], sit[1], X_data, Y_data,))
             p.start()
