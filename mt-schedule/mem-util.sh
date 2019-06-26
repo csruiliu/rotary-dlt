@@ -3,6 +3,7 @@ timestamp=$(date +%Y%m%d%H%M%S.%3N)
 python3 benchmark_packed.py & 
 nvidia-smi --query-gpu=utilization.memory --format=csv --loop-ms=100 >> /home/ruiliu/Development/mtml-tf/mt-schedule/mem-monitor-$datetime.csv & 
 wait -n
+sleep 5
 pkill -P $$
 
 #if [ $RET -eq 0 ]
