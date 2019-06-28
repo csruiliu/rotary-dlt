@@ -9,12 +9,12 @@ import argparse
 parser = argparse.ArgumentParser()
 #parser.add_argument('-f', '--csvfile', type=str, help='identify a csv file to figure')
 parser.add_argument("csvfile", help="identify a csv file to figure")
-parser.add_argument("outfile", help="identify the output filename")
+#parser.add_argument("outfile", help="identify the output filename")
 args = parser.parse_args()
 
 csvpath = args.csvfile
-outpath = args.outfile
-
+#outpath = args.outfile
+outpath = csvpath.replace('.csv','.png')
 
 y = []
 count = 1
