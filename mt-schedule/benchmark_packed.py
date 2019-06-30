@@ -16,6 +16,7 @@ parser.add_argument('-iw', '--imgw', type=int, default=224, help='identify the w
 parser.add_argument('-ih', '--imgh', type=int, default=224, help='identify the height of img')
 parser.add_argument('-cls', '--clazz', type=int, default=1000, help='predication classes')
 parser.add_argument('-ch', '--channel', type=int, default=3, help='identify the channel of input images')
+parser.add_argument('-e', '--epoch', type=int, default=1, help='identify the epoch numbers')
 args = parser.parse_args()
 
 gpuId = args.gpuid
@@ -23,6 +24,7 @@ imgWidth = args.imgw
 imgHeight = args.imgh
 numClasses = args.clazz
 numChannels = args.channel
+numEpoches = args.epoch
 
 modelCollection = []
 modelEntityCollection = []
@@ -42,10 +44,10 @@ def prepareModelsMan():
     
     #Generate all same models 
     model_class_num = [5]
-    model_class = ["perceptron"]
-    all_batch_list = np.repeat(80,5).tolist()
+    model_class = ["resnet"]
+    all_batch_list = np.repeat(10,5).tolist()
     #all_batch_list = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
-    layer_list = np.repeat(5,5).tolist()
+    layer_list = np.repeat(1,5).tolist()
     #layer_list = np.random.choice(np.arange(5,20), 22).tolist()
     #layer_list = [5, 2, 8, 4, 9, 12, 14, 20, 3, 17, 10, 3, 13, 19, 7, 11, 15, 6, 14, 10]
     
@@ -164,7 +166,7 @@ def scheduleMan():
     schUnit4.append(batchUnit4)
     scheduleCollection.append(schUnit4)
 
-def executeSch(sch_unit, batch_unit, X_train, Y_train):
+def executeSch(sch_unit, batch_unit, num_epoch, X_train, Y_train):
     total_time = 0
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
@@ -173,18 +175,19 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
             sess.run(tf.global_variables_initializer())
             mini_batches = batch_unit[0]
             num_batch = Y_train.shape[0] // mini_batches
-            for i in range(num_batch):
-                print('step %d / %d' %(i+1, num_batch))
-                #print(datetime.datetime.now())
-                X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
-                Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
-                #print(datetime.datetime.now())
-                #start_time = timer()
-                sess.run(sch_unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-                #print(datetime.datetime.now())
-                #end_time = timer()
-                #total_time += end_time - start_time
-                #print("training time for 1 epoch:", total_time)
+            for e in range(num_epoch):
+                for i in range(num_batch):
+                    print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
+                    #print(datetime.datetime.now())
+                    X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
+                    Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
+                    #print(datetime.datetime.now())
+                    #start_time = timer()
+                    sess.run(sch_unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    #print(datetime.datetime.now())
+                    #end_time = timer()
+                    #total_time += end_time - start_time
+                    #print("training time for 1 epoch:", total_time)
 
     else:
         for idx, batch in enumerate(batch_unit):
@@ -192,18 +195,19 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
                 sess.run(tf.global_variables_initializer())
                 mini_batches = batch
                 num_batch = Y_train.shape[0] // mini_batches
-                for i in range(num_batch):
-                    print('step %d / %d' %(i+1, num_batch))
-                    print(timer())
-                    X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
-                    Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
-                    print(timer())
-                    #start_time = timer()
-                    sess.run(sch_unit[idx], feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-                    print(timer())
-                    #end_time = timer()
-                    #total_time += end_time - start_time
-                    #print("training time for 1 epoch:", total_time)
+                for e in range(num_epoch):
+                    for i in range(num_batch):
+                        print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
+                        print(timer())
+                        X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
+                        Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
+                        print(timer())
+                        #start_time = timer()
+                        sess.run(sch_unit[idx], feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                        print(timer())
+                        #end_time = timer()
+                        #total_time += end_time - start_time
+                        #print("training time for 1 epoch:", total_time)
 
 
 if __name__ == '__main__':
@@ -220,7 +224,7 @@ if __name__ == '__main__':
         schedulePack()
         #scheduleMan()
         for idx, sit in enumerate(scheduleCollection):
-            p = Process(target=executeSch, args=(sit[0], sit[1], X_data, Y_data,))
+            p = Process(target=executeSch, args=(sit[0], sit[1], numEpoches, X_data, Y_data,))
             p.start()
             print(p.pid)
             p.join()

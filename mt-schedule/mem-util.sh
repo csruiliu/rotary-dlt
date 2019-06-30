@@ -1,7 +1,7 @@
 if [ $# == 0 ]
 then
     echo "parameter error, usage: mem-util.sh [output_name]"
-    echo "full cmd: mem-util.sh [output_name] [GPU_id] [img_width] [img_height]"
+    echo "full cmd: mem-util.sh [output_name] [num_epoch] [GPU_id] [img_width] [img_height]"
     exit 1
 fi
 
@@ -24,22 +24,29 @@ case $# in
     pkill -P $$
     ;;
     2)
-    python3 benchmark_packed.py -g $2 &
-    nvidia-smi --id=$2 --query-gpu=utilization.memory --format=csv --loop-ms=100 >> $fileName & 
+    python3 benchmark_packed.py -e $2 &
+    nvidia-smi --query-gpu=utilization.memory --format=csv --loop-ms=100 >> $fileName & 
     wait -n 
     sleep 5
     pkill -P $$
     ;;
     3)
-    python3 benchmark_packed.py -g $2 -iw $3 &
-    nvidia-smi --id=$2 --query-gpu=utilization.memory --format=csv --loop-ms=100 >> $fileName &
-    wait -n
+    python3 benchmark_packed.py -e $2 -g $3 &
+    nvidia-smi --id=$3 --query-gpu=utilization.memory --format=csv --loop-ms=100 >> $fileName & 
+    wait -n 
     sleep 5
     pkill -P $$
     ;;
     4)
-    python3 benchmark_packed.py -g $2 -iw $3 -ih $4 &
-    nvidia-smi --id=$2 --query-gpu=utilization.memory --format=csv --loop-ms=100 >> $fileName &
+    python3 benchmark_packed.py -e $2 -g $3 -iw $4 &
+    nvidia-smi --id=$3 --query-gpu=utilization.memory --format=csv --loop-ms=100 >> $fileName &
+    wait -n
+    sleep 5
+    pkill -P $$
+    ;;
+    5)
+    python3 benchmark_packed.py -e $2 -g $3 -iw $4 -ih $5 &
+    nvidia-smi --id=$3 --query-gpu=utilization.memory --format=csv --loop-ms=100 >> $fileName &
     wait -n
     sleep 5
     pkill -P $$
