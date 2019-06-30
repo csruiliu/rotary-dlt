@@ -7,6 +7,7 @@ from multiprocessing import Process
 from img_utils import *
 from dnn_model import DnnModel
 from timeit import default_timer as timer
+import datetime
 
 import argparse
 parser = argparse.ArgumentParser()
@@ -40,10 +41,14 @@ Y_data = load_labels_onehot(label_path, numClasses)
 def prepareModelsMan():
     
     #Generate all same models 
-    model_class_num = [10]
+    model_class_num = [5]
     model_class = ["perceptron"]
-    all_batch_list = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
-    layer_list = [5, 2, 8, 4, 9, 12, 14, 20, 3, 17]
+    all_batch_list = np.repeat(80,5).tolist()
+    #all_batch_list = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
+    layer_list = np.repeat(5,5).tolist()
+    #layer_list = np.random.choice(np.arange(5,20), 22).tolist()
+    #layer_list = [5, 2, 8, 4, 9, 12, 14, 20, 3, 17, 10, 3, 13, 19, 7, 11, 15, 6, 14, 10]
+    
     model_name_abbr = np.random.choice(100000, sum(model_class_num), replace=False).tolist()    
     for idx, mls in enumerate(model_class):
         for _ in range(model_class_num[idx]):
@@ -170,13 +175,16 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
             num_batch = Y_train.shape[0] // mini_batches
             for i in range(num_batch):
                 print('step %d / %d' %(i+1, num_batch))
+                #print(datetime.datetime.now())
                 X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
                 Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
-                start_time = timer()
+                #print(datetime.datetime.now())
+                #start_time = timer()
                 sess.run(sch_unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-                end_time = timer()
-                total_time += end_time - start_time
-                print("training time for 1 epoch:", total_time)
+                #print(datetime.datetime.now())
+                #end_time = timer()
+                #total_time += end_time - start_time
+                #print("training time for 1 epoch:", total_time)
 
     else:
         for idx, batch in enumerate(batch_unit):
@@ -186,13 +194,16 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
                 num_batch = Y_train.shape[0] // mini_batches
                 for i in range(num_batch):
                     print('step %d / %d' %(i+1, num_batch))
+                    print(timer())
                     X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
                     Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
-                    start_time = timer()
+                    print(timer())
+                    #start_time = timer()
                     sess.run(sch_unit[idx], feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-                    end_time = timer()
-                    total_time += end_time - start_time
-                    print("training time for 1 epoch:", total_time)
+                    print(timer())
+                    #end_time = timer()
+                    #total_time += end_time - start_time
+                    #print("training time for 1 epoch:", total_time)
 
 
 if __name__ == '__main__':
