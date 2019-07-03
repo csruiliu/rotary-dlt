@@ -17,6 +17,7 @@ parser.add_argument('-ih', '--imgh', type=int, default=224, help='identify the h
 parser.add_argument('-cls', '--clazz', type=int, default=1000, help='predication classes')
 parser.add_argument('-ch', '--channel', type=int, default=3, help='identify the channel of input images')
 parser.add_argument('-e', '--epoch', type=int, default=1, help='identify the epoch numbers')
+parser.add_argument('-s', '--shuffle', action='store_true', default=False, help='use shuffle batch input or not')
 args = parser.parse_args()
 
 gpuId = args.gpuid
@@ -24,7 +25,8 @@ imgWidth = args.imgw
 imgHeight = args.imgh
 numClasses = args.clazz
 numChannels = args.channel
-numEpoches = args.epoch
+numEpochs = args.epoch
+isShuffle = args.shuffle
 
 modelCollection = []
 modelEntityCollection = []
@@ -41,17 +43,15 @@ X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
 Y_data = load_labels_onehot(label_path, numClasses)
 
 def prepareModelsMan():
-    
     #Generate all same models 
-    model_class_num = [5]
-    model_class = ["resnet"]
-    all_batch_list = np.repeat(10,5).tolist()
+    model_class_num = [3]
+    model_class = ["mobilenet"]
+    all_batch_list = np.repeat(20,3).tolist()
     #all_batch_list = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
-    layer_list = np.repeat(1,5).tolist()
-    #layer_list = np.random.choice(np.arange(5,20), 22).tolist()
-    #layer_list = [5, 2, 8, 4, 9, 12, 14, 20, 3, 17, 10, 3, 13, 19, 7, 11, 15, 6, 14, 10]
-    
-    model_name_abbr = np.random.choice(100000, sum(model_class_num), replace=False).tolist()    
+    layer_list = np.repeat(1,3).tolist()
+    #layer_list = np.random.choice(np.arange(3,10), 9).tolist()
+    #layer_list = [5, 2, 8, 4, 9, 10, 3, 7, 1, 4,2,8,4,3,11]
+    model_name_abbr = np.random.choice(100000, sum(model_class_num), replace=False).tolist()
     for idx, mls in enumerate(model_class):
         for _ in range(model_class_num[idx]):
             dm = DnnModel(mls, str(model_name_abbr.pop()), model_layer=layer_list.pop(), input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=all_batch_list.pop(), desired_accuracy=0.9)
@@ -175,12 +175,20 @@ def executeSch(sch_unit, batch_unit, num_epoch, X_train, Y_train):
             sess.run(tf.global_variables_initializer())
             mini_batches = batch_unit[0]
             num_batch = Y_train.shape[0] // mini_batches
+            num_batch_list = np.arange(num_batch)
             for e in range(num_epoch):
                 for i in range(num_batch):
                     print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
                     #print(datetime.datetime.now())
-                    X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
-                    Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
+                    if isShuffle:
+                        rand_idx = int(np.random.choice(num_batch_list, 1, replace=False))
+                        #print(rand_idx)
+                        X_mini_batch_feed = X_train[rand_idx:rand_idx + mini_batches,:,:,:]
+                        Y_mini_batch_feed = Y_train[rand_idx:rand_idx + mini_batches,:]
+                    else:
+                        #print(i)
+                        X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
+                        Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
                     #print(datetime.datetime.now())
                     #start_time = timer()
                     sess.run(sch_unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
@@ -195,12 +203,18 @@ def executeSch(sch_unit, batch_unit, num_epoch, X_train, Y_train):
                 sess.run(tf.global_variables_initializer())
                 mini_batches = batch
                 num_batch = Y_train.shape[0] // mini_batches
+                num_batch_list = np.arange(num_batch)
                 for e in range(num_epoch):
                     for i in range(num_batch):
                         print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
                         print(timer())
-                        X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
-                        Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
+                        if isShuffle:
+                            rand_idx = np.random.choice(num_batch_list, 1, replace=False)
+                            X_mini_batch_feed = X_train[rand_idx:rand_idx + mini_batches,:,:,:]
+                            Y_mini_batch_feed = Y_train[rand_idx:rand_idx + mini_batches,:]
+                        else:
+                            X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
+                            Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
                         print(timer())
                         #start_time = timer()
                         sess.run(sch_unit[idx], feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
@@ -211,20 +225,23 @@ def executeSch(sch_unit, batch_unit, num_epoch, X_train, Y_train):
 
 
 if __name__ == '__main__':
-    print("run gpu:",gpuId)
+    print("run gpu:", gpuId)
+    print("training epochs:", numEpochs)
+    print("shuffle input:", isShuffle)
     print("input image width:", imgWidth)
     print("input image height", imgHeight)
     print("prediction classes:", numClasses)
     print("channel of input images:", numChannels)
     deviceId = '/device:GPU:' + str(gpuId)
     with tf.device(deviceId):
+        #print(isShuffle)
         prepareModelsMan()
         printAllModels()
         buildModels()
         schedulePack()
         #scheduleMan()
         for idx, sit in enumerate(scheduleCollection):
-            p = Process(target=executeSch, args=(sit[0], sit[1], numEpoches, X_data, Y_data,))
+            p = Process(target=executeSch, args=(sit[0], sit[1], numEpochs, X_data, Y_data,))
             p.start()
             print(p.pid)
             p.join()
