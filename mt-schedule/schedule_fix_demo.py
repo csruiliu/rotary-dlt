@@ -188,8 +188,8 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
             num_batch = Y_train.shape[0] // mini_batches            
             for i in range(num_batch):
                 print('step %d / %d' %(i+1, num_batch))
-                X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
-                Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
+                X_mini_batch_feed = X_train[i:i + mini_batches,:,:,:]
+                Y_mini_batch_feed = Y_train[i:i + mini_batches,:]
                 start_time = timer()
                 sess.run(sch_unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                 end_time = timer()
@@ -204,8 +204,8 @@ def executeSch(sch_unit, batch_unit, X_train, Y_train):
                 num_batch = Y_train.shape[0] // mini_batches            
                 for i in range(num_batch):
                     print('step %d / %d' %(i+1, num_batch))
-                    X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
-                    Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
+                    X_mini_batch_feed = X_train[i:i + mini_batches,:,:,:]
+                    Y_mini_batch_feed = Y_train[i:i + mini_batches,:]
                     start_time = timer()
                     sess.run(sch_unit[idx], feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                     end_time = timer()

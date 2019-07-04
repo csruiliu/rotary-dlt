@@ -72,8 +72,8 @@ class Schedule(object):
 
             for i in range(num_batch):
                 print('step %d / %d' %(i+1, num_batch))
-                X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
-                Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
+                X_mini_batch_feed = X_train[i:i + mini_batches,:,:,:]
+                Y_mini_batch_feed = Y_train[i:i + mini_batches,:]
                 start_time = timer()
 
                 sess.run(modelTrainStep, feed_dict={self.features: X_mini_batch_feed, self.labels: Y_mini_batch_feed})
