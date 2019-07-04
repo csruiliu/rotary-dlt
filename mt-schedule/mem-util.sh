@@ -36,9 +36,9 @@ done
 
 filePath=/home/ruiliu/Development/mtml-tf/mt-schedule/exp-result/$fileName 
 
-if [ -f $fileName ]
+if [ -f $filePath ]
 then
-    rm $fileName
+    rm $filePath
 fi
 
 python3 benchmark_packed.py$pycmd &
