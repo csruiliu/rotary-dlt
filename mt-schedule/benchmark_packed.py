@@ -31,6 +31,7 @@ isShuffle = args.shuffle
 modelCollection = []
 modelEntityCollection = []
 logitCollection = []
+trainCollection = []
 scheduleCollection = []
 batchCollection = []
 
@@ -44,11 +45,11 @@ Y_data = load_labels_onehot(label_path, numClasses)
 
 def prepareModelsMan():
     #Generate all same models 
-    model_class_num = [3]
-    model_class = ["mobilenet"]
-    all_batch_list = np.repeat(20,3).tolist()
+    model_class_num = [10]
+    model_class = ["resnet"]
+    all_batch_list = np.repeat(10,10).tolist()
     #all_batch_list = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
-    layer_list = np.repeat(1,3).tolist()
+    layer_list = np.repeat(1,10).tolist()
     #layer_list = np.random.choice(np.arange(3,10), 9).tolist()
     #layer_list = [5, 2, 8, 4, 9, 10, 3, 7, 1, 4,2,8,4,3,11]
     model_name_abbr = np.random.choice(100000, sum(model_class_num), replace=False).tolist()
@@ -94,10 +95,11 @@ def buildModels():
         modelEntity = midx.getModelEntity()
         modelEntityCollection.append(modelEntity)
         modelLogit = modelEntity.build(features)
-        logitUnit = []
-        logitUnit.append(modelLogit)
-        logitUnit.append(midx.getBatchSize())
-        logitCollection.append(logitUnit)
+        modelTrain = modelEntity.cost(modelLogit,labels)
+        trainUnit = []
+        trainUnit.append(modelTrain)
+        trainUnit.append(midx.getBatchSize())
+        trainCollection.append(trainUnit)
 
 def scheduleNo():
     for lit in logitCollection:
@@ -112,12 +114,12 @@ def scheduleNo():
 
 def schedulePack():
     schUnit = []
-    logitUnit = []
+    trainUnit = []
     batchUnit = []
-    for lit in logitCollection:
-        logitUnit.append(lit[0])
-    batchUnit.append(logitCollection[0][1])
-    schUnit.append(logitUnit)
+    for tit in trainCollection:
+        trainUnit.append(tit[0])
+    batchUnit.append(trainCollection[0][1])
+    schUnit.append(trainUnit)
     schUnit.append(batchUnit)
     scheduleCollection.append(schUnit)
 
