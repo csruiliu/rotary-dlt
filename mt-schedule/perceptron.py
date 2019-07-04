@@ -35,7 +35,13 @@ class perceptron(object):
         with tf.name_scope('loss'):
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
         cross_entropy_cost = tf.reduce_mean(cross_entropy)
-        return cross_entropy_cost
+        
+        with tf.name_scope('optimizer_test'):
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            with tf.control_dependencies(update_ops):
+                train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy_cost)
+
+        return train_step
 
     def getModelInstanceName(self):
         return (self.net_name + " with layer: " + str(self.model_layer_num)) 
