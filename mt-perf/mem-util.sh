@@ -32,7 +32,7 @@ then
     rm $FilePath
 fi
 
-python3 benchmark_packed.py$PYCMD &
+python3 perf_packed.py$PYCMD &
 nvidia-smi --query-gpu=utilization.memory --format=csv --loop-ms=100 >> $FilePath &
 wait -n
 sleep 5

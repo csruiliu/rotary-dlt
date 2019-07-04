@@ -58,7 +58,7 @@ class mobilenet(object):
             net, net_size = self._inverted_bottleneck(net, 6, 320, 0)
             self.model_size += net_size
 
-            net = tc.layers.conv2d(net, 1280, 1, normalizer_fn=self.normalizer, normalizer_params=self.bn_params) 
+            net = tc.layers.conv2d(net, 1280, 1, normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
             self.model_size += (1 * 1 * int(net.shape[1]) + 1) * 1280
 
             avg_num = int(self.img_h // 32)
@@ -92,15 +92,14 @@ class mobilenet(object):
 
             if input.get_shape().as_list()[-1] == channels:
                 output = tf.add(input, output)
-                
             return output, layer_size
 
     def cost(self, logits, labels):
-        with tf.name_scope('loss_' + self.net_name):
+        with tf.name_scope('loss_'+self.net_name):
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
         cross_entropy_cost = tf.reduce_mean(cross_entropy)
 
-        with tf.name_scope('optimizer_' + self.net_name):
+        with tf.name_scope('optimizer_'+self.net_name):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):
                 train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy_cost)
@@ -108,7 +107,7 @@ class mobilenet(object):
         return train_step
 
     def getModelInstanceName(self):
-        return (self.net_name + " with layer: " + str(self.model_layer_num)) 
+        return (self.net_name + " with layer: " + str(self.model_layer_num))
 
     def getModelMemSize(self):
         return self.model_size * 4 / (1024**2)

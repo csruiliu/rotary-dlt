@@ -45,7 +45,7 @@ Y_data = load_labels_onehot(label_path, numClasses)
 def prepareModelsMan():
     #Generate all same models 
     model_class_num = [10]
-    model_class = ["resnet"]
+    model_class = ["mobilenet"]
     all_batch_list = np.repeat(10,10).tolist()
     #all_batch_list = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
     layer_list = np.repeat(1,10).tolist()
@@ -155,14 +155,14 @@ def executeSch(sch_unit, batch_unit, num_epoch, X_train, Y_train):
 
 
 if __name__ == '__main__':
-    print("run gpu:", gpuId)
+    deviceId = '/device:GPU:' + str(gpuId)
+    print("run gpu:", deviceId)
     print("training epochs:", numEpochs)
     print("shuffle input:", isShuffle)
     print("input image width:", imgWidth)
     print("input image height", imgHeight)
     print("prediction classes:", numClasses)
     print("channel of input images:", numChannels)
-    deviceId = '/device:GPU:' + str(gpuId)
     with tf.device(deviceId):
         #print(isShuffle)
         prepareModelsMan()
@@ -174,9 +174,4 @@ if __name__ == '__main__':
             p.start()
             print(p.pid)
             p.join()
-
-
-
-
-
 

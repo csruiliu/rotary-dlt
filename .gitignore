@@ -10,3 +10,4 @@ dataset/
 **/tf-venv/
 **/tf-venv-dlrs/
 **/logs/
+**/exp-result/
