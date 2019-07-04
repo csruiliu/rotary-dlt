@@ -187,8 +187,8 @@ def executeSch(sch_unit, batch_unit, num_epoch, X_train, Y_train):
                         Y_mini_batch_feed = Y_train[rand_idx:rand_idx + mini_batches,:]
                     else:
                         #print(i)
-                        X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
-                        Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
+                        X_mini_batch_feed = X_train[i:i + mini_batches,:,:,:]
+                        Y_mini_batch_feed = Y_train[i:i + mini_batches,:]
                     #print(datetime.datetime.now())
                     #start_time = timer()
                     sess.run(sch_unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
@@ -213,8 +213,8 @@ def executeSch(sch_unit, batch_unit, num_epoch, X_train, Y_train):
                             X_mini_batch_feed = X_train[rand_idx:rand_idx + mini_batches,:,:,:]
                             Y_mini_batch_feed = Y_train[rand_idx:rand_idx + mini_batches,:]
                         else:
-                            X_mini_batch_feed = X_train[num_batch:num_batch + mini_batches,:,:,:]
-                            Y_mini_batch_feed = Y_train[num_batch:num_batch + mini_batches,:]
+                            X_mini_batch_feed = X_train[i:i + mini_batches,:,:,:]
+                            Y_mini_batch_feed = Y_train[i:i + mini_batches,:]
                         print(timer())
                         #start_time = timer()
                         sess.run(sch_unit[idx], feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
