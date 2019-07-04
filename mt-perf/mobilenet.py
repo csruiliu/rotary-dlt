@@ -96,6 +96,8 @@ class mobilenet(object):
 
     def cost(self, logits, labels):
         with tf.name_scope('loss_'+self.net_name):
+            #cross_entropy = tf.losses.hinge_loss(labels=labels, logits=logits)
+            #cross_entropy = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
         cross_entropy_cost = tf.reduce_mean(cross_entropy)
 

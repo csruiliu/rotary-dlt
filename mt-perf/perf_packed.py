@@ -37,18 +37,18 @@ batchCollection = []
 features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
 labels = tf.placeholder(tf.int64, [None, numClasses])
 
-bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
-label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k-label.txt'
+bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
+label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
 X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
 Y_data = load_labels_onehot(label_path, numClasses)
 
 def prepareModelsMan():
     #Generate all same models 
-    model_class_num = [10]
+    model_class_num = [5]
     model_class = ["mobilenet"]
-    all_batch_list = np.repeat(10,10).tolist()
+    all_batch_list = np.repeat(10,5).tolist()
     #all_batch_list = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
-    layer_list = np.repeat(1,10).tolist()
+    layer_list = np.repeat(1,5).tolist()
     #layer_list = np.random.choice(np.arange(3,10), 9).tolist()
     #layer_list = [5, 2, 8, 4, 9, 10, 3, 7, 1, 4,2,8,4,3,11]
     model_name_abbr = np.random.choice(100000, sum(model_class_num), replace=False).tolist()
@@ -114,6 +114,7 @@ def schedulePack():
 def executeSch(sch_unit, batch_unit, num_epoch, X_train, Y_train):
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
+    config.allow_soft_placement = True
     if len(batch_unit) == 1:
         with tf.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
