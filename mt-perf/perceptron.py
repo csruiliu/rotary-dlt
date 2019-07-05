@@ -35,7 +35,7 @@ class perceptron(object):
         with tf.name_scope('loss_'+self.net_name):
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
         cross_entropy_cost = tf.reduce_mean(cross_entropy)
-        
+
         with tf.name_scope('optimizer_'+self.net_name):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):

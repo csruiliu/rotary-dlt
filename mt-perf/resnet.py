@@ -41,7 +41,7 @@ class resnet(object):
             W_shortcut = self.weight_variable([1, 1, in_filter, f3])
             x_shortcut = tf.nn.conv2d(x_shortcut, W_shortcut, strides=[1, stride, stride, 1], padding='VALID')
             layer_size += (1 * 1 * in_filter + 1) * f3
-            
+
             add = tf.add(x_shortcut, X)
             add_result = tf.nn.relu(add)
 
@@ -132,7 +132,7 @@ class resnet(object):
             avg_pool_size = int(self.img_h // 32)
 
             x = tf.nn.avg_pool(x, [1, avg_pool_size, avg_pool_size, 1], strides=[1,1,1,1], padding='VALID')
-            
+
             flatten = tf.layers.flatten(x)
             x = tf.layers.dense(flatten, units=50, activation=tf.nn.relu)
             self.model_size += (int(flatten.shape[1]) + 1) * 50
@@ -165,6 +165,6 @@ class resnet(object):
 
     def getModelInstanceName(self):
         return (self.net_name + " with layer: " + str(self.model_layer_num)) 
-    
+
     def getModelMemSize(self):
         return self.model_size * 4 // (1024**2)

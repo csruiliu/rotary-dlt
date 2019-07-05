@@ -26,17 +26,17 @@ class convnet(object):
 
     def create_biases(self, size):
         return tf.Variable(tf.constant(0.05, shape=[size]))
-    
-    def create_convolutional_layer(self, input, conv_filter_size, num_filters, in_filter, conv_stride, pool_stride, conv_padding, pool_padding):  
+
+    def create_convolutional_layer(self, input, conv_filter_size, num_filters, in_filter, conv_stride, pool_stride, conv_padding, pool_padding):
         weights = self.create_weights(shape=[conv_filter_size, conv_filter_size, in_filter, num_filters])
         biases = self.create_biases(num_filters)
-        
+
         layer = tf.nn.conv2d(input=input, filter=weights, strides=[1, conv_stride, conv_stride, 1], padding=conv_padding)
         layer += biases
         layer = tf.nn.max_pool(value=layer, ksize=[1, 3, 3, 1], strides=[1, pool_stride, pool_stride, 1], padding=pool_padding)
         layer = tf.nn.relu(layer)
-        
-        layer_size = (conv_filter_size * conv_filter_size * in_filter + 1) * num_filters 
+
+        layer_size = (conv_filter_size * conv_filter_size * in_filter + 1) * num_filters
         #print(layer_size)
         return layer, layer_size
 
@@ -45,15 +45,15 @@ class convnet(object):
 
             layer_conv, layer_conv_size = self.create_convolutional_layer(input=input, in_filter=3,
                                                           conv_filter_size=conv1_filter_size,
-                                                          num_filters=conv1_num_filters, conv_stride=1, 
+                                                          num_filters=conv1_num_filters, conv_stride=1,
                                                           pool_stride=2, conv_padding='SAME', pool_padding='SAME')
-            
+
             self.model_size += layer_conv_size
 
 
             for _ in range(self.model_layer_num):
-                layer_conv, layer_conv_size = self.create_convolutional_layer(input=layer_conv, in_filter=64, 
-                                                          conv_filter_size=conv2_filter_size, 
+                layer_conv, layer_conv_size = self.create_convolutional_layer(input=layer_conv, in_filter=64,
+                                                          conv_filter_size=conv2_filter_size,
                                                           num_filters=conv2_num_filters, conv_stride=1,
                                                           pool_stride=2, conv_padding='SAME', pool_padding='SAME')
                 self.model_size += layer_conv_size
@@ -75,7 +75,7 @@ class convnet(object):
         with tf.name_scope('loss_'+self.net_name):
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
         cross_entropy_cost = tf.reduce_mean(cross_entropy)
-        
+
         with tf.name_scope('optimizer_'+self.net_name):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):
@@ -84,7 +84,7 @@ class convnet(object):
         return train_step
 
     def getModelInstanceName(self):
-        return (self.net_name + " with layer: " + str(self.model_layer_num)) 
-    
+        return (self.net_name + " with layer: " + str(self.model_layer_num))
+
     def getModelMemSize(self):
-        return self.model_size * 4 / 1024 
+        return self.model_size * 4 / 1024
