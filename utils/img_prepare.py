@@ -14,10 +14,10 @@ def image_input(imgDir, img_w, img_h, img_num):
     all_arr = []
     count = 0
     for filename in sorted(os.listdir(imgDir)):
-        #print(filename)
         count+=1
         if count > img_num:
             break
+        print(filename)
         arr_single = read_single_image(imgDir + '/'+ filename, img_w, img_h)
         if arr_single != []:
             if all_arr == []:
@@ -30,25 +30,8 @@ def image_input(imgDir, img_w, img_h, img_num):
 def read_single_image(img_name, img_w, img_h):
     img = cv2.imread(img_name, cv2.IMREAD_COLOR)
     img = cv2.resize(img, (img_w,img_h))
-    img_ext = np.expand_dims(img, axis=0) 
+    img_ext = np.expand_dims(img, axis=0)
     return img_ext
-
-def check_channel_dir(img_dir):
-    for img_name in os.listdir(img_dir):
-        img = plt.imread(img_dir+'/'+img_name)
-        shape = img.shape
-        if len(shape) != 3:
-            print(img_name)
-
-def check_image(img_dir):
-    for filename in sorted(os.listdir(img_dir)):
-        img = cv2.imread(filename, cv2.IMREAD_COLOR)
-        print(filename)
-        try:
-            img_byte = np.array(img, dtype=np.float32)
-        except UserWarning:
-            print('corrupt img', filename)
-
 
 def pickle_save_bin(arr, output_file):
     img_data = {'image': arr}
@@ -65,18 +48,18 @@ def create_tfrecord(tf_writer, img_folder, label_file, img_w, img_h):
         content = lf.readlines()
     labels = [x.strip() for x in content]
 
-    #for idx, img_name in enumerate(os.listdir(img_folder)):
-    #    img_path = img_folder + "/" + img_name
-    #    img = Image.open(img_path)
-    #    img = img.resize((img_w, img_h))
-    #    img_raw = img.tobytes()
-    #    example = tf.train.Example(features=tf.train.Features(feature={
-    #        'label':tf.train.Feature(int64_list=tf.train.Int64List(value=[int(labels[idx])])),
-    #        'img_raw':tf.train.Feature(bytes_list=tf.train.BytesList(value=[img_raw]))
-    #    }))
-    #    tf_writer.write(example.SerializeToString())
+    for idx, img_name in enumerate(os.listdir(img_folder)):
+        img_path = img_folder + "/" + img_name
+        img = cv2.imread(img_name, cv2.IMREAD_COLOR)
+        img = cv2.resize(img, (img_w,img_h))
+        img_raw = img.tobytes()
+        example = tf.train.Example(features=tf.train.Features(feature={
+            'label':tf.train.Feature(int64_list=tf.train.Int64List(value=[int(labels[idx])])),
+            'img_raw':tf.train.Feature(bytes_list=tf.train.BytesList(value=[img_raw]))
+        }))
+        tf_writer.write(example.SerializeToString())
 
-    #tf_writer.close()
+    tf_writer.close()
 
 def read_tfrecord(tf_file, img_w, img_h, num_channels):
     tf_file_queue = tf.train.string_input_producer([tf_file])
@@ -109,12 +92,8 @@ if __name__ == '__main__':
     #print(offset)
     imgDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet150k'
     outDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-    
     arr_input = image_input(imgDir, 224, 224, pack_img_num)
     pickle_save_bin(arr_input, outDir)
-
-    #check_image(imgDir)
-    #check_channel_dir(imgDir)    
 
     #writer = tf.python_io.TFRecordWriter("../dataset/imagenet10k.tfrecords")
     #img_folder = "/home/ruiliu/Development/mtml-tf/dataset/imagenet10k"

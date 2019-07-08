@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#use image_check.py to generate dirty.txt that has all the 1-channel images
 imgStat="/home/ruiliu/Development/mtml-tf/utils/dirty.txt"
 imgDir="/home/ruiliu/Development/mtml-tf/dataset/imagenet150k"
 labelFile="/home/ruiliu/Development/mtml-tf/dataset/imagenet150k-label.txt"

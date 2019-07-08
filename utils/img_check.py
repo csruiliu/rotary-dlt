@@ -1,13 +1,13 @@
 import numpy as np
-from PIL import Image
-import argparse
-parser = argparse.ArgumentParser()
-parser.add_argument('-i', '--img', type=str, help='identify a image to test')
-args = parser.parse_args()
+import matplotlib.pyplot as plt
 
-imgfile = args.img
-img_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
+def check_channel_dir(img_dir):
+    for img_name in os.listdir(img_dir):
+        img = plt.imread(img_dir+'/'+img_name)
+        shape = img.shape
+        if len(shape) != 3:
+            print(img_name)
 
-#img = Image.open(imgfile)
-img = Image.open(img_dir + '/' +imgfile)
-img_byte = np.array(img, dtype=np.float32)
+if __name__ == '__main__':
+    img_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet150k'
+    check_channel_dir(img_dir)
