@@ -12,9 +12,7 @@ def unpickle(path, file_name):
 
 def convert_image(raw_images, img_w, img_h, num_channels):
     raw_float = np.array(raw_images, dtype=float) / 255.0
-    images = raw_float.reshape([-1, num_channels, img_w, img_h])
-    images = images.transpose([0, 2, 3, 1])
-    return images
+    return raw_float
 
 def load_data(path, file_name, img_w, img_h, num_channels):
     data = unpickle(path, file_name)
@@ -81,9 +79,7 @@ def load_images_bin(path, num_channels, img_w, img_h):
         data = pickle.load(file, encoding='bytes')
     raw_images = data['image']
     raw_float = np.array(raw_images, dtype=float) / 255.0
-    images = raw_float.reshape([-1, num_channels, img_w, img_h])
-    images = images.transpose([0, 2, 3, 1])
-    return images
+    return raw_float
 
 
 def load_labels_onehot(path, num_classes):
