@@ -159,6 +159,13 @@ class resnet(object):
 
         return train_step
 
+    def getCost(self, logits, labels):
+        cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
+        cross_entropy_cost = tf.reduce_mean(cross_entropy)
+        return cross_entropy_cost
+
+
+
     def weight_variable(self, shape):
         initial = tf.truncated_normal(shape, stddev=0.1)
         return tf.Variable(initial)

@@ -56,7 +56,7 @@ input_dict = {}
 def prepareModelsMan():
     #Generate all same models 
     model_class_num = [input_model_num]
-    model_class = ["mobilenet"]
+    model_class = ["resnet"]
     all_batch_list = np.repeat(10,input_model_num).tolist()
     #all_batch_list = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
     layer_list = np.repeat(1,input_model_num).tolist()
