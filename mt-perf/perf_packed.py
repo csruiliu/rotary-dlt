@@ -34,34 +34,39 @@ trainCollection = []
 scheduleCollection = []
 batchCollection = []
 
+input_model_num = 3
 
 #features1 = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
 #labels1 = tf.placeholder(tf.int64, [None, numClasses])
 #features2 = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
 #labels2 = tf.placeholder(tf.int64, [None, numClasses])
 
-#bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
-#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k-label.txt'
+#bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
+#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
 bin_dir = '/tank/local/ruiliu/imagenet1k.bin'
 label_path = '/tank/local/ruiliu/imagenet1k-label.txt'
 X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
 Y_data = load_labels_onehot(label_path, numClasses)
 
+names = locals()
+input_dict = {} 
 
-input_var_num = 2
-for idx in range(input_var_num):
-    name='features'+str(idx)
-    locals()['features'+str(idx)] = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
-    name='labels'+str(idx)
-    locals()['labels'+str(idx)] = tf.placeholder(tf.int64, [None, numClasses])
+for idx in range(input_model_num):
+    names['features' + str(idx)] = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+    names['labels' + str(idx)] = tf.placeholder(tf.int64, [None, numClasses])
+    
+    #name='features'+str(idx)
+    #locals()['features'+str(idx)] = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+    #name='labels'+str(idx)
+    #locals()['labels'+str(idx)] = tf.placeholder(tf.int64, [None, numClasses])
 
 def prepareModelsMan():
     #Generate all same models 
-    model_class_num = [2]
+    model_class_num = [input_model_num]
     model_class = ["mobilenet"]
-    all_batch_list = np.repeat(10,2).tolist()
+    all_batch_list = np.repeat(10,input_model_num).tolist()
     #all_batch_list = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
-    layer_list = np.repeat(1,2).tolist()
+    layer_list = np.repeat(1,input_model_num).tolist()
     #layer_list = np.random.choice(np.arange(3,10), 9).tolist()
     #layer_list = [5, 2, 8, 4, 9, 10, 3, 7, 1, 4,2,8,4,3,11]
     model_name_abbr = np.random.choice(100000, sum(model_class_num), replace=False).tolist()
@@ -103,27 +108,15 @@ def saveModelDes():
             file.write('=======================\n')
 
 def buildModels():
-    count = 0
-    for midx in modelCollection:
-        count+=1
-        if count == 1:
-            modelEntity = midx.getModelEntity()
-            modelEntityCollection.append(modelEntity)
-            modelLogit = modelEntity.build(features0)
-            modelTrain = modelEntity.cost(modelLogit,labels0)
-            trainUnit = []
-            trainUnit.append(modelTrain)
-            trainUnit.append(midx.getBatchSize())
-            trainCollection.append(trainUnit)
-        elif count == 2:
-            modelEntity = midx.getModelEntity()
-            modelEntityCollection.append(modelEntity)
-            modelLogit = modelEntity.build(features1)
-            modelTrain = modelEntity.cost(modelLogit,labels1)
-            trainUnit = []
-            trainUnit.append(modelTrain)
-            trainUnit.append(midx.getBatchSize())
-            trainCollection.append(trainUnit)
+    for midx, mc in enumerate(modelCollection):
+        modelEntity = mc.getModelEntity()
+        modelEntityCollection.append(modelEntity)
+        modelLogit = modelEntity.build(names['features' + str(midx)])
+        modelTrain = modelEntity.cost(modelLogit, names['labels' + str(midx)])
+        trainUnit = []
+        trainUnit.append(modelTrain)
+        trainUnit.append(mc.getBatchSize())
+        trainCollection.append(trainUnit)
 
 def schedulePack():
     schUnit = []
@@ -156,12 +149,18 @@ def executeSch(sch_unit, batch_unit, num_epoch, X_train, Y_train):
                         Y_mini_batch_feed = Y_train[rand_idx:rand_idx+mini_batches,:]
                     else:
                         #print(i)
-                        X_mini_batch_feed1 = X_train[i:i+mini_batches,:,:,:]
-                        Y_mini_batch_feed1 = Y_train[i:i+mini_batches,:]
-                        rand_idx = int(np.random.choice(num_batch_list, 1, replace=False))
-                        X_mini_batch_feed2 = X_train[rand_idx:rand_idx+mini_batches,:,:,:]
-                        Y_mini_batch_feed2 = Y_train[rand_idx:rand_idx+mini_batches,:]
-                        sess.run(sch_unit, feed_dict={features0: X_mini_batch_feed1, labels0: Y_mini_batch_feed1, features1: X_mini_batch_feed2, labels1: Y_mini_batch_feed2})
+                        #X_mini_batch_feed1 = X_train[i:i+mini_batches,:,:,:]
+                        #Y_mini_batch_feed1 = Y_train[i:i+mini_batches,:]
+                        
+                        for ridx in range(input_model_num):
+                            rand_idx = int(np.random.choice(num_batch_list, 1, replace=False))
+                            names['X_mini_batch_feed' + str(ridx)] = X_train[rand_idx:rand_idx+mini_batches,:,:,:]
+                            names['Y_mini_batch_feed' + str(ridx)] = Y_train[rand_idx:rand_idx+mini_batches,:]
+                            input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
+                            input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
+                        sess.run(sch_unit, feed_dict=input_dict)
+                        
+                        #sess.run(sch_unit, feed_dict={features0: X_mini_batch_feed1, labels0: Y_mini_batch_feed1, features1: X_mini_batch_feed2, labels1: Y_mini_batch_feed2})
     else:
         for idx, batch in enumerate(batch_unit):
             with tf.Session(config=config) as sess:
@@ -179,7 +178,7 @@ def executeSch(sch_unit, batch_unit, num_epoch, X_train, Y_train):
                         else:
                             X_mini_batch_feed = X_train[i:i+mini_batches,:,:,:]
                             Y_mini_batch_feed = Y_train[i:i+mini_batches,:]
-                        sess.run(sch_unit[idx], feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                        #sess.run(sch_unit[idx], feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
 
 if __name__ == '__main__':
