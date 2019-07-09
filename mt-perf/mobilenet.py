@@ -108,6 +108,12 @@ class mobilenet(object):
 
         return train_step
 
+    def getCost(self, logits, labels):
+        cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
+        cross_entropy_cost = tf.reduce_mean(cross_entropy)
+        return cross_entropy_cost
+
+
     def getModelInstanceName(self):
         return (self.net_name + " with layer: " + str(self.model_layer_num))
 

@@ -34,31 +34,24 @@ trainCollection = []
 scheduleCollection = []
 batchCollection = []
 
-input_model_num = 3
+input_model_num = 5
 
-#features1 = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
-#labels1 = tf.placeholder(tf.int64, [None, numClasses])
-#features2 = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
-#labels2 = tf.placeholder(tf.int64, [None, numClasses])
+features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+labels = tf.placeholder(tf.int64, [None, numClasses])
 
 #bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
 #label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-bin_dir = '/tank/local/ruiliu/imagenet1k.bin'
-label_path = '/tank/local/ruiliu/imagenet1k-label.txt'
+bin_dir = '/tank/local/ruiliu/imagenet10k.bin'
+label_path = '/tank/local/ruiliu/imagenet10k-label.txt'
 X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
 Y_data = load_labels_onehot(label_path, numClasses)
 
 names = locals()
-input_dict = {} 
+input_dict = {}
 
-for idx in range(input_model_num):
-    names['features' + str(idx)] = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
-    names['labels' + str(idx)] = tf.placeholder(tf.int64, [None, numClasses])
-    
-    #name='features'+str(idx)
-    #locals()['features'+str(idx)] = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
-    #name='labels'+str(idx)
-    #locals()['labels'+str(idx)] = tf.placeholder(tf.int64, [None, numClasses])
+#for idx in range(input_model_num):
+#    names['features' + str(idx)] = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+#    names['labels' + str(idx)] = tf.placeholder(tf.int64, [None, numClasses])
 
 def prepareModelsMan():
     #Generate all same models 
@@ -111,12 +104,32 @@ def buildModels():
     for midx, mc in enumerate(modelCollection):
         modelEntity = mc.getModelEntity()
         modelEntityCollection.append(modelEntity)
-        modelLogit = modelEntity.build(names['features' + str(midx)])
-        modelTrain = modelEntity.cost(modelLogit, names['labels' + str(midx)])
+        #modelLogit = modelEntity.build(names['features' + str(midx)])
+        modelLogit = modelEntity.build(features)
+        #modelTrain = modelEntity.cost(modelLogit, names['labels' + str(midx)])
+        modelTrain = modelEntity.cost(modelLogit, labels)
         trainUnit = []
         trainUnit.append(modelTrain)
         trainUnit.append(mc.getBatchSize())
         trainCollection.append(trainUnit)
+
+def buildCombineModels():
+    combineTrain = 0
+    for midx, mc in enumerate(modelCollection):
+        modelEntity = mc.getModelEntity()
+        modelEntityCollection.append(modelEntity)
+        #modelLogit = modelEntity.build(names['features' + str(midx)])
+        modelLogit = modelEntity.build(features)
+        #modelTrain = modelEntity.cost(modelLogit, names['labels' + str(midx)])
+        modelTrain = modelEntity.getCost(modelLogit, labels)
+        combineTrain += modelTrain
+        trainUnit = []
+        trainUnit.append(modelTrain)
+        trainUnit.append(mc.getBatchSize())
+        trainCollection.append(trainUnit)
+    return combineTrain
+    #for tidx in TrainCollection:
+
 
 def schedulePack():
     schUnit = []
@@ -149,18 +162,16 @@ def executeSch(sch_unit, batch_unit, num_epoch, X_train, Y_train):
                         Y_mini_batch_feed = Y_train[rand_idx:rand_idx+mini_batches,:]
                     else:
                         #print(i)
-                        #X_mini_batch_feed1 = X_train[i:i+mini_batches,:,:,:]
-                        #Y_mini_batch_feed1 = Y_train[i:i+mini_batches,:]
-                        
-                        for ridx in range(input_model_num):
-                            rand_idx = int(np.random.choice(num_batch_list, 1, replace=False))
-                            names['X_mini_batch_feed' + str(ridx)] = X_train[rand_idx:rand_idx+mini_batches,:,:,:]
-                            names['Y_mini_batch_feed' + str(ridx)] = Y_train[rand_idx:rand_idx+mini_batches,:]
-                            input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
-                            input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
-                        sess.run(sch_unit, feed_dict=input_dict)
-                        
-                        #sess.run(sch_unit, feed_dict={features0: X_mini_batch_feed1, labels0: Y_mini_batch_feed1, features1: X_mini_batch_feed2, labels1: Y_mini_batch_feed2})
+                        X_mini_batch_feed = X_train[i:i+mini_batches,:,:,:]
+                        Y_mini_batch_feed = Y_train[i:i+mini_batches,:]
+                        #for ridx in range(input_model_num):
+                        #    rand_idx = int(np.random.choice(num_batch_list, 1))
+                        #    names['X_mini_batch_feed' + str(ridx)] = X_train[rand_idx:rand_idx+mini_batches,:,:,:]
+                        #    names['Y_mini_batch_feed' + str(ridx)] = Y_train[rand_idx:rand_idx+mini_batches,:]
+                        #    input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
+                        #    input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
+                        #sess.run(sch_unit, feed_dict=input_dict)
+                        sess.run(sch_unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
     else:
         for idx, batch in enumerate(batch_unit):
             with tf.Session(config=config) as sess:
@@ -192,12 +203,13 @@ if __name__ == '__main__':
     print("channel of input images:", numChannels)
     with tf.device(deviceId):
         prepareModelsMan()
-
         printAllModels()
+        #trainStep=buildCombineModels()
         buildModels()
         schedulePack()
         for idx, sit in enumerate(scheduleCollection):
             p = Process(target=executeSch, args=(sit[0], sit[1], numEpochs, X_data, Y_data,))
+            #p = Process(target=executeSch, args=(trainStep, sit[1], numEpochs, X_data, Y_data,))
             p.start()
             print(p.pid)
             p.join()
