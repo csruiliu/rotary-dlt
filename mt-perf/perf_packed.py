@@ -12,21 +12,25 @@ import datetime
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('-g', '--gpuid', type=int, default=0, help='identify a GPU to run')
+parser.add_argument('-bs', '--batchsize', type=int, default=10, help='identify the training batch size')
 parser.add_argument('-iw', '--imgw', type=int, default=224, help='identify the weight of img')
 parser.add_argument('-ih', '--imgh', type=int, default=224, help='identify the height of img')
 parser.add_argument('-cls', '--clazz', type=int, default=1000, help='predication classes')
 parser.add_argument('-ch', '--channel', type=int, default=3, help='identify the channel of input images')
 parser.add_argument('-e', '--epoch', type=int, default=1, help='identify the epoch numbers')
-parser.add_argument('-s', '--shuffle', action='store_true', default=False, help='use shuffle batch input or not')
+parser.add_argument('-s', '--shuffle', action='store_true', default=False, help='use shuffle the batch input or not, default is sequential, if use different batch size, then this config will be ignored')
+parser.add_argument('-d', '--diff', action='store_true', default=False, help='use different batch input for each model in the packed api, default is all the models in packed use all input batch')
 args = parser.parse_args()
 
 gpuId = args.gpuid
+batchSize = args.batchsize
 imgWidth = args.imgw
 imgHeight = args.imgh
 numClasses = args.clazz
 numChannels = args.channel
 numEpochs = args.epoch
 isShuffle = args.shuffle
+isDiffernetBatch = args.diff
 
 modelCollection = []
 modelEntityCollection = []
@@ -34,31 +38,31 @@ trainCollection = []
 scheduleCollection = []
 batchCollection = []
 
-input_model_num = 5
+input_model_num = 2
 
-features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
-labels = tf.placeholder(tf.int64, [None, numClasses])
-
-#bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-bin_dir = '/tank/local/ruiliu/imagenet10k.bin'
-label_path = '/tank/local/ruiliu/imagenet10k-label.txt'
+bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
+label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+#bin_dir = '/tank/local/ruiliu/imagenet10k.bin'
+#label_path = '/tank/local/ruiliu/imagenet10k-label.txt'
 X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
 Y_data = load_labels_onehot(label_path, numClasses)
 
-names = locals()
-input_dict = {}
+if isDiffernetBatch:
+    names = locals()
+    input_dict = {}
+    for idx in range(input_model_num):
+        names['features' + str(idx)] = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+        names['labels' + str(idx)] = tf.placeholder(tf.int64, [None, numClasses])
+else:
+    features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+    labels = tf.placeholder(tf.int64, [None, numClasses])
 
-#for idx in range(input_model_num):
-#    names['features' + str(idx)] = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
-#    names['labels' + str(idx)] = tf.placeholder(tf.int64, [None, numClasses])
 
 def prepareModelsMan():
     #Generate all same models 
     model_class_num = [input_model_num]
-    model_class = ["resnet"]
-    all_batch_list = np.repeat(10,input_model_num).tolist()
-    #all_batch_list = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
+    model_class = ["mobilenet"]
+    all_batch_list = np.repeat(batchSize,input_model_num).tolist()
     layer_list = np.repeat(1,input_model_num).tolist()
     #layer_list = np.random.choice(np.arange(3,10), 9).tolist()
     #layer_list = [5, 2, 8, 4, 9, 10, 3, 7, 1, 4,2,8,4,3,11]
@@ -67,16 +71,6 @@ def prepareModelsMan():
         for _ in range(model_class_num[idx]):
             dm = DnnModel(mls, str(model_name_abbr.pop()), model_layer=layer_list.pop(), input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=all_batch_list.pop(), desired_accuracy=0.9)
             modelCollection.append(dm)
-
-    #modelClass = ["resnet", "mobilenet", "perceptron", "convnet"]
-    #modelNum = [1,1,1,1]
-    #all_batch_list = [20, 20, 20, 20]
-    #layer_list = [4, 8, 1, 1]
-    #modelNameAddr = np.random.choice(100000, 4, replace=False).tolist()
-    #dm1 = DnnModel("mobilenet", str(modelNameAddr.pop()), model_layer=1, input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=10, desired_accuracy=0.9)
-    #dm2 = DnnModel("resnet",str(modelNameAddr.pop()), model_layer=1, input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=10, desired_accuracy=0.9)
-    #modelCollection.append(dm1)
-    #modelCollection.append(dm2)
 
 def printAllModels():
     for idm in modelCollection:
@@ -100,103 +94,85 @@ def saveModelDes():
             file.write('input batch size: '+ str(batchSize)+ '\n')
             file.write('=======================\n')
 
-def buildModels():
+def buildPackedModels():
     for midx, mc in enumerate(modelCollection):
         modelEntity = mc.getModelEntity()
         modelEntityCollection.append(modelEntity)
-        #modelLogit = modelEntity.build(names['features' + str(midx)])
-        modelLogit = modelEntity.build(features)
-        #modelTrain = modelEntity.cost(modelLogit, names['labels' + str(midx)])
-        modelTrain = modelEntity.cost(modelLogit, labels)
-        trainUnit = []
-        trainUnit.append(modelTrain)
-        trainUnit.append(mc.getBatchSize())
-        trainCollection.append(trainUnit)
+        if isDiffernetBatch:
+            modelLogit = modelEntity.build(names['features' + str(midx)])
+            modelTrain = modelEntity.cost(modelLogit, names['labels' + str(midx)])
+        else:
+            modelLogit = modelEntity.build(features)
+            modelTrain = modelEntity.cost(modelLogit, labels)
+        trainCollection.append(modelTrain)
 
-def buildCombineModels():
+def buildPackedModelsCombine():
     combineTrain = 0
     for midx, mc in enumerate(modelCollection):
         modelEntity = mc.getModelEntity()
-        modelEntityCollection.append(modelEntity)
-        #modelLogit = modelEntity.build(names['features' + str(midx)])
         modelLogit = modelEntity.build(features)
-        #modelTrain = modelEntity.cost(modelLogit, names['labels' + str(midx)])
-        modelTrain = modelEntity.getCost(modelLogit, labels)
+        modelTrain = modelEntity.cost(modelLogit, labels)
         combineTrain += modelTrain
-        trainUnit = []
-        trainUnit.append(modelTrain)
-        trainUnit.append(mc.getBatchSize())
-        trainCollection.append(trainUnit)
     return combineTrain
-    #for tidx in TrainCollection:
 
-
-def schedulePack():
-    schUnit = []
-    trainUnit = []
-    batchUnit = []
-    for tit in trainCollection:
-        trainUnit.append(tit[0])
-    batchUnit.append(trainCollection[0][1])
-    schUnit.append(trainUnit)
-    schUnit.append(batchUnit)
-    scheduleCollection.append(schUnit)
-
-def executeSch(sch_unit, batch_unit, num_epoch, X_train, Y_train):
+def executePack(train_collection, num_epoch, X_train, Y_train):
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
-    if len(batch_unit) == 1:
-        with tf.Session(config=config) as sess:
-            sess.run(tf.global_variables_initializer())
-            mini_batches = batch_unit[0]
-            num_batch = Y_train.shape[0] // mini_batches
-            num_batch_list = np.arange(num_batch)
-            for e in range(num_epoch):
-                for i in range(num_batch):
-                    print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
+    with tf.Session(config=config) as sess:
+        sess.run(tf.global_variables_initializer())
+        num_batch = Y_train.shape[0] // batchSize
+        num_batch_list = np.arange(num_batch)
+        for e in range(num_epoch):
+            for i in range(num_batch):
+                print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
+                if isDiffernetBatch:
+                    for ridx in range(input_model_num):
+                        rand_idx = int(np.random.choice(num_batch_list, 1))
+                        names['X_mini_batch_feed' + str(ridx)] = X_train[rand_idx:rand_idx+batchSize,:,:,:]
+                        names['Y_mini_batch_feed' + str(ridx)] = Y_train[rand_idx:rand_idx+batchSize,:]
+                        input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
+                        input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
+                    sess.run(train_collection, feed_dict=input_dict)
+                else:
                     if isShuffle:
                         rand_idx = int(np.random.choice(num_batch_list, 1, replace=False))
-                        #print(rand_idx)
-                        X_mini_batch_feed = X_train[rand_idx:rand_idx+mini_batches,:,:,:]
-                        Y_mini_batch_feed = Y_train[rand_idx:rand_idx+mini_batches,:]
+                        X_mini_batch_feed = X_train[rand_idx:rand_idx+batchSize,:,:,:]
+                        Y_mini_batch_feed = Y_train[rand_idx:rand_idx+batchSize,:]
                     else:
-                        #print(i)
-                        X_mini_batch_feed = X_train[i:i+mini_batches,:,:,:]
-                        Y_mini_batch_feed = Y_train[i:i+mini_batches,:]
-                        #for ridx in range(input_model_num):
-                        #    rand_idx = int(np.random.choice(num_batch_list, 1))
-                        #    names['X_mini_batch_feed' + str(ridx)] = X_train[rand_idx:rand_idx+mini_batches,:,:,:]
-                        #    names['Y_mini_batch_feed' + str(ridx)] = Y_train[rand_idx:rand_idx+mini_batches,:]
-                        #    input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
-                        #    input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
-                        #sess.run(sch_unit, feed_dict=input_dict)
-                        sess.run(sch_unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-    else:
-        for idx, batch in enumerate(batch_unit):
-            with tf.Session(config=config) as sess:
-                sess.run(tf.global_variables_initializer())
-                mini_batches = batch
-                num_batch = Y_train.shape[0] // mini_batches
-                num_batch_list = np.arange(num_batch)
-                for e in range(num_epoch):
-                    for i in range(num_batch):
-                        print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
-                        if isShuffle:
-                            rand_idx = np.random.choice(num_batch_list, 1, replace=False)
-                            X_mini_batch_feed = X_train[rand_idx:rand_idx+mini_batches,:,:,:]
-                            Y_mini_batch_feed = Y_train[rand_idx:rand_idx+mini_batches,:]
-                        else:
-                            X_mini_batch_feed = X_train[i:i+mini_batches,:,:,:]
-                            Y_mini_batch_feed = Y_train[i:i+mini_batches,:]
-                        #sess.run(sch_unit[idx], feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                        X_mini_batch_feed = X_train[i:i+batchSize,:,:,:]
+                        Y_mini_batch_feed = Y_train[i:i+batchSize,:]
+                    sess.run(train_collection, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+
+
+def executePackCombine(train_collection_combine, num_epoch, X_train, Y_train):
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    config.allow_soft_placement = True
+    with tf.Session(config=config) as sess:
+        sess.run(tf.global_variables_initializer())
+        num_batch = Y_train.shape[0] // batchSize
+        num_batch_list = np.arange(num_batch)
+        for e in range(num_epoch):
+            for i in range(num_batch):
+                print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
+                if isShuffle:
+                    rand_idx = int(np.random.choice(num_batch_list, 1, replace=False))
+                    X_mini_batch_feed = X_train[rand_idx:rand_idx+batchSize,:,:,:]
+                    Y_mini_batch_feed = Y_train[rand_idx:rand_idx+batchSize,:]
+                else:
+                    X_mini_batch_feed = X_train[i:i+batchSize,:,:,:]
+                    Y_mini_batch_feed = Y_train[i:i+batchSize,:]
+                sess.run(train_collection_combine, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                
 
 
 if __name__ == '__main__':
     deviceId = '/device:GPU:' + str(gpuId)
     print("run gpu:", deviceId)
     print("training epochs:", numEpochs)
-    print("shuffle input:", isShuffle)
+    print("is shuffle input:", isShuffle)
+    print("is different batch input:", isDiffernetBatch)
     print("input image width:", imgWidth)
     print("input image height", imgHeight)
     print("prediction classes:", numClasses)
@@ -204,13 +180,7 @@ if __name__ == '__main__':
     with tf.device(deviceId):
         prepareModelsMan()
         printAllModels()
-        #trainStep=buildCombineModels()
-        buildModels()
-        schedulePack()
-        for idx, sit in enumerate(scheduleCollection):
-            p = Process(target=executeSch, args=(sit[0], sit[1], numEpochs, X_data, Y_data,))
-            #p = Process(target=executeSch, args=(trainStep, sit[1], numEpochs, X_data, Y_data,))
-            p.start()
-            print(p.pid)
-            p.join()
-
+        trainStep=buildPackedModelsCombine()
+        #buildPackedModels()
+        #executePack(trainCollection, numEpochs, X_data, Y_data)
+        executePackCombine(trainStep, numEpochs, X_data, Y_data)    
