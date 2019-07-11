@@ -111,9 +111,15 @@ def buildPackedModelsCombine():
     for midx, mc in enumerate(modelCollection):
         modelEntity = mc.getModelEntity()
         modelLogit = modelEntity.build(features)
-        modelTrain = modelEntity.cost(modelLogit, labels)
+        modelTrain = modelEntity.getCost(modelLogit, labels)
         combineTrain += modelTrain
-    return combineTrain
+
+    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    with tf.control_dependencies(update_ops):
+        train_step = tf.train.AdamOptimizer(1e-4).minimize(combineTrain)
+
+    return train_step
+
 
 def executePack(train_collection, num_epoch, X_train, Y_train):
     config = tf.ConfigProto()
@@ -180,7 +186,7 @@ if __name__ == '__main__':
     with tf.device(deviceId):
         prepareModelsMan()
         printAllModels()
-        trainStep=buildPackedModelsCombine()
-        #buildPackedModels()
-        #executePack(trainCollection, numEpochs, X_data, Y_data)
-        executePackCombine(trainStep, numEpochs, X_data, Y_data)    
+        buildPackedModels()
+        executePack(trainCollection, numEpochs, X_data, Y_data)
+        #trainStep=buildPackedModelsCombine()
+        #executePackCombine(trainStep, numEpochs, X_data, Y_data)    
