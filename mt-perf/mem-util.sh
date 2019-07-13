@@ -1,17 +1,31 @@
 #datetime=$(date +%Y%m%d%H%M)
 #timestamp=$(date +%Y%m%d%H%M%S.%3N)
 
+#Query Type can be one of the following:
+#utilization.gpu
+#utilization.memory
+#memory.total
+#memory.free
+#memory.used
+
+
 PYCMD=""
-while getopts "f:g:e:w:h:s" opt; do
+while getopts "f:q:g:e:w:h:s:d" opt; do
     case $opt in
         f)
         fileName=$OPTARG
+        ;;
+        q)
+        queryType=$OPTARG
         ;;
         g)
         pycmd+=" -g $OPTARG"
         ;;
         e)
         pycmd+=" -e $OPTARG"
+        ;;
+        b)
+        pycmd+=" -bs $OPTARG"
         ;;
         w)
         pycmd+=" -iw $OPTARG"
@@ -21,10 +35,15 @@ while getopts "f:g:e:w:h:s" opt; do
         ;;
         s)
         pycmd+=" -s"
+        ;;
+        d)
+        pycmd+=" -d"
+        ;;
     esac
 done
 
-FilePath=/home/ruiliu/Development/mtml-tf/mt-perf/exp-result/$fileName 
+#FilePath=/home/ruiliu/Development/mtml-tf/mt-perf/exp-result/$fileName 
+FilePath=/tank/local/ruiliu/mtml-tf/mt-perf/exp-result/$fileName
 
 if [ -f $FilePath ]
 then
@@ -33,7 +52,7 @@ then
 fi
 
 python3 perf_packed.py$PYCMD &
-nvidia-smi --query-gpu=utilization.memory --format=csv --loop-ms=100 >> $FilePath &
+nvidia-smi --query-gpu=$queryType --format=csv --loop-ms=100 >> $FilePath &
 wait -n
 sleep 5
 pkill -P $$

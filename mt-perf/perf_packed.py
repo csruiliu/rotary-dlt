@@ -38,12 +38,12 @@ trainCollection = []
 scheduleCollection = []
 batchCollection = []
 
-input_model_num = 2
+input_model_num = 5
 
-bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-#bin_dir = '/tank/local/ruiliu/imagenet10k.bin'
-#label_path = '/tank/local/ruiliu/imagenet10k-label.txt'
+#bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
+#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
+label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
 X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
 Y_data = load_labels_onehot(label_path, numClasses)
 
@@ -170,7 +170,6 @@ def executePackCombine(train_collection_combine, num_epoch, X_train, Y_train):
                     X_mini_batch_feed = X_train[i:i+batchSize,:,:,:]
                     Y_mini_batch_feed = Y_train[i:i+batchSize,:]
                 sess.run(train_collection_combine, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-                
 
 
 if __name__ == '__main__':
