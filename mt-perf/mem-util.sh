@@ -42,6 +42,7 @@ while getopts "f:q:g:e:w:h:s:d" opt; do
     esac
 done
 
+#tank is a local disk of the server
 #FilePath=/home/ruiliu/Development/mtml-tf/mt-perf/exp-result/$fileName 
 FilePath=/tank/local/ruiliu/mtml-tf/mt-perf/exp-result/$fileName
 
