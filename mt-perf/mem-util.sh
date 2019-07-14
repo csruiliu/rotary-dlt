@@ -10,7 +10,7 @@
 
 
 PYCMD=""
-while getopts "f:q:g:e:w:h:s:d" opt; do
+while getopts "f:q:g:e:w:h:sdl:" opt; do
     case $opt in
         f)
         fileName=$OPTARG
@@ -39,6 +39,9 @@ while getopts "f:q:g:e:w:h:s:d" opt; do
         d)
         pycmd+=" -d"
         ;;
+        l)
+        lms=$OPTARG
+        ;;
     esac
 done
 
@@ -53,7 +56,7 @@ then
 fi
 
 python3 perf_packed.py$PYCMD &
-nvidia-smi --query-gpu=$queryType --format=csv --loop-ms=100 >> $FilePath &
+nvidia-smi --query-gpu=$queryType --format=csv --loop-ms=$lms >> $FilePath &
 wait -n
 sleep 5
 pkill -P $$
