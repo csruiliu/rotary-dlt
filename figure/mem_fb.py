@@ -17,25 +17,59 @@ csvpath = args.csvfile
 outpath = csvpath.replace('.csv','.png')
 expName = csvpath.split('.')[0]
 
-y = []
+mem_total = []
+mem_free = []
+mem_used = []
+mem_util = []
+gpu_util = []
 count = 1
 with open(csvpath,'r') as csvfile:
     next(csvfile)
-    read = csv.reader(csvfile, delimiter=' ')
+    read = csv.reader(csvfile, delimiter=',')
     for row in read:
-        y.append(int(row[0]))
+        mem_used.append(int(row[0].replace(' MiB','')))
+        mem_free.append(int(row[1].replace(' MiB','')))
+        mem_total.append(int(row[2].replace(' MiB','')))
+        mem_util.append(int(row[3].replace(' %','')))
+        gpu_util.append(int(row[4].replace(' %','')))
         count += 1
 
+barWidth=1
+
 x = np.arange(1, count)
+
+#print(np.arange(0,16278,3255))
 
 ax = plt.axes()
 ax.tick_params(direction='in')
 ax.grid(linestyle='--')
-plt.plot(x,y)
 plt.title(expName)
-plt.yticks(np.arange(0,16278,3200), ('0%', '20%', '40%', '60%', '80%', '100%'))
+
+fig = plt.gcf()
+fig.set_size_inches(12, 4)
+
+plt.subplot(1, 2, 1)
+
+plt.bar(x, mem_used, width=barWidth, label='mem used')
+plt.bar(x, mem_free, bottom=mem_used, width=barWidth, label='mem free')
+plt.plot(x, mem_total, linewidth=3.0, color='g', label='mem total')
+
+plt.yticks(np.arange(0,16278,3255), ('0%', '20%', '40%', '60%', '80%', '100%'))
 plt.xlabel("Total Training Time (ms)")
-plt.ylabel("GPU Free Memory")
+plt.ylabel("GPU Memory")
+plt.legend(loc='lower center')
+
+plt.subplot(1, 2, 2)
+
+plt.plot(x, gpu_util, color='b', label='gpu util')
+plt.plot(x, mem_util, color='r', label='mem util')
+
+plt.yticks(np.arange(0,103,20), ('0%', '20%', '40%', '60%', '80%', '100%'))
+plt.xlabel("Total Training Time (ms)")
+plt.ylabel("Utilization")
+plt.legend(loc='lower center')
+
 #plt.show()
-plt.savefig(outpath,format='png')
+plt.tight_layout()
+fig.savefig(outpath,format='png')
 
