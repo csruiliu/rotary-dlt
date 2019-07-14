@@ -175,6 +175,7 @@ def executePackCombine(train_collection_combine, num_epoch, X_train, Y_train):
 if __name__ == '__main__':
     deviceId = '/device:GPU:' + str(gpuId)
     print("run gpu:", deviceId)
+    print("training batch size", batchSize)
     print("training epochs:", numEpochs)
     print("is shuffle input:", isShuffle)
     print("is different batch input:", isDiffernetBatch)

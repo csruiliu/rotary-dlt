@@ -10,7 +10,7 @@
 
 
 PYCMD=""
-while getopts "f:q:g:e:w:h:sdl:" opt; do
+while getopts "f:q:g:e:b:w:h:sdl:" opt; do
     case $opt in
         f)
         fileName=$OPTARG
@@ -19,25 +19,25 @@ while getopts "f:q:g:e:w:h:sdl:" opt; do
         queryType=$OPTARG
         ;;
         g)
-        pycmd+=" -g $OPTARG"
+        PYCMD+=" -g $OPTARG"
         ;;
         e)
-        pycmd+=" -e $OPTARG"
+        PYCMD+=" -e $OPTARG"
         ;;
         b)
-        pycmd+=" -bs $OPTARG"
+        PYCMD+=" -bs $OPTARG"
         ;;
         w)
-        pycmd+=" -iw $OPTARG"
+        PYCMD+=" -iw $OPTARG"
         ;;
         h)
-        pycmd+=" -ih $OPTARG"
+        PYCMD+=" -ih $OPTARG"
         ;;
         s)
-        pycmd+=" -s"
+        PYCMD+=" -s"
         ;;
         d)
-        pycmd+=" -d"
+        PYCMD+=" -d"
         ;;
         l)
         lms=$OPTARG
@@ -54,6 +54,8 @@ then
     echo "log file exists, removing it"
     rm $FilePath
 fi
+
+#echo $PYCMD
 
 python3 perf_packed.py$PYCMD &
 nvidia-smi --query-gpu=$queryType --format=csv --loop-ms=$lms >> $FilePath &
