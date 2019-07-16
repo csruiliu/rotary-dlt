@@ -42,12 +42,12 @@ trainCollection = []
 scheduleCollection = []
 batchCollection = []
 
-input_model_num = 1
+input_model_num = 5
 
 #bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
 #label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
-label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
+bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
+label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
 X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
 Y_data = load_labels_onehot(label_path, numClasses)
 
@@ -167,7 +167,7 @@ def executePack(train_collection, num_epoch, X_train, Y_train):
                     model_profiler.add_step(step=i, run_meta=run_metadata)
         
         profile_graph_opts_builder = option_builder.ProfileOptionBuilder(option_builder.ProfileOptionBuilder.time_and_memory())
-        profile_graph_opts_builder.with_timeline_output(timeline_file='/tank/ruiliu/mtml-tf/mt-perf/profile_dir/mobile-m1-b10/model_profiler.json')
+        profile_graph_opts_builder.with_timeline_output(timeline_file='/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir/mobile-m5-b20-1k-diff/model_profiler.json')
         #profile_graph_opts_builder.with_timeline_output(timeline_file='/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir/mobile-m5-b10/model_profiler.json')
         model_profiler.profile_graph(profile_graph_opts_builder.build())
 

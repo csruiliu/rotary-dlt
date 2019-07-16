@@ -10,9 +10,12 @@
 
 
 PYCMD=""
+NVISMI=""
+lms=10
+queryType="memory.gpu"
 while getopts "f:q:g:e:b:w:h:sdl:" opt; do
     case $opt in
-        f)
+        f)        
         fileName=$OPTARG
         ;;
         q)
