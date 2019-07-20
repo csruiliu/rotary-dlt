@@ -51,7 +51,6 @@ label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
 X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
 Y_data = load_labels_onehot(label_path, numClasses)
 
-
 profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir/test'
 
 if isDiffernetBatch:
