@@ -79,6 +79,7 @@ def load_images_bin(path, num_channels, img_w, img_h):
         data = pickle.load(file, encoding='bytes')
     raw_images = data['image']
     raw_float = np.array(raw_images, dtype=float) / 255.0
+    #raw_float = raw_float.transpose([0, 3, 1, 2])
     return raw_float
 
 

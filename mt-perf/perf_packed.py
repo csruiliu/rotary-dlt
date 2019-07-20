@@ -42,7 +42,7 @@ trainCollection = []
 scheduleCollection = []
 batchCollection = []
 
-input_model_num = 5
+input_model_num = 1
 
 #bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
 #label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
@@ -51,21 +51,26 @@ label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
 X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
 Y_data = load_labels_onehot(label_path, numClasses)
 
+
+profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir/test'
+
 if isDiffernetBatch:
     names = locals()
     input_dict = {}
     for idx in range(input_model_num):
-        names['features' + str(idx)] = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
-        names['labels' + str(idx)] = tf.placeholder(tf.int64, [None, numClasses])
+        names['features' + str(idx)] = tf.compat.v1.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+        names['labels' + str(idx)] = tf.compat.v1.placeholder(tf.int64, [None, numClasses])
 else:
-    features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
-    labels = tf.placeholder(tf.int64, [None, numClasses])
+    features = tf.compat.v1.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+    labels = tf.compat.v1.placeholder(tf.int64, [None, numClasses])
+    #features = tf.compat.v1.placeholder(tf.float32, [None, numChannels, imgWidth, imgHeight])
+    #labels = tf.compat.v1.placeholder(tf.int64, [None, numClasses])
 
 
 def prepareModelsMan():
     #Generate all same models 
     model_class_num = [input_model_num]
-    model_class = ["mobilenet"]
+    model_class = ["resnet"]
     all_batch_list = np.repeat(batchSize,input_model_num).tolist()
     layer_list = np.repeat(1,input_model_num).tolist()
     #layer_list = np.random.choice(np.arange(3,10), 9).tolist()
@@ -126,50 +131,45 @@ def buildPackedModelsCombine():
 
 
 def executePack(train_collection, num_epoch, X_train, Y_train):
-    config = tf.ConfigProto()
+    config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
     
     #builder = tf.profiler.ProfileOptionBuilder
     #opts = builder(builder.time_and_memory()).order_by('micros').build()
-
-    run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-    run_metadata = tf.RunMetadata()
-    #with tf.contrib.tfprof.ProfileContext('./train_dir', trace_steps=range(0, 2), dump_steps=range(0, 2)) as pctx:
-    with tf.Session(config=config) as sess:
-        sess.run(tf.global_variables_initializer())
-        model_profiler = model_analyzer.Profiler(graph=sess.graph)
-        num_batch = Y_train.shape[0] // batchSize
-        num_batch_list = np.arange(num_batch)
-        for e in range(num_epoch):
-            for i in range(num_batch):
-                print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
-                if isDiffernetBatch:
-                    for ridx in range(input_model_num):
-                        rand_idx = int(np.random.choice(num_batch_list, 1))
-                        names['X_mini_batch_feed' + str(ridx)] = X_train[rand_idx:rand_idx+batchSize,:,:,:]
-                        names['Y_mini_batch_feed' + str(ridx)] = Y_train[rand_idx:rand_idx+batchSize,:]
-                        input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
-                        input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
-                    #sess.run(train_collection, feed_dict=input_dict)
-                    sess.run(train_collection, feed_dict=input_dict, options=run_options, run_metadata=run_metadata)
-                    model_profiler.add_step(step=i, run_meta=run_metadata)
-                else:
-                    if isShuffle:
-                        rand_idx = int(np.random.choice(num_batch_list, 1, replace=False))
-                        X_mini_batch_feed = X_train[rand_idx:rand_idx+batchSize,:,:,:]
-                        Y_mini_batch_feed = Y_train[rand_idx:rand_idx+batchSize,:]
+    run_options = tf.compat.v1.RunOptions(trace_level=tf.compat.v1.RunOptions.FULL_TRACE)
+    run_metadata = tf.compat.v1.RunMetadata()
+    
+    with tf.contrib.tfprof.ProfileContext(profile_dir, trace_steps=range(0, 2), dump_steps=range(0, 2)) as pctx:
+        with tf.compat.v1.Session(config=config) as sess:
+            sess.run(tf.compat.v1.global_variables_initializer())
+            #model_profiler = model_analyzer.Profiler(graph=sess.graph)
+            num_batch = Y_train.shape[0] // batchSize
+            num_batch_list = np.arange(num_batch)
+            for e in range(num_epoch):
+                for i in range(num_batch):
+                    print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
+                    if isDiffernetBatch:
+                        for ridx in range(input_model_num):
+                            rand_idx = int(np.random.choice(num_batch_list, 1))
+                            names['X_mini_batch_feed' + str(ridx)] = X_train[rand_idx:rand_idx+batchSize,:,:,:]
+                            names['Y_mini_batch_feed' + str(ridx)] = Y_train[rand_idx:rand_idx+batchSize,:]
+                            input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
+                            input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
+                        sess.run(train_collection, feed_dict=input_dict)
                     else:
-                        X_mini_batch_feed = X_train[i:i+batchSize,:,:,:]
-                        Y_mini_batch_feed = Y_train[i:i+batchSize,:]
-                    #sess.run(train_collection, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-                    sess.run(train_collection, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata)
-                    model_profiler.add_step(step=i, run_meta=run_metadata)
-        
-        profile_graph_opts_builder = option_builder.ProfileOptionBuilder(option_builder.ProfileOptionBuilder.time_and_memory())
-        profile_graph_opts_builder.with_timeline_output(timeline_file='/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir/mobile-m5-b20-1k-diff/model_profiler.json')
+                        if isShuffle:
+                            rand_idx = int(np.random.choice(num_batch_list, 1, replace=False))
+                            X_mini_batch_feed = X_train[rand_idx:rand_idx+batchSize,:,:,:]
+                            Y_mini_batch_feed = Y_train[rand_idx:rand_idx+batchSize,:]
+                        else:
+                            X_mini_batch_feed = X_train[i:i+batchSize,:,:,:]
+                            Y_mini_batch_feed = Y_train[i:i+batchSize,:]
+                        sess.run(train_collection, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata) 
+        #profile_graph_opts_builder = option_builder.ProfileOptionBuilder(option_builder.ProfileOptionBuilder.time_and_memory())
+        #profile_graph_opts_builder.with_timeline_output(timeline_file='/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir/test/model_profiler.json')
         #profile_graph_opts_builder.with_timeline_output(timeline_file='/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir/mobile-m5-b10/model_profiler.json')
-        model_profiler.profile_graph(profile_graph_opts_builder.build())
+        #model_profiler.profile_graph(profile_graph_opts_builder.build())
 
 def executePackCombine(train_collection_combine, num_epoch, X_train, Y_train):
     config = tf.ConfigProto()
