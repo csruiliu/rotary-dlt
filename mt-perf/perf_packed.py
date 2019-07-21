@@ -44,32 +44,34 @@ batchCollection = []
 
 input_model_num = 1
 
-#bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
-label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
+bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
+label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+#bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
+#label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
 X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
 Y_data = load_labels_onehot(label_path, numClasses)
 
-profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir/test'
+#profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir/test'
+profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir/test'
+
 
 if isDiffernetBatch:
     names = locals()
     input_dict = {}
     for idx in range(input_model_num):
-        names['features' + str(idx)] = tf.compat.v1.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
-        names['labels' + str(idx)] = tf.compat.v1.placeholder(tf.int64, [None, numClasses])
+        names['features' + str(idx)] = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+        names['labels' + str(idx)] = tf.placeholder(tf.int64, [None, numClasses])
 else:
-    features = tf.compat.v1.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
-    labels = tf.compat.v1.placeholder(tf.int64, [None, numClasses])
-    #features = tf.compat.v1.placeholder(tf.float32, [None, numChannels, imgWidth, imgHeight])
-    #labels = tf.compat.v1.placeholder(tf.int64, [None, numClasses])
+    features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+    labels = tf.placeholder(tf.int64, [None, numClasses])
+    #features = tf.placeholder(tf.float32, [None, numChannels, imgWidth, imgHeight])
+    #labels = tf.placeholder(tf.int64, [None, numClasses])
 
 
 def prepareModelsMan():
     #Generate all same models 
     model_class_num = [input_model_num]
-    model_class = ["resnet"]
+    model_class = ["mobilenet"]
     all_batch_list = np.repeat(batchSize,input_model_num).tolist()
     layer_list = np.repeat(1,input_model_num).tolist()
     #layer_list = np.random.choice(np.arange(3,10), 9).tolist()
@@ -130,18 +132,18 @@ def buildPackedModelsCombine():
 
 
 def executePack(train_collection, num_epoch, X_train, Y_train):
-    config = tf.compat.v1.ConfigProto()
+    config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
     
     #builder = tf.profiler.ProfileOptionBuilder
     #opts = builder(builder.time_and_memory()).order_by('micros').build()
-    run_options = tf.compat.v1.RunOptions(trace_level=tf.compat.v1.RunOptions.FULL_TRACE)
-    run_metadata = tf.compat.v1.RunMetadata()
+    run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+    run_metadata = tf.RunMetadata()
     
     with tf.contrib.tfprof.ProfileContext(profile_dir, trace_steps=range(0, 2), dump_steps=range(0, 2)) as pctx:
-        with tf.compat.v1.Session(config=config) as sess:
-            sess.run(tf.compat.v1.global_variables_initializer())
+        with tf.Session(config=config) as sess:
+            sess.run(tf.global_variables_initializer())
             #model_profiler = model_analyzer.Profiler(graph=sess.graph)
             num_batch = Y_train.shape[0] // batchSize
             num_batch_list = np.arange(num_batch)

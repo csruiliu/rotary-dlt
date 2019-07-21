@@ -2,6 +2,8 @@ import tensorflow as tf
 import tensorflow.contrib as tc
 
 channel_num = 3
+weight_decay = 1e-4
+exp = 6  
 
 #MobileNetV2
 class mobilenet(object):
@@ -18,140 +20,131 @@ class mobilenet(object):
         self.model_size = 0
 
     def build(self, input):
-        with tf.compat.v1.variable_scope(self.net_name + '_instance'):
-            #print("input",input.get_shape())
-            self.i = 0
-            output = tc.layers.conv2d(input, 32, 3, 2, normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
-            self.model_size += (3 * 3 * channel_num * int(input.shape[1]) + 1) * 32
-            #print("1st output", output.get_shape())
-            #tf.print(output,[output])
-            
-            net, net_size = self._inverted_bottleneck(output, 1, 16, 0)
-            #print("1st invert", net.get_shape())
-            self.model_size += net_size
-            
-            net, net_size = self._inverted_bottleneck(net, 6, 24, 1)
-            self.model_size += net_size
-            #print("2st invert", net.get_shape())
-            
-            net, net_size = self._inverted_bottleneck(net, 6, 24, 0)
-            self.model_size += net_size
-            #print("3st invert", net.get_shape())
-            
-            net, net_size = self._inverted_bottleneck(net, 6, 32, 1)
-            self.model_size += net_size
-            #print("4st invert", net.get_shape())
-            
-            net, net_size = self._inverted_bottleneck(net, 6, 32, 0)
-            self.model_size += net_size
-            #print("5st invert", net.get_shape())
-            
-            net, net_size = self._inverted_bottleneck(net, 6, 32, 0)
-            self.model_size += net_size
-            #print("6st invert", net.get_shape())
-            
-            net, net_size = self._inverted_bottleneck(net, 6, 64, 1)
-            self.model_size += net_size
-            #print("7st invert", net.get_shape())
-            
-            net, net_size = self._inverted_bottleneck(net, 6, 64, 0)
-            self.model_size += net_size
-            #print("8st invert", net.get_shape())
-            
-            net, net_size = self._inverted_bottleneck(net, 6, 64, 0)
-            self.model_size += net_size
-            #print("9st invert", net.get_shape())
-            
-            net, net_size = self._inverted_bottleneck(net, 6, 64, 0)
-            self.model_size += net_size
-            #print("10st invert", net.get_shape())
-            
-            net, net_size = self._inverted_bottleneck(net, 6, 96, 0)
-            self.model_size += net_size
-            #print("11st invert", net.get_shape())
-            
-            net, net_size = self._inverted_bottleneck(net, 6, 96, 0)
-            self.model_size += net_size
-            #print("12st invert", net.get_shape())
-            
-            net, net_size = self._inverted_bottleneck(net, 6, 96, 0)
-            self.model_size += net_size
-            #print("13st invert", net.get_shape())
-            
-            net, net_size = self._inverted_bottleneck(net, 6, 160, 1)
-            self.model_size += net_size
-            #print("14st invert", net.get_shape())
-            
-            net, net_size = self._inverted_bottleneck(net, 6, 160, 0)
-            self.model_size += net_size
-            #print("15st invert", net.get_shape())
-            
-            net, net_size = self._inverted_bottleneck(net, 6, 160, 0)
-            self.model_size += net_size
-            #print("16st invert", net.get_shape())
-            
-            net, net_size = self._inverted_bottleneck(net, 6, 320, 0)
-            self.model_size += net_size
-            #print("17st invert", net.get_shape())
-            
-            net = tc.layers.conv2d(net, 1280, 1, normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
-            self.model_size += (1 * 1 * int(net.shape[1]) + 1) * 1280
+        instance_name = self.net_name + '_instance'
+        with tf.variable_scope(instance_name):
+            net = self._conv2d_block(input, 32, 3, 2, self.is_training, 'conv1_1')
+            net = self._res_block(net, 1, 16, 1, self.is_training, block_name='res2_1')
+            net = self._res_block(net, exp, 24, 2, self.is_training, block_name='res3_1')  # size/4
+            net = self._res_block(net, exp, 24, 1, self.is_training, block_name='res3_2')
 
-            avg_num = int(self.img_h // 32)
-            net = tc.layers.avg_pool2d(net, avg_num)
-            net = tc.layers.conv2d(net, self.num_classes, 1, activation_fn=None)
-            #print("final invert", net.get_shape())
-            self.model_size += (1 * 1 * int(net.shape[1]) + 1) * self.num_classes
-            #print("logits shape:",tf.shape(net))
-            logits = tf.squeeze(net)
+            net = self._res_block(net, exp, 32, 2, self.is_training, block_name='res4_1')  # size/8
+            net = self._res_block(net, exp, 32, 1, self.is_training, block_name='res4_2')
+            net = self._res_block(net, exp, 32, 1, self.is_training, block_name='res4_3')
+
+            net = self._res_block(net, exp, 64, 2, self.is_training, block_name='res5_1')
+            net = self._res_block(net, exp, 64, 1, self.is_training, block_name='res5_2')
+            net = self._res_block(net, exp, 64, 1, self.is_training, block_name='res5_3')
+            net = self._res_block(net, exp, 64, 1, self.is_training, block_name='res5_4')
+
+            net = self._res_block(net, exp, 96, 1, self.is_training, block_name='res6_1')  # size/16
+            net = self._res_block(net, exp, 96, 1, self.is_training, block_name='res6_2')
+            net = self._res_block(net, exp, 96, 1, self.is_training, block_name='res6_3')
+
+            net = self._res_block(net, exp, 160, 2, self.is_training, block_name='res7_1')  # size/32
+            net = self._res_block(net, exp, 160, 1, self.is_training, block_name='res7_2')
+            net = self._res_block(net, exp, 160, 1, self.is_training, block_name='res7_3')
+
+            net = self._res_block(net, exp, 320, 1, self.is_training, block_name='res8_1', shortcut=False)
+            net = self._pwise_block(net, 1280, self.is_training, block_name='conv9_1')
+            net = self._global_avg(net)
+
+            logits = tc.layers.flatten(self._conv_1x1(net, self.num_classes, name='logits'))
+
+            return logits 
+
+    def _res_block(self, input, expansion_ratio, output_dim, stride, is_train, block_name, bias=False, shortcut=True):
+        with tf.variable_scope(block_name):
+            bottleneck_dim = round(expansion_ratio * input.get_shape().as_list()[-1])
+            net = self._conv_1x1(input, bottleneck_dim, name='pw', bias=bias)
+            net = self._batch_norm(net, train=is_train, name='pw_bn')
+            net = tf.nn.relu6(net, 'relu6')
+
+            net = self._dwise_conv(net, strides=[1, stride, stride, 1], name='dw', bias=bias)
+            net = self._batch_norm(net, train=is_train, name='dw_bn')
+            net = tf.nn.relu6(net, 'relu6')
+
+            net = self._conv_1x1(net, output_dim, name='pw_linear', bias=bias)
+            net = self._batch_norm(net, train=is_train, name='pw_linear_bn')
+
+            # element wise add, only for stride==1
+            if shortcut and stride == 1:
+                in_dim=int(input.get_shape().as_list()[-1])
+                if in_dim != output_dim:
+                    ins = self._conv_1x1(input, output_dim, name='ex_dim')
+                    net = ins + net
+                else:
+                    net = input+net
             
-        return logits
+            return net
+            
+    def _conv2d_block(self, input, out_dim, kernel_size, strides_size, is_train, block_name):
+        with tf.variable_scope(block_name):
+            block = self._conv2d(input, out_dim, kernel_size, kernel_size, strides_size, strides_size)
+            block = self._batch_norm(block, train=is_train, name='bn')
+            block = tf.nn.relu6(block, 'relu6')
+            return block
 
-    def _inverted_bottleneck(self, input, up_sample_rate, channels, subsample):
-        with tf.compat.v1.variable_scope('inverted_bottleneck{}_{}_{}'.format(self.i, up_sample_rate, subsample)):
-            layer_size = 0
-            self.i += 1
-            stride = 2 if subsample else 1
-            num_outputs = up_sample_rate*input.get_shape().as_list()[-1]
-            output = tc.layers.conv2d(input, num_outputs, 1,
-                                      activation_fn=tf.nn.relu6,
-                                      normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
-            #print("1output inverted_bn",output.get_shape()) 
-            layer_size += (1 * 1 * int(input.shape[1]) + 1) * num_outputs
+    def _pwise_block(self, input, output_dim, is_train, block_name, bias=False):
+        with tf.variable_scope(block_name):
+            out = self._conv_1x1(input, output_dim, bias=bias, name='pwb')
+            out = self._batch_norm(out, train=is_train, name='bn')
+            block = tf.nn.relu6(out, 'relu6')
+            return block
 
-            output = tc.layers.separable_conv2d(output, None, 3, 1, stride=stride,
-                                                activation_fn=tf.nn.relu6,
-                                                normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
-            #print("2output inverted_bn",output.get_shape())
-            layer_size += (3 * 3 * int(output.shape[1]) + 1) * channels
 
-            output = tc.layers.conv2d(output, channels, 1, activation_fn=None,
-                                      normalizer_fn=self.normalizer, normalizer_params=self.bn_params)
-            layer_size += (1 * 1 * int(output.shape[1]) + 1) * channels
+    def _conv2d(self, input, output_dim, kernel_height, kernel_width, strides_h, strides_w, stddev=0.02, bias=False, name='conv2d'):
+        with tf.variable_scope(name):
+            w = tf.get_variable('w', [kernel_height, kernel_width, input.get_shape()[-1], output_dim],
+                regularizer = tc.layers.l2_regularizer(weight_decay),
+                initializer = tf.truncated_normal_initializer(stddev=stddev))
+            conv = tf.nn.conv2d(input, w, strides=[1, strides_h, strides_w, 1], padding='SAME')
+            if bias:
+                biases = tf.get_variable('bias', [output_dim], initializer = tf.constant_initializer(0.0))
+                conv = tf.nn.bias_add(conv, biases)
+            return conv
 
-            if input.get_shape().as_list()[-1] == channels:
-                output = tf.add(input, output)
-            return output, layer_size
+    def _dwise_conv(self, input, kernel_height=3, kernel_width=3, channel_multiplier=1, strides=[1,1,1,1], padding='SAME', stddev=0.02, name='dwise_conv', bias=False):
+        with tf.variable_scope(name):
+            in_channel = input.get_shape().as_list()[-1]
+            w = tf.get_variable('w', [kernel_height, kernel_width, in_channel, channel_multiplier],
+                        regularizer=tc.layers.l2_regularizer(weight_decay),
+                        initializer=tf.truncated_normal_initializer(stddev=stddev))
+            conv = tf.nn.depthwise_conv2d(input, w, strides, padding, rate=None, name=None, data_format=None)
+            if bias:
+                biases = tf.get_variable('bias', [in_channel*channel_multiplier], initializer=tf.constant_initializer(0.0))
+                conv = tf.nn.bias_add(conv, biases)
+            return conv
+
+    def _batch_norm(self, x, momentum=0.9, epsilon=1e-5, train=True, name='bn'):
+        return tf.layers.batch_normalization(x, momentum=momentum, epsilon=epsilon, scale=True, training=train, name=name)
+
+    def _conv_1x1(self, input, output_dim, name, bias=False):
+        with tf.name_scope(name):
+            return self._conv2d(input, output_dim, 1,1,1,1, stddev=0.02, name=name, bias=bias)
+
+    def _global_avg(self, x):
+        with tf.name_scope('global_avg'):
+            net = tf.layers.average_pooling2d(x, x.get_shape()[1:-1], 1)
+            return net
 
     def cost(self, logits, labels):
-        with tf.compat.v1.name_scope('loss_'+self.net_name):
+        with tf.name_scope('loss_'+self.net_name):
             #cross_entropy = tf.losses.hinge_loss(labels=labels, logits=logits)
             #cross_entropy = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
-            cross_entropy = tf.compat.v1.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
-        cross_entropy_cost = tf.reduce_mean(cross_entropy)
+            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
+            cross_entropy_cost = tf.reduce_mean(cross_entropy)
 
-        with tf.compat.v1.name_scope('optimizer_'+self.net_name):
-            update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
+        with tf.name_scope('optimizer_'+self.net_name):
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):
-                train_step = tf.compat.v1.train.AdamOptimizer(1e-4).minimize(cross_entropy_cost)
+                train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy_cost)
 
         return train_step
 
     def getCost(self, logits, labels):
-        cross_entropy = tf.compat.v1.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
+        cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
         cross_entropy_cost = tf.reduce_mean(cross_entropy)
         return cross_entropy_cost
-
 
     def getModelInstanceName(self):
         return (self.net_name + " with layer: " + str(self.model_layer_num))
