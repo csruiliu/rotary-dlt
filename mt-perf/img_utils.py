@@ -91,3 +91,19 @@ def load_labels_onehot(path, num_classes):
         labels_array[idx, hot-1] = 1
     return labels_array
 
+def parse_image(filename, label):
+    image_string = tf.read_file(filename)
+    image_decoded = tf.image.decode_image(image_string, channels=3)
+    image_converted = tf.cast(image_decoded, tf.float32)
+    image_scaled = tf.image.resize_image_with_crop_or_pad(image_converted, 224, 224)
+    return image_scaled, label
+
+def generate_image_dataset(image_dir, label_path):
+    images_list = sorted(tf.gfile.ListDirectory(image_dir))
+    images = [image_dir + '/' +s for s in images_list]
+    labels = [int(line.rstrip('\n')) for line in open(label_path)]
+    dataset = tf.data.Dataset.from_tensor_slices((images, labels))
+    dataset = dataset.map(parse_image)
+    dataset = dataset.batch(batch_size=32)
+    dataset_it = dataset.make_one_shot_iterator()
+    return dataset_it
