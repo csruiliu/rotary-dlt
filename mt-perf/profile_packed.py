@@ -13,19 +13,19 @@ import numpy as np
 from img_utils import *
 from dnn_model import DnnModel
 
-import matplotlib.pyplot as plt
-
 numChannels = 3
 imgWidth = 224
 imgHeight = 224
 numClasses = 1000
 
-image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
+#image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
+image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
 #bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k-label.txt'
+#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k-label.txt'
 #bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
 #label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
-profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir/test'
+#profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir/test'
+profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir'
 
 #X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
 #Y_data = load_labels_onehot(label_path, numClasses)
@@ -42,8 +42,8 @@ if __name__ == '__main__':
     ######################
 
     image_raw = tf.placeholder(tf.int64,shape=[500, 375, 3])
-    trans_op = tf.image.resize_images(image_raw, (224, 224))
-    #trans_op = tf.contrib.image.transform(image_raw,transforms=[1,0,0,0,1,0,0,0])
+    #trans_op = tf.image.resize_images(image_raw, (224, 224))
+    trans_op = tf.contrib.image.transform(image_raw,transforms=[1,0,0,0,1,0,0,0])
     img = cv2.imread(image_dir+'/'+image_name)
     
     config = tf.ConfigProto()
@@ -55,7 +55,7 @@ if __name__ == '__main__':
         run_metadata = tf.RunMetadata()
         sess.run(trans_op, feed_dict={image_raw:img}, options=run_options, run_metadata=run_metadata)
         trace = timeline.Timeline(step_stats=run_metadata.step_stats)
-        trace_file = open('/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir/test/tf_resize.json', 'w')
+        trace_file = open(profile_dir+'/tf_transform.json', 'w')
         trace_file.write(trace.generate_chrome_trace_format(show_memory=True))
 
     ######################
