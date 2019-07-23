@@ -33,13 +33,18 @@ profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir/test'
 features = tf.placeholder(tf.float32, [None, imgHeight, imgWidth, numChannels])
 labels = tf.placeholder(tf.int64, [None, numClasses])
 
+image_name = 'ILSVRC2010_test_00030001.JPEG'
 
 if __name__ == '__main__':
-    
-    #image_raw = tf.placeholder(tf.int64,shape=[500, 375, 3])
-    #trans_op = tf.image.resize_images(image_raw, (224, 224))
+
+    ######################
+    #test tf ops 
+    ######################
+
+    image_raw = tf.placeholder(tf.int64,shape=[500, 375, 3])
+    trans_op = tf.image.resize_images(image_raw, (224, 224))
     #trans_op = tf.contrib.image.transform(image_raw,transforms=[1,0,0,0,1,0,0,0])
-    #img = cv2.imread(image_dir+'/'+image_name)
+    img = cv2.imread(image_dir+'/'+image_name)
     
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
@@ -48,15 +53,27 @@ if __name__ == '__main__':
     with tf.Session(config=config) as sess:
         run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
         run_metadata = tf.RunMetadata()
-        sess.run(tf.global_variables_initializer())
-        my_profiler = model_analyzer.Profiler(graph=sess.graph)
+        sess.run(trans_op, feed_dict={image_raw:img}, options=run_options, run_metadata=run_metadata)
+        trace = timeline.Timeline(step_stats=run_metadata.step_stats)
+        trace_file = open('/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir/test/tf_resize.json', 'w')
+        trace_file.write(trace.generate_chrome_trace_format(show_memory=True))
 
-        dataset_it = generate_image_dataset(image_dir,label_path)
-        next_data = dataset_it.get_next()
+    ######################
+    #test tf.data api 
+    ######################
+
+    #with tf.Session(config=config) as sess:
+    #    run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+    #    run_metadata = tf.RunMetadata()
+    #    sess.run(tf.global_variables_initializer())
+    #    my_profiler = model_analyzer.Profiler(graph=sess.graph)
+
+    #    dataset_it = generate_image_dataset(image_dir,label_path)
+    #    next_data = dataset_it.get_next()
     
-        for i in range(10):
-            sess.run(next_data)
-            image, label = sess.run(next_data, options=run_options, run_metadata=run_metadata)
+    #    for i in range(10):
+    #        sess.run(next_data)
+    #        image, label = sess.run(next_data, options=run_options, run_metadata=run_metadata)
  
             #trace = timeline.Timeline(step_stats=run_metadata.step_stats)
             #trace_file = open('/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir/test/sss.json', 'w')
