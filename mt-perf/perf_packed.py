@@ -4,6 +4,7 @@ import tensorflow as tf
 
 from tensorflow.python.profiler import model_analyzer
 from tensorflow.python.profiler import option_builder
+from tensorflow.python.client import timeline
 
 import numpy as np
 from multiprocessing import Process
@@ -170,7 +171,7 @@ def executePack(train_collection, num_epoch, X_train, Y_train):
                     sess.run(train_collection, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata)
 
                     trace = timeline.Timeline(step_stats=run_metadata.step_stats)
-                    trace_file = open(profile_dir+'/tf_profile_packed_'+str(e)+'_'+str(i)'.json', 'w')
+                    trace_file = open(profile_dir+'/tf_profile_packed_'+str(e)+'_'+str(i)+'.json', 'w')
                     trace_file.write(trace.generate_chrome_trace_format(show_memory=True))
 
         #profile_graph_opts_builder = option_builder.ProfileOptionBuilder(option_builder.ProfileOptionBuilder.time_and_memory())
