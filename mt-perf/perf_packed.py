@@ -44,15 +44,19 @@ batchCollection = []
 
 input_model_num = 1
 
-bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-#bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
-#label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
+#image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
+image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
+#bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
+bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
+#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
+#profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir'
+profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir'
+
 X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
 Y_data = load_labels_onehot(label_path, numClasses)
 
-#profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir/test'
-profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir/test'
+
 
 
 if isDiffernetBatch:
@@ -69,7 +73,7 @@ else:
 
 
 def prepareModelsMan():
-    #Generate all same models 
+    #Generate all same models
     model_class_num = [input_model_num]
     model_class = ["mobilenet"]
     all_batch_list = np.repeat(batchSize,input_model_num).tolist()
@@ -135,38 +139,40 @@ def executePack(train_collection, num_epoch, X_train, Y_train):
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
-    
-    #builder = tf.profiler.ProfileOptionBuilder
-    #opts = builder(builder.time_and_memory()).order_by('micros').build()
+
     run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
     run_metadata = tf.RunMetadata()
-    
-    with tf.contrib.tfprof.ProfileContext(profile_dir, trace_steps=range(0, 2), dump_steps=range(0, 2)) as pctx:
-        with tf.Session(config=config) as sess:
-            sess.run(tf.global_variables_initializer())
-            #model_profiler = model_analyzer.Profiler(graph=sess.graph)
-            num_batch = Y_train.shape[0] // batchSize
-            num_batch_list = np.arange(num_batch)
-            for e in range(num_epoch):
-                for i in range(num_batch):
-                    print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
-                    if isDiffernetBatch:
-                        for ridx in range(input_model_num):
-                            rand_idx = int(np.random.choice(num_batch_list, 1))
-                            names['X_mini_batch_feed' + str(ridx)] = X_train[rand_idx:rand_idx+batchSize,:,:,:]
-                            names['Y_mini_batch_feed' + str(ridx)] = Y_train[rand_idx:rand_idx+batchSize,:]
-                            input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
-                            input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
-                        sess.run(train_collection, feed_dict=input_dict)
+
+    with tf.Session(config=config) as sess:
+        sess.run(tf.global_variables_initializer())
+        #model_profiler = model_analyzer.Profiler(graph=sess.graph)
+        num_batch = Y_train.shape[0] // batchSize
+        num_batch_list = np.arange(num_batch)
+        for e in range(num_epoch):
+            for i in range(num_batch):
+                print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
+                if isDiffernetBatch:
+                    for ridx in range(input_model_num):
+                        rand_idx = int(np.random.choice(num_batch_list, 1))
+                        names['X_mini_batch_feed' + str(ridx)] = X_train[rand_idx:rand_idx+batchSize,:,:,:]
+                        names['Y_mini_batch_feed' + str(ridx)] = Y_train[rand_idx:rand_idx+batchSize,:]
+                        input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
+                        input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
+                    sess.run(train_collection, feed_dict=input_dict)
+                else:
+                    if isShuffle:
+                        rand_idx = int(np.random.choice(num_batch_list, 1, replace=False))
+                        X_mini_batch_feed = X_train[rand_idx:rand_idx+batchSize,:,:,:]
+                        Y_mini_batch_feed = Y_train[rand_idx:rand_idx+batchSize,:]
                     else:
-                        if isShuffle:
-                            rand_idx = int(np.random.choice(num_batch_list, 1, replace=False))
-                            X_mini_batch_feed = X_train[rand_idx:rand_idx+batchSize,:,:,:]
-                            Y_mini_batch_feed = Y_train[rand_idx:rand_idx+batchSize,:]
-                        else:
-                            X_mini_batch_feed = X_train[i:i+batchSize,:,:,:]
-                            Y_mini_batch_feed = Y_train[i:i+batchSize,:]
-                        sess.run(train_collection, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata) 
+                        X_mini_batch_feed = X_train[i:i+batchSize,:,:,:]
+                        Y_mini_batch_feed = Y_train[i:i+batchSize,:]
+                    sess.run(train_collection, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata)
+
+                    trace = timeline.Timeline(step_stats=run_metadata.step_stats)
+                    trace_file = open(profile_dir+'/tf_profile_packed_'+str(e)+'_'+str(i)'.json', 'w')
+                    trace_file.write(trace.generate_chrome_trace_format(show_memory=True))
+
         #profile_graph_opts_builder = option_builder.ProfileOptionBuilder(option_builder.ProfileOptionBuilder.time_and_memory())
         #profile_graph_opts_builder.with_timeline_output(timeline_file='/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir/test/model_profiler.json')
         #profile_graph_opts_builder.with_timeline_output(timeline_file='/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir/mobile-m5-b10/model_profiler.json')
@@ -191,7 +197,7 @@ def executePackCombine(train_collection_combine, num_epoch, X_train, Y_train):
                     X_mini_batch_feed = X_train[i:i+batchSize,:,:,:]
                     Y_mini_batch_feed = Y_train[i:i+batchSize,:]
                 sess.run(train_collection_combine, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-    
+
 if __name__ == '__main__':
     deviceId = '/device:GPU:' + str(gpuId)
     print("run gpu:", deviceId)
@@ -209,4 +215,4 @@ if __name__ == '__main__':
         buildPackedModels()
         executePack(trainCollection, numEpochs, X_data, Y_data)
         #trainStep=buildPackedModelsCombine()
-        #executePackCombine(trainStep, numEpochs, X_data, Y_data)    
+        #executePackCombine(trainStep, numEpochs, X_data, Y_data)

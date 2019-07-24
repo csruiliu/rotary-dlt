@@ -4,6 +4,7 @@
 *.png
 *.pdf
 *.jpg
+*.pyc
 
 dataset/
 **/__pycache__/
