@@ -1,4 +1,5 @@
 import tensorflow as tf
+from tensorflow.python.client import timeline
 import numpy as np
 import argparse
 
@@ -44,7 +45,7 @@ def prepareModelsMan():
     modelCollection = []
     model_class_num = [input_model_num]
     model_class = ["mobilenet"]
-    all_batch_list = [10,20]
+    all_batch_list = [20,20]
     #all_batch_list = np.random.choice([10,20,40,50], input_model_num, replace=False).tolist()
     #all_batch_list = np.repeat(batchSize, input_model_num).tolist()
     layer_list = np.repeat(1, input_model_num).tolist()
@@ -92,7 +93,7 @@ def execPaddingPack(train_collection, num_epoch, X_train, Y_train):
                 sess.run(train_collection, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
 if __name__ == '__main__':
-    
+
     X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
     Y_data = load_labels_onehot(label_path, numClasses)
     modelCollection = prepareModelsMan()

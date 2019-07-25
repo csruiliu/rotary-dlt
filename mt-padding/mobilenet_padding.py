@@ -6,7 +6,7 @@ weight_decay = 1e-4
 exp = 6
 
 #MobileNetV2
-class mobilenet(object):
+class mobilenet_padding(object):
     def __init__(self, net_name, model_layer, input_h, input_w, batch_size, num_classes, is_training=True):
         self.net_name = net_name
         self.model_layer_num = model_layer
@@ -23,6 +23,9 @@ class mobilenet(object):
     def build(self, input):
         instance_name = self.net_name + '_instance'
         with tf.variable_scope(instance_name):
+            input_padding = input[0:self.batch_size,:,:,:]
+            print(input_padding.shape)
+
             net = self._conv2d_block(input_padding, 32, 3, 2, self.is_training, 'conv1_1')
             net = self._res_block(net, 1, 16, 1, self.is_training, block_name='res2_1')
             net = self._res_block(net, exp, 24, 2, self.is_training, block_name='res3_1')  # size/4
