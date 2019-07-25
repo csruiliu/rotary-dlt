@@ -16,7 +16,7 @@ class DnnModel(object):
         
         #the imported module and the regarding class name have to be the same
         clazz = getattr(import_model, self.modelName)
-        self.modelEntity = clazz(self.instanceName, self.modelLayer, self.inputWidth, self.inputHeight, self.numClasses)
+        self.modelEntity = clazz(net_name=self.instanceName, model_layer=self.modelLayer, input_h=self.inputHeight, input_w=self.inputWidth, batch_size=self.batchSize, num_classes=self.numClasses)
         
 
     def getModelLayer(self):
