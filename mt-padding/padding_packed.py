@@ -12,6 +12,8 @@ from dnn_model import DnnModel
 #########################
 
 parser = argparse.ArgumentParser()
+parser.add_argument('-bs', '--batchsize', type=int, default=10, help='identify the training batch size')
+parser.add_argument('-p', '--profile', action='store_true', default=False, help='use tf.profiler or not')
 parser.add_argument('-d', '--diff', action='store_true', default=False, help='use different batch input for each model in the packed api, default is all the models in packed use all input batch')
 args = parser.parse_args()
 
@@ -29,12 +31,13 @@ label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
 #profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir'
 profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir'
 
-batchSize = 20
+batchSize = args.batchsize
 imgWidth = 224
 imgHeight = 224
 numClasses = 1000
 numChannels = 3
 numEpochs = 1
+isProfile = args.profile
 
 input_model_num = 2
 
@@ -45,7 +48,7 @@ def prepareModelsMan():
     modelCollection = []
     model_class_num = [input_model_num]
     model_class = ["mobilenet_padding"]
-    all_batch_list = [20,20]
+    all_batch_list = [10,40]
     #all_batch_list = np.random.choice([10,20,40,50], input_model_num, replace=False).tolist()
     #all_batch_list = np.repeat(batchSize, input_model_num).tolist()
     layer_list = np.repeat(1, input_model_num).tolist()
@@ -92,12 +95,14 @@ def execPaddingPack(train_collection, num_epoch, X_train, Y_train):
                 batch_end = (i+1) * batchSize
                 X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                sess.run(train_collection, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata)
-
-                trace = timeline.Timeline(step_stats=run_metadata.step_stats)
-                trace_file = open('/tank/local/ruiliu/mtml-tf/mt-padding/profile_dir/tf_packed_'+str(i)+'.json', 'w')
-                #trace_file = open('/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir/test/tf_packed_'+str(i)+'.json', 'w')
-                trace_file.write(trace.generate_chrome_trace_format(show_memory=True))
+                if isProfile:
+                    sess.run(train_collection, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata)
+                    trace = timeline.Timeline(step_stats=run_metadata.step_stats)
+                    trace_file = open('/tank/local/ruiliu/mtml-tf/mt-padding/profile_dir/tf_packed_b20b40_'+str(i)+'.json', 'w')
+                    #trace_file = open('/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir/test/tf_packed_'+str(i)+'.json', 'w')
+                    trace_file.write(trace.generate_chrome_trace_format(show_memory=True))
+                else:
+                    sess.run(train_collection, feed_dict={features:X_mini_batch_feed, labels:Y_mini_batch_feed})
 
 if __name__ == '__main__':
     X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)

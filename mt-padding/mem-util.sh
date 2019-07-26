@@ -42,6 +42,9 @@ while getopts "f:q:g:e:b:w:h:sdl:" opt; do
         d)
         PYCMD+=" -d"
         ;;
+        p)
+        PYCMD+=" -p"
+        ;;
         l)
         lms=$OPTARG
         ;;
