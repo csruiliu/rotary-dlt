@@ -22,10 +22,10 @@ args = parser.parse_args()
 
 #image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
 image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
-bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-#bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
-label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-#label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
+#bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
+bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
+#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
 #profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir'
 profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir'
 
@@ -44,7 +44,7 @@ labels = tf.placeholder(tf.int64, [batchSize, numClasses])
 def prepareModelsMan():
     modelCollection = []
     model_class_num = [input_model_num]
-    model_class = ["mobilenet"]
+    model_class = ["mobilenet_padding"]
     all_batch_list = [20,20]
     #all_batch_list = np.random.choice([10,20,40,50], input_model_num, replace=False).tolist()
     #all_batch_list = np.repeat(batchSize, input_model_num).tolist()
