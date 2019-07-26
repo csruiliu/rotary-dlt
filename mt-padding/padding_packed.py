@@ -81,6 +81,8 @@ def execPaddingPack(train_collection, num_epoch, X_train, Y_train):
     config.allow_soft_placement = True
 
     with tf.Session(config=config) as sess:
+        run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+        run_metadata = tf.RunMetadata()
         sess.run(tf.global_variables_initializer())
         num_batch = Y_train.shape[0] // batchSize
         for e in range(num_epoch):
@@ -90,10 +92,14 @@ def execPaddingPack(train_collection, num_epoch, X_train, Y_train):
                 batch_end = (i+1) * batchSize
                 X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                sess.run(train_collection, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                sess.run(train_collection, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata)
+
+                trace = timeline.Timeline(step_stats=run_metadata.step_stats)
+                trace_file = open('/tank/local/ruiliu/mtml-tf/mt-padding/profile_dir/tf_packed_'+str(i)+'.json', 'w')
+                #trace_file = open('/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir/test/tf_packed_'+str(i)+'.json', 'w')
+                trace_file.write(trace.generate_chrome_trace_format(show_memory=True))
 
 if __name__ == '__main__':
-
     X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
     Y_data = load_labels_onehot(label_path, numClasses)
     modelCollection = prepareModelsMan()
