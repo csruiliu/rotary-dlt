@@ -2,6 +2,7 @@ import tensorflow as tf
 from tensorflow.python.client import timeline
 import numpy as np
 import argparse
+from timeit import default_timer as timer
 
 from img_utils import *
 from dnn_model import DnnModel
@@ -25,9 +26,9 @@ args = parser.parse_args()
 #image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
 image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
 #bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
+bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
 #label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
+label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
 #profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir'
 profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir'
 
@@ -39,7 +40,7 @@ numChannels = 3
 numEpochs = 1
 isProfile = args.profile
 
-input_model_num = 2
+input_model_num = 4
 
 features = tf.placeholder(tf.float32, [batchSize, imgWidth, imgHeight, numChannels])
 labels = tf.placeholder(tf.int64, [batchSize, numClasses])
@@ -48,7 +49,7 @@ def prepareModelsMan():
     modelCollection = []
     model_class_num = [input_model_num]
     model_class = ["mobilenet_padding"]
-    all_batch_list = [10,40]
+    all_batch_list = [40,40,40,50]
     #all_batch_list = np.random.choice([10,20,40,50], input_model_num, replace=False).tolist()
     #all_batch_list = np.repeat(batchSize, input_model_num).tolist()
     layer_list = np.repeat(1, input_model_num).tolist()
@@ -102,8 +103,12 @@ def execPaddingPack(train_collection, num_epoch, X_train, Y_train):
                     #trace_file = open('/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir/test/tf_packed_'+str(i)+'.json', 'w')
                     trace_file.write(trace.generate_chrome_trace_format(show_memory=True))
                 else:
+                    #start_time = timer()
                     sess.run(train_collection, feed_dict={features:X_mini_batch_feed, labels:Y_mini_batch_feed})
-
+                    #end_time = timer()
+                    #dur_time = end_time - start_time
+                    #total_time += dur_time
+                    #print("training time for 1 epoch:", dur_time) 
 if __name__ == '__main__':
     X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
     Y_data = load_labels_onehot(label_path, numClasses)
