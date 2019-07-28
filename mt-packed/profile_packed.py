@@ -90,7 +90,7 @@ def printAllModels(model_collection):
 def buildPackedModels(model_collection):
     modelEntityCollection = []
     trainCollection = []
-    for midx, mc in enumerate(modelCollection):
+    for midx, mc in enumerate(model_collection):
         modelEntity = mc.getModelEntity()
         modelEntityCollection.append(modelEntity)
         if isDiffernetBatch:
@@ -102,9 +102,9 @@ def buildPackedModels(model_collection):
         trainCollection.append(modelTrain)
     return trainCollection
 
-def buildPackedModelsCombine():
+def buildPackedModelsCombine(model_collection):
     combineTrain = 0
-    for midx, mc in enumerate(modelCollection):
+    for midx, mc in enumerate(model_collection):
         modelEntity = mc.getModelEntity()
         modelLogit = modelEntity.build(features)
         modelTrain = modelEntity.getCost(modelLogit, labels)
