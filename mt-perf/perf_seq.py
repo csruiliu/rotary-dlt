@@ -24,10 +24,10 @@ args = parser.parse_args()
 
 #image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
 image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
-bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-#bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
-label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-#label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
+#bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
+bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
+#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
 #profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir'
 profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir'
 
@@ -39,7 +39,7 @@ batchSize = 0
 numEpochs = args.epoch
 isProfile = args.profile
 
-input_model_num = 4
+#input_model_num = 4
 
 features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
 labels = tf.placeholder(tf.int64, [None, numClasses])
@@ -47,8 +47,11 @@ labels = tf.placeholder(tf.int64, [None, numClasses])
 def prepareModelsMan():
     modelCollection = []
     model_class_num = [5,5,5,5]
+    #model_class_num = [1]  
+    #model_class = ["resnet_padding"]
+    #all_batch_list = [40]
     model_class = ["mobilenet_padding","resnet_padding","perceptron_padding","convnet_padding"]
-    all_batch_list = [20,10,40,40,50,20,20,40,50,10,10,20,20,40,50,10,20,40,50,100]
+    all_batch_list = [20,10,40,40,20,10,20,40,40,10,10,10,40,20,50,10,20,40,50,100]
     #all_batch_list = np.random.choice([10,20,40,50], input_model_num, replace=False).tolist()
     #all_batch_list = np.repeat(batchSize, input_model_num).tolist()
     #layer_list = np.repeat(1, input_model_num).tolist()
@@ -78,21 +81,22 @@ def buildModels(model_collection):
         trainUnit = []
         modelEntity = midx.getModelEntity()
         modelBatchSize = midx.getBatchSize()
+        modelName = midx.getModelName()
         modelLogit = modelEntity.build(features)
         modelTrain = modelEntity.cost(modelLogit, labels)
         trainUnit.append(modelTrain)
         trainUnit.append(modelBatchSize)
+        trainUnit.append(modelName)
         trainCollection.append(trainUnit)
     return trainCollection
 
 def execSeq(train_collection, num_epoch, X_train, Y_train):
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    config.allow_soft_placement = True
+    #config = tf.ConfigProto()
+    #config.gpu_options.allow_growth = True
+    #config.allow_soft_placement = True
     for tidx in train_collection:
-        #print(tidx[0])
-        #print(tidx[1])
-        with tf.Session(config=config) as sess:
+        print("model name:",tidx[2])
+        with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
             num_batch = Y_train.shape[0] // tidx[1]
             num_batch_list = np.arange(num_batch)
