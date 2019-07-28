@@ -44,7 +44,7 @@ class convnet_padding(object):
     def build(self, input):
         with tf.variable_scope(self.net_name + '_instance'):
             input_padding = input[0:self.batch_size,:,:,:]
-            print("padding shape:", input_padding.shape)
+            #print("padding shape:", input_padding.shape)
             layer_conv, layer_conv_size = self.create_convolutional_layer(input=input_padding, in_filter=3,
                                                           conv_filter_size=conv1_filter_size,
                                                           num_filters=conv1_num_filters, conv_stride=1,
@@ -73,7 +73,7 @@ class convnet_padding(object):
     def cost(self, logits, labels):
         with tf.name_scope('loss_'+self.net_name):
             labels_padding = labels[0:self.batch_size,:]
-            print("label padding shape:", labels_padding.shape)
+            #print("label padding shape:", labels_padding.shape)
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_padding, logits=logits)
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
 

@@ -24,7 +24,7 @@ class perceptron_padding(object):
     def build(self, input):
         with tf.variable_scope(self.net_name + '_instance'):
             input_padding = input[0:self.batch_size,:,:,:]
-            print("padding shape:", input_padding.shape)
+            #print("padding shape:", input_padding.shape)
             input_image = tf.reshape(input_padding, [-1, self.input_size])
             layer, layer_size = self.perceptron_layer(input_image)
             self.model_size += layer_size
@@ -37,7 +37,7 @@ class perceptron_padding(object):
     def cost(self, logits, labels):
         with tf.name_scope('loss_'+self.net_name):
             labels_padding = labels[0:self.batch_size,:]
-            print("labels padding shape:", labels_padding.shape)
+            #print("labels padding shape:", labels_padding.shape)
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_padding, logits=logits)
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
 

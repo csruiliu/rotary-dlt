@@ -24,10 +24,10 @@ args = parser.parse_args()
 
 #image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
 image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
-#bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
-#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
+bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
+#bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
+label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+#label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
 #profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir'
 profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir'
 
@@ -58,6 +58,7 @@ def prepareModelsMan():
         for _ in range(model_class_num[idx]):
             global batchSize
             batchSize = all_batch_list.pop()
+            #print(batchSize)
             dm = DnnModel(mls, str(model_name_abbr.pop()), model_layer=layer_list.pop(), input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=batchSize, desired_accuracy=0.9)
             modelCollection.append(dm)
     return modelCollection
@@ -74,10 +75,14 @@ def buildModels(model_collection):
     modelEntityCollection = []
     trainCollection = []
     for midx in model_collection:
+        trainUnit = []
         modelEntity = midx.getModelEntity()
+        modelBatchSize = midx.getBatchSize()
         modelLogit = modelEntity.build(features)
         modelTrain = modelEntity.cost(modelLogit, labels)
-        trainCollection.append(modelTrain)
+        trainUnit.append(modelTrain)
+        trainUnit.append(modelBatchSize)
+        trainCollection.append(trainUnit)
     return trainCollection
 
 def execSeq(train_collection, num_epoch, X_train, Y_train):
@@ -85,9 +90,11 @@ def execSeq(train_collection, num_epoch, X_train, Y_train):
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
     for tidx in train_collection:
+        #print(tidx[0])
+        #print(tidx[1])
         with tf.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
-            num_batch = Y_train.shape[0] // batchSize
+            num_batch = Y_train.shape[0] // tidx[1]
             num_batch_list = np.arange(num_batch)
             for e in range(num_epoch):
                 for i in range(num_batch):
@@ -96,7 +103,7 @@ def execSeq(train_collection, num_epoch, X_train, Y_train):
                     batch_end = (i+1) * batchSize
                     X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
                     Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                    sess.run(tidx, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    sess.run(tidx[0], feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
 if __name__ == '__main__':
     X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
@@ -105,4 +112,3 @@ if __name__ == '__main__':
     printAllModels(modelCollection)
     trainCollection = buildModels(modelCollection)
     execSeq(trainCollection, numEpochs, X_data, Y_data)
-    #execPack(trainCollection, numEpochs, X_data, Y_data)
