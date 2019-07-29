@@ -46,16 +46,19 @@ labels = tf.placeholder(tf.int64, [None, numClasses])
 
 def prepareModelsMan():
     modelCollection = []
-    model_class_num = [5,5,5,5]
+    #model_class_num = [5,5,5,5]
+    model_class_num = [3,3,2,2]
     #model_class_num = [1]  
     #model_class = ["resnet_padding"]
     #all_batch_list = [40]
     model_class = ["mobilenet_padding","resnet_padding","perceptron_padding","convnet_padding"]
-    all_batch_list = [20,10,40,50,20,10,50,50,40,20,10,10,40,20,50,10,20,40,50,100]
+    all_batch_list = [40,20,10,20,20,20,40,40,40,100]
+    #all_batch_list = [20,10,40,50,20,10,40,20,40,20,10,10,40,20,40,10,20,40,50,100]
     #all_batch_list = np.random.choice([10,20,40,50], input_model_num, replace=False).tolist()
     #all_batch_list = np.repeat(batchSize, input_model_num).tolist()
     #layer_list = np.repeat(1, input_model_num).tolist()
-    layer_list = [4,3,6,2,5,4,3,6,2,5,1,1,1,1,1,1,1,1,1,1]
+    #layer_list = [2,2,2,2,2,3,3,3,3,3,1,1,1,1,1,1,1,1,1,1]
+    layer_list = [2,2,3,3,1,1,1,1,1,1]
     model_name_abbr = np.random.choice(100000, sum(model_class_num), replace=False).tolist()
     for idx, mls in enumerate(model_class):
         for _ in range(model_class_num[idx]):
@@ -98,7 +101,6 @@ def execSeq(train_unit, num_epoch, X_train, Y_train):
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         num_batch = Y_train.shape[0] // tidx[1]
-        #num_batch_list = np.arange(num_batch)
         for e in range(num_epoch):
             for i in range(num_batch):
                 print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
@@ -116,3 +118,6 @@ if __name__ == '__main__':
     trainCollection = buildModels(modelCollection)
     for tidx in trainCollection:
         p = Process(target=execSeq, args=(tidx, numEpochs, X_data, Y_data,))
+        p.start()
+        print(p.pid)
+        p.join()
