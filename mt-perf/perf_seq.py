@@ -1,12 +1,12 @@
 import tensorflow as tf
 from tensorflow.python.client import timeline
 import numpy as np
+from multiprocessing import Process
 import argparse
 from timeit import default_timer as timer
 
 from img_utils import *
 from dnn_model import DnnModel
-
 
 #########################
 # Command Parameters
@@ -51,7 +51,7 @@ def prepareModelsMan():
     #model_class = ["resnet_padding"]
     #all_batch_list = [40]
     model_class = ["mobilenet_padding","resnet_padding","perceptron_padding","convnet_padding"]
-    all_batch_list = [20,10,40,40,20,10,20,40,40,10,10,10,40,20,50,10,20,40,50,100]
+    all_batch_list = [20,10,40,50,20,10,50,50,40,20,10,10,40,20,50,10,20,40,50,100]
     #all_batch_list = np.random.choice([10,20,40,50], input_model_num, replace=False).tolist()
     #all_batch_list = np.repeat(batchSize, input_model_num).tolist()
     #layer_list = np.repeat(1, input_model_num).tolist()
@@ -75,7 +75,7 @@ def printAllModels(model_collection):
         print("===============")
 
 def buildModels(model_collection):
-    modelEntityCollection = []
+    #modelEntityCollection = []
     trainCollection = []
     for midx in model_collection:
         trainUnit = []
@@ -90,29 +90,29 @@ def buildModels(model_collection):
         trainCollection.append(trainUnit)
     return trainCollection
 
-def execSeq(train_collection, num_epoch, X_train, Y_train):
-    #config = tf.ConfigProto()
-    #config.gpu_options.allow_growth = True
-    #config.allow_soft_placement = True
-    for tidx in train_collection:
-        print("model name:",tidx[2])
-        with tf.Session() as sess:
-            sess.run(tf.global_variables_initializer())
-            num_batch = Y_train.shape[0] // tidx[1]
-            num_batch_list = np.arange(num_batch)
-            for e in range(num_epoch):
-                for i in range(num_batch):
-                    print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
-                    batch_offset = i * batchSize
-                    batch_end = (i+1) * batchSize
-                    X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
-                    Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                    sess.run(tidx[0], feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-
+def execSeq(train_unit, num_epoch, X_train, Y_train):
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    config.allow_soft_placement = True
+    print("model name:",train_unit[2])
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        num_batch = Y_train.shape[0] // tidx[1]
+        #num_batch_list = np.arange(num_batch)
+        for e in range(num_epoch):
+            for i in range(num_batch):
+                print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
+                batch_offset = i * batchSize
+                batch_end = (i+1) * batchSize
+                X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
+                Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
+                sess.run(tidx[0], feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+    
 if __name__ == '__main__':
     X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
     Y_data = load_labels_onehot(label_path, numClasses)
     modelCollection = prepareModelsMan()
     printAllModels(modelCollection)
     trainCollection = buildModels(modelCollection)
-    execSeq(trainCollection, numEpochs, X_data, Y_data)
+    for tidx in trainCollection:
+        p = Process(target=execSeq, args=(tidx, numEpochs, X_data, Y_data,))
