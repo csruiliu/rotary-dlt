@@ -55,7 +55,7 @@ plt.bar(x, mem_free, bottom=mem_used, width=barWidth, label='mem free')
 plt.plot(x, mem_total, linewidth=3.0, color='g', label='mem total')
 
 plt.yticks(np.arange(0,16278,3255), ('0%', '20%', '40%', '60%', '80%', '100%'))
-plt.xlabel("Total Training Time (ms)")
+plt.xlabel("Total Training Time (1 record for every 100 ms)")
 plt.ylabel("GPU Memory")
 plt.legend(loc='lower center')
 
@@ -65,7 +65,7 @@ plt.plot(x, gpu_util, color='b', label='gpu util')
 plt.plot(x, mem_util, color='r', label='mem util')
 
 plt.yticks(np.arange(0,103,20), ('0%', '20%', '40%', '60%', '80%', '100%'))
-plt.xlabel("Total Training Time (ms)")
+plt.xlabel("Total Training Time (1 record for every 100 ms)")
 plt.ylabel("Utilization")
 plt.legend(loc='lower center')
 
