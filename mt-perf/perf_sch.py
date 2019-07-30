@@ -93,14 +93,46 @@ def buildModels(model_collection):
         trainCollection.append(trainUnit)
     return trainCollection
 
-def execSeq(train_unit, num_epoch, X_train, Y_train):
+def scheduleModels(train_collection):
+    sch_unit1 = []
+    sch_unit1_train = []
+    sch_unit1_train.append(train_collection[0][0])
+    sch_unit1_train.append(train_collection[1][0])
+    sch_unit1_train.append(train_collection[4][0])
+    sch_unit1.append(sch_unit1_train)
+    sch_unit1.append(100)
+
+    sch_unit2 = []
+    sch_unit2_train = []
+    sch_unit2_train.append(train_collection[2][0])
+    sch_unit2_train.append(train_collection[5][0])
+    sch_unit2_train.append(train_collection[7][0])
+    sch_unit2.append(sch_unit2_train)
+    sch_unit2.append(40)
+
+    sch_unit3 = []
+    sch_unit3_train = []
+    sch_unit3_train.append(train_collection[3][0])
+    sch_unit3_train.append(train_collection[6][0])
+    sch_unit3_train.append(train_collection[8][0])
+    sch_unit3_train.append(train_collection[9][0])
+    sch_unit3.append(sch_unit3_train)
+    sch_unit3.append(40)
+
+    sch_collection = []
+    sch_collection.append(sch_unit1)
+    sch_collection.append(sch_unit2)
+    sch_collection.append(sch_unit3)
+    return sch_collection
+
+def execSch(sch_unit, num_epoch, X_train, Y_train):
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
-    print("model name:",train_unit[2])
+    #print("model name:",train_unit[2])
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        num_batch = Y_train.shape[0] // train_unit[1]
+        num_batch = Y_train.shape[0] // sch_unit[1]
         for e in range(num_epoch):
             for i in range(num_batch):
                 print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
@@ -108,7 +140,7 @@ def execSeq(train_unit, num_epoch, X_train, Y_train):
                 batch_end = (i+1) * batchSize
                 X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                sess.run(train_unit[0], feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                sess.run(sch_unit[0], feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
     
 if __name__ == '__main__':
     X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
@@ -116,8 +148,9 @@ if __name__ == '__main__':
     modelCollection = prepareModelsMan()
     printAllModels(modelCollection)
     trainCollection = buildModels(modelCollection)
-    for tidx in trainCollection:
-        p = Process(target=execSeq, args=(tidx, numEpochs, X_data, Y_data,))
+    schCollection = scheduleModels(trainCollection)
+    for sidx in schCollection:
+        p = Process(target=execSch, args=(sidx, numEpochs, X_data, Y_data,))
         p.start()
         print(p.pid)
         p.join()
