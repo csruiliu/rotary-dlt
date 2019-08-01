@@ -94,7 +94,9 @@ def execTrain(unit, num_epoch, X_train, Y_train):
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
     #print("model name:",train_unit[2])
-    with tf.Session() as sess:
+    with tf.Session(config=config) as sess:
+        run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+        run_metadata = tf.RunMetadata()
         sess.run(tf.global_variables_initializer())
         num_batch = Y_train.shape[0] // maxBatchSize
         for e in range(num_epoch):
@@ -105,11 +107,22 @@ def execTrain(unit, num_epoch, X_train, Y_train):
                 X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
                 if (i+1) % 10 == 0:
-                    start_time = timer()
-                    sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-                    end_time = timer()
-                    step_time += end_time - start_time
-                    step_count += 1
+                    if isProfile:
+                        start_time = timer()
+                        sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata)
+                        end_time = timer()
+                        step_time += end_time - start_time
+                        step_count += 1
+                        trace = timeline.Timeline(step_stats=run_metadata.step_stats)
+                        trace_file = open('/tank/local/ruiliu/mtml-tf/mt-padding/profile_dir/tf_packed_'+str(i)+'.json', 'w')
+                        #trace_file = open('/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir/test/tf_packed_'+str(i)+'.json', 'w')
+                        trace_file.write(trace.generate_chrome_trace_format(show_memory=True))
+                    else:
+                        start_time = timer()
+                        sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                        end_time = timer()
+                        step_time += end_time - start_time
+                        step_count += 1
                 else:
                     sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
         print(step_time)
