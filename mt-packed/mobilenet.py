@@ -7,11 +7,12 @@ exp = 6
 
 #MobileNetV2
 class mobilenet(object):
-    def __init__(self, net_name, model_layer, input_h, input_w, num_classes, is_training=True):
+    def __init__(self, net_name, model_layer, input_h, input_w, batch_size, num_classes, is_training=True):
         self.net_name = net_name
         self.model_layer_num = model_layer
         self.img_h = input_h
         self.img_w = input_w
+        self.batch_size = batch_size
         self.input_size = input_h * input_w * channel_num
         self.num_classes = num_classes
         self.is_training = is_training

@@ -3,14 +3,16 @@ import tensorflow as tf
 channel_num = 3
 
 class perceptron(object):
-    def __init__(self, net_name, model_layer, input_h, input_w, num_classes):
+    def __init__(self, net_name, model_layer, input_h, input_w, batch_size, num_classes):
         self.net_name = net_name
         self.model_layer_num = model_layer
         self.img_h = input_h
         self.img_w = input_w
         self.input_size = input_h * input_w * channel_num
         self.num_classes = num_classes
+        self.batch_size = batch_size
         self.model_size = 0
+
 
     def perceptron_layer(self, input):
         weights = tf.Variable(tf.random_normal([int(input.shape[1]), self.num_classes]))

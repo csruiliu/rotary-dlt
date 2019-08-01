@@ -79,11 +79,13 @@ def printAllModels(model_collection):
 def buildModels(model_collection):
     trainCollection = []
     for midx in model_collection:
-        modelEntity = midx.getModelEntity()
-        #modelBatchSize = midx.getBatchSize()
-        #modelName = midx.getModelName()
-        modelLogit = modelEntity.build(features)
-        modelTrain = modelEntity.cost(modelLogit, labels)
+        workerDevice = '/job:localhost/task:'+ str(midx) +'/gpu:0'
+        with tf.device(tf.train.replica_device_setter(worker_device=workerDevice)):
+            modelEntity = midx.getModelEntity()
+            #modelBatchSize = midx.getBatchSize()
+            #modelName = midx.getModelName()
+            modelLogit = modelEntity.build(features)
+            modelTrain = modelEntity.cost(modelLogit, labels)
         trainCollection.append(modelTrain)
     return trainCollection
 
@@ -114,7 +116,7 @@ def execTrain(unit, num_epoch, X_train, Y_train):
                         step_time += end_time - start_time
                         step_count += 1
                         trace = timeline.Timeline(step_stats=run_metadata.step_stats)
-                        trace_file = open('/tank/local/ruiliu/mtml-tf/mt-padding/profile_dir/tf_packed_'+str(i)+'.json', 'w')
+                        trace_file = open('/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir/tf_packed_step'+str(i)+'.json', 'w')
                         #trace_file = open('/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir/test/tf_packed_'+str(i)+'.json', 'w')
                         trace_file.write(trace.generate_chrome_trace_format(show_memory=True))
                     else:
