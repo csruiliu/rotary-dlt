@@ -62,7 +62,7 @@ fi
 
 #echo $PYCMD
 
-python3 padding_packed.py$PYCMD &
+python3 perf_sch.py$PYCMD &
 nvidia-smi --query-gpu=$queryType --format=csv --loop-ms=$lms >> $FilePath &
 wait -n
 sleep 5

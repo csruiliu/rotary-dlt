@@ -53,7 +53,7 @@ done
 
 #tank is a local disk of the server
 #FilePath=/home/ruiliu/Development/mtml-tf/mt-perf/exp-result/$fileName 
-FilePath=/tank/local/ruiliu/mtml-tf/mt-padding/exp-result/$fileName
+FilePath=/tank/local/ruiliu/mtml-tf/mt-packed/exp-result/$fileName
 
 if [ -f $FilePath ]
 then
@@ -63,7 +63,7 @@ fi
 
 #echo $PYCMD
 
-python3 padding_packed.py$PYCMD &
+python3 profile_packed.py$PYCMD &
 nvidia-smi --query-gpu=$queryType --format=csv --loop-ms=$lms >> $FilePath &
 wait -n
 sleep 5

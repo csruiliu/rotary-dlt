@@ -52,7 +52,7 @@ isShuffle = args.shuffle
 isDiffernetBatch = args.diff
 isProfile = args.profile
 
-input_model_num = 4
+input_model_num = 2
 
 if isDiffernetBatch:
     names = locals()
@@ -67,8 +67,8 @@ else:
 def prepareModelsMan():
     modelCollection = []
     model_class_num = [input_model_num]
-    model_class = ["mobilenet_padding"]
-    all_batch_list = [40,40,40,50]
+    model_class = ["resnet_padding"]
+    all_batch_list = [50,50]
     #all_batch_list = np.random.choice([10,20,40,50], input_model_num, replace=False).tolist()
     #all_batch_list = np.repeat(batchSize, input_model_num).tolist()
     layer_list = np.repeat(1, input_model_num).tolist()

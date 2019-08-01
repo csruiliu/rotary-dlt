@@ -99,6 +99,8 @@ def scheduleModels(train_collection):
     sch_unit1_train.append(train_collection[0][0])
     sch_unit1_train.append(train_collection[1][0])
     sch_unit1_train.append(train_collection[4][0])
+    sch_unit1_train.append(train_collection[3][0])
+    sch_unit1_train.append(train_collection[8][0])
     sch_unit1.append(sch_unit1_train)
     sch_unit1.append(100)
 
@@ -107,6 +109,9 @@ def scheduleModels(train_collection):
     sch_unit2_train.append(train_collection[2][0])
     sch_unit2_train.append(train_collection[5][0])
     sch_unit2_train.append(train_collection[7][0])
+    sch_unit2_train.append(train_collection[6][0])
+    sch_unit2_train.append(train_collection[9][0])
+    
     sch_unit2.append(sch_unit2_train)
     sch_unit2.append(40)
 
@@ -122,7 +127,7 @@ def scheduleModels(train_collection):
     sch_collection = []
     sch_collection.append(sch_unit1)
     sch_collection.append(sch_unit2)
-    sch_collection.append(sch_unit3)
+    #sch_collection.append(sch_unit3)
     return sch_collection
 
 def execSch(sch_unit, num_epoch, X_train, Y_train):

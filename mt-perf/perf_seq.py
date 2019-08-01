@@ -35,7 +35,7 @@ imgWidth = 224
 imgHeight = 224
 numClasses = 1000
 numChannels = 3
-batchSize = 0
+maxBatchSize = args.batchsize
 numEpochs = args.epoch
 isProfile = args.profile
 
@@ -47,25 +47,27 @@ labels = tf.placeholder(tf.int64, [None, numClasses])
 def prepareModelsMan():
     modelCollection = []
     #model_class_num = [5,5,5,5]
-    model_class_num = [3,3,2,2]
-    #model_class_num = [1]  
-    #model_class = ["resnet_padding"]
+    #model_class_num = [3,3,2,2]
+    model_class_num = [1,1]  
+    model_class = ["mobilenet","mobilenet_padding"]
+    #model_class = ["mobilenet"]
     #all_batch_list = [40]
-    model_class = ["mobilenet_padding","resnet_padding","perceptron_padding","convnet_padding"]
-    all_batch_list = [40,20,10,20,20,20,40,40,40,100]
+    #model_class = ["mobilenet_padding","resnet_padding","perceptron_padding","convnet_padding"]
+    all_batch_list = [10,50]
+    #all_batch_list = [40,20,10,20,20,20,40,40,40,100]
     #all_batch_list = [20,10,40,50,20,10,40,20,40,20,10,10,40,20,40,10,20,40,50,100]
     #all_batch_list = np.random.choice([10,20,40,50], input_model_num, replace=False).tolist()
     #all_batch_list = np.repeat(batchSize, input_model_num).tolist()
-    #layer_list = np.repeat(1, input_model_num).tolist()
+    layer_list = np.repeat(1, sum(model_class_num)).tolist()
     #layer_list = [2,2,2,2,2,3,3,3,3,3,1,1,1,1,1,1,1,1,1,1]
-    layer_list = [2,2,3,3,1,1,1,1,1,1]
+    #layer_list = [2,2,3,3,1,1,1,1,1,1]
     model_name_abbr = np.random.choice(100000, sum(model_class_num), replace=False).tolist()
     for idx, mls in enumerate(model_class):
         for _ in range(model_class_num[idx]):
-            global batchSize
-            batchSize = all_batch_list.pop()
+            #global batchSize
+            #batchSize = all_batch_list.pop()
             #print(batchSize)
-            dm = DnnModel(mls, str(model_name_abbr.pop()), model_layer=layer_list.pop(), input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=batchSize, desired_accuracy=0.9)
+            dm = DnnModel(mls, str(model_name_abbr.pop()), model_layer=layer_list.pop(), input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=all_batch_list.pop(), desired_accuracy=0.9)
             modelCollection.append(dm)
     return modelCollection
 
@@ -104,8 +106,8 @@ def execSeq(train_unit, num_epoch, X_train, Y_train):
         for e in range(num_epoch):
             for i in range(num_batch):
                 print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
-                batch_offset = i * batchSize
-                batch_end = (i+1) * batchSize
+                batch_offset = i * train_unit[1]
+                batch_end = (i+1) * train_unit[1]
                 X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
                 sess.run(train_unit[0], feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
@@ -116,8 +118,12 @@ if __name__ == '__main__':
     modelCollection = prepareModelsMan()
     printAllModels(modelCollection)
     trainCollection = buildModels(modelCollection)
+    start_time = timer()
     for tidx in trainCollection:
         p = Process(target=execSeq, args=(tidx, numEpochs, X_data, Y_data,))
         p.start()
         print(p.pid)
         p.join()
+    end_time = timer()
+    dur_time = end_time - start_time
+    print("overall training time", dur_time)

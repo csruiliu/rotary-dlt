@@ -25,10 +25,10 @@ args = parser.parse_args()
 
 #image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
 image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
-bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-#bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
-label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-#label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
+#bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
+bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
+#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
 #profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir'
 profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir'
 
@@ -47,12 +47,12 @@ labels = tf.placeholder(tf.int64, [None, numClasses])
 
 def prepareModelsMan():
     modelCollection = []
-    model_class_num = [2]
-    #model_class_num = [1]  
-    #model_class = ["resnet_padding"]
-    #all_batch_list = [40]
+    #model_class_num = [1,1]
+    model_class_num = [1]  
     model_class = ["mobilenet"]
-    all_batch_list = [50,50]
+    #all_batch_list = [40]
+    #model_class = ["mobilenet","mobilenet_padding"]
+    all_batch_list = [40]
     #all_batch_list = [40,20,10,20,20,20,40,40,40,100]
     #all_batch_list = [20,10,40,50,20,10,40,20,40,20,10,10,40,20,40,10,20,40,50,100]
     #all_batch_list = np.random.choice([10,20,40,50], input_model_num, replace=False).tolist()
@@ -114,7 +114,7 @@ def execTrain(unit, num_epoch, X_train, Y_train):
                     sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
         print(step_time)
         print(step_count)
-        print("average step time:", step_time / step_count)
+        print("average step time:", step_time / step_count * 1000)
 
 if __name__ == '__main__':
     X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
