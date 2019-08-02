@@ -48,11 +48,11 @@ labels = tf.placeholder(tf.int64, [None, numClasses])
 def prepareModelsMan():
     modelCollection = []
     #model_class_num = [1,1]
-    model_class_num = [1]  
-    model_class = ["mobilenet"]
+    model_class_num = [2]  
+    model_class = ["convnet"]
     #all_batch_list = [40]
     #model_class = ["mobilenet","mobilenet_padding"]
-    all_batch_list = [40]
+    all_batch_list = [10,10]
     #all_batch_list = [40,20,10,20,20,20,40,40,40,100]
     #all_batch_list = [20,10,40,50,20,10,40,20,40,20,10,10,40,20,40,10,20,40,50,100]
     #all_batch_list = np.random.choice([10,20,40,50], input_model_num, replace=False).tolist()
@@ -78,14 +78,13 @@ def printAllModels(model_collection):
 
 def buildModels(model_collection):
     trainCollection = []
-    for midx in model_collection:
+    for midx,mc in enumerate(model_collection):
         workerDevice = '/job:localhost/task:'+ str(midx) +'/gpu:0'
-        with tf.device(tf.train.replica_device_setter(worker_device=workerDevice)):
-            modelEntity = midx.getModelEntity()
-            #modelBatchSize = midx.getBatchSize()
-            #modelName = midx.getModelName()
-            modelLogit = modelEntity.build(features)
-            modelTrain = modelEntity.cost(modelLogit, labels)
+        print("workerDevice:", workerDevice)
+        #with tf.device(tf.train.replica_device_setter(worker_device=workerDevice)):
+        modelEntity = mc.getModelEntity()
+        modelLogit = modelEntity.build(features)
+        modelTrain = modelEntity.cost(modelLogit, labels)
         trainCollection.append(modelTrain)
     return trainCollection
 
@@ -116,9 +115,9 @@ def execTrain(unit, num_epoch, X_train, Y_train):
                         step_time += end_time - start_time
                         step_count += 1
                         trace = timeline.Timeline(step_stats=run_metadata.step_stats)
-                        trace_file = open('/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir/tf_packed_step'+str(i)+'.json', 'w')
-                        #trace_file = open('/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir/test/tf_packed_'+str(i)+'.json', 'w')
-                        trace_file.write(trace.generate_chrome_trace_format(show_memory=True))
+                        trace_file = open('/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir/m10-m10-task/tf_packed_step'+str(i)+'.json', 'w')
+                        #trace_file = open('/home/ruiliu/Development/mtml-tf/mt-perf/exp-result/test/tf_packed_task'+str(i)+'.json', 'w')
+                        trace_file.write(trace.generate_chrome_trace_format())
                     else:
                         start_time = timer()
                         sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
