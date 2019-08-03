@@ -8,10 +8,11 @@
 #memory.free
 #memory.used
 
+
 PYCMD=""
 NVISMI=""
 lms=10
-queryType="memory.gpu"
+queryType="memory.used,memory.free,memory.total,utilization.memory,utilization.gpu"
 while getopts "f:q:g:e:b:w:h:sdl:" opt; do
     case $opt in
         f)        
@@ -51,8 +52,8 @@ while getopts "f:q:g:e:b:w:h:sdl:" opt; do
 done
 
 #tank is a local disk of the server
-#FilePath=/home/ruiliu/Development/mtml-tf/mt-perf/exp-result/$fileName 
-FilePath=/tank/local/ruiliu/mtml-tf/mt-perf/exp-result/$fileName
+FilePath=/home/ruiliu/Development/mtml-tf/mt-perf/exp-result/$fileName 
+#FilePath=/tank/local/ruiliu/mtml-tf/mt-packed/exp-result/$fileName
 
 if [ -f $FilePath ]
 then
@@ -61,8 +62,7 @@ then
 fi
 
 #echo $PYCMD
-
-python3 perf_sch.py$PYCMD &
+python3 packed_opt.py$PYCMD &
 nvidia-smi --query-gpu=$queryType --format=csv --loop-ms=$lms >> $FilePath &
 wait -n
 sleep 5

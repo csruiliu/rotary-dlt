@@ -12,7 +12,7 @@
 PYCMD=""
 NVISMI=""
 lms=10
-queryType="memory.gpu"
+queryType="memory.used,memory.free,memory.total,utilization.memory,utilization.gpu"
 while getopts "f:q:g:e:b:w:h:sdl:" opt; do
     case $opt in
         f)        
