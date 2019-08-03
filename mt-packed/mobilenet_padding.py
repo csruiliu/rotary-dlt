@@ -19,6 +19,7 @@ class mobilenet_padding(object):
         self.normalizer = tc.layers.batch_norm
         self.bn_params = {'is_training': self.is_training}
         self.model_size = 0
+        self.cost = 0
 
     def build(self, input):
         instance_name = self.net_name + '_instance'
@@ -131,7 +132,7 @@ class mobilenet_padding(object):
             net = tf.layers.average_pooling2d(x, x.get_shape()[1:-1], 1)
             return net
 
-    def cost(self, logits, labels):
+    def train_step(self, logits, labels):
         with tf.name_scope('loss_'+self.net_name):
             #cross_entropy = tf.losses.hinge_loss(labels=labels, logits=logits)
             #cross_entropy = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
@@ -139,6 +140,27 @@ class mobilenet_padding(object):
             print("label padding shape", labels_padding.shape)
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_padding, logits=logits)
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
+        self.cost = cross_entropy_cost
+
+        with tf.name_scope('optimizer_'+self.net_name):
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            with tf.control_dependencies(update_ops):
+                train_optimizer = tf.train.AdamOptimizer(1e-4)
+                grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost, tf.trainable_variables())
+                train_ops = train_optimizer.apply_gradients(grads_and_vars)
+        
+        return train_optimizer, grads_and_vars, train_ops
+
+       
+    def train(self, logits, labels):
+        with tf.name_scope('loss_'+self.net_name):
+            #cross_entropy = tf.losses.hinge_loss(labels=labels, logits=logits)
+            #cross_entropy = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
+            labels_padding = labels[0:self.batch_size:,]
+            print("label padding shape", labels_padding.shape)
+            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_padding, logits=logits)
+            cross_entropy_cost = tf.reduce_mean(cross_entropy)
+        self.cost = cross_entropy_cost
 
         with tf.name_scope('optimizer_'+self.net_name):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -147,12 +169,7 @@ class mobilenet_padding(object):
 
         return train_step
 
-    def getCost(self, logits, labels):
-        labels_padding = labels[0:self.batch_size:,]
-        print("label padding shape", labels_padding.shape)
-        cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_padding, logits=logits)
-        cross_entropy_cost = tf.reduce_mean(cross_entropy)
-        return cross_entropy_cost
+ 
 
     def getModelInstanceName(self):
         return (self.net_name + " with layer: " + str(self.model_layer_num))

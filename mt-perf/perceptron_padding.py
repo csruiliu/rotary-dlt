@@ -12,6 +12,7 @@ class perceptron_padding(object):
         self.num_classes = num_classes
         self.batch_size = batch_size
         self.model_size = 0
+        self.cost = 0
 
     def perceptron_layer(self, input):
         weights = tf.Variable(tf.random_normal([int(input.shape[1]), self.num_classes]))
@@ -24,7 +25,7 @@ class perceptron_padding(object):
     def build(self, input):
         with tf.variable_scope(self.net_name + '_instance'):
             input_padding = input[0:self.batch_size,:,:,:]
-            #print("padding shape:", input_padding.shape)
+            print("padding shape:", input_padding.shape)
             input_image = tf.reshape(input_padding, [-1, self.input_size])
             layer, layer_size = self.perceptron_layer(input_image)
             self.model_size += layer_size
@@ -33,14 +34,29 @@ class perceptron_padding(object):
                 self.model_size += layer_size
 
         return layer
-
-    def cost(self, logits, labels):
+    
+    def train_step(self, logits, labels):
         with tf.name_scope('loss_'+self.net_name):
-            labels_padding = labels[0:self.batch_size,:]
-            #print("labels padding shape:", labels_padding.shape)
+            labels_padding = labels[0:self.batch_size,:,:,:]
+            print("labels padding shape:", labels_padding.shape)
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_padding, logits=logits)
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
+        self.cost = cross_entropy_cost
+        with tf.name_scope('optimizer_'+self.net_name):
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            with tf.control_dependencies(update_ops):
+                train_optimizer = tf.train.AdamOptimizer(1e-4)
+                grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost, tf.trainable_variables())
+                train_ops = train_optimizer.apply_gradients(grads_and_vars)
+        return train_optimizer, grads_and_vars, train_ops
 
+    def train(self, logits, labels):
+        with tf.name_scope('loss_'+self.net_name):
+            labels_padding = labels[0:self.batch_size,:,:,:]
+            print("labels padding shape:", labels_padding.shape)
+            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_padding, logits=logits)
+            cross_entropy_cost = tf.reduce_mean(cross_entropy)
+        self.cost = cross_entropy_cost
         with tf.name_scope('optimizer_'+self.net_name):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):
@@ -48,11 +64,8 @@ class perceptron_padding(object):
 
         return train_step
 
-    def getCost(self, logits, labels):
-        labels_padding = labels[0:self.batch_size,:]
-        cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_padding, logits=logits)
-        cross_entropy_cost = tf.reduce_mean(cross_entropy)
-        return cross_entropy_cost
+    def getCost(self):
+        return self.cost
 
     def getModelInstanceName(self):
         return (self.net_name + " with layer: " + str(self.model_layer_num)) 

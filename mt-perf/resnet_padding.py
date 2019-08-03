@@ -12,6 +12,7 @@ class resnet_padding(object):
         self.num_classes = num_classes
         self.batch_size = batch_size
         self.model_size = 0
+        self.cost = 0
 
 
     def conv_block(self, X_input, kernel_size, in_filter, out_filters, stage, block, training, stride):
@@ -82,7 +83,7 @@ class resnet_padding(object):
         #assert(x.shape == (x.shape[0],70,70,3))
         with tf.variable_scope(self.net_name + '_instance'):
             input_padding = input[0:self.batch_size,:,:,:]
-            #print("padding shape:", input_padding.shape)
+            print("padding shape:", input_padding.shape)
             x = tf.pad(input_padding, tf.constant([[0, 0], [3, 3, ], [3, 3], [0, 0]]), "CONSTANT")
             #training = tf.placeholder(tf.bool, name='training')
             w_conv1 = self.weight_variable([7, 7, 3, 64])
@@ -150,13 +151,28 @@ class resnet_padding(object):
 
         return logits
 
+    def train_step(self, logits, labels):
+        with tf.name_scope('loss_'+self.net_name):
+            labels_padding = labels[0:self.batch_size,:,:,:]
+            print("labels padding shape:", labels_padding.shape)
+            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_padding, logits=logits)
+            cross_entropy_cost = tf.reduce_mean(cross_entropy)
+        self.cost = cross_entropy_cost
+        with tf.name_scope('optimizer_'+self.net_name):
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            with tf.control_dependencies(update_ops):
+                train_optimizer = tf.train.AdamOptimizer(1e-4)
+                grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost, tf.trainable_variables())
+                train_ops = train_optimizer.apply_gradients(grads_and_vars)
+        return train_optimizer, grads_and_vars, train_ops
+
     def cost(self, logits, labels):
         with tf.name_scope('loss_'+self.net_name):
             labels_padding = labels[0:self.batch_size:,]
-            #print("label padding shape", labels_padding.shape)
+            print("label padding shape", labels_padding.shape)
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_padding, logits=logits)
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
-
+        self.cost = cross_entropy_cost
         with tf.name_scope('optimizer_'+self.net_name):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):
@@ -164,12 +180,8 @@ class resnet_padding(object):
 
         return train_step
 
-    def getCost(self, logits, labels):
-        labels_padding = labels[0:self.batch_size:,]
-        #print("label padding shape", labels_padding.shape)
-        cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
-        cross_entropy_cost = tf.reduce_mean(cross_entropy)
-        return cross_entropy_cost
+    def getCost(self):
+        return self.cost
 
     def weight_variable(self, shape):
         initial = tf.truncated_normal(shape, stddev=0.1)

@@ -12,6 +12,7 @@ class perceptron(object):
         self.num_classes = num_classes
         self.batch_size = batch_size
         self.model_size = 0
+        self.cost = 0
 
 
     def perceptron_layer(self, input):
@@ -33,11 +34,25 @@ class perceptron(object):
 
         return layer
 
-    def cost(self, logits, labels):
+    def train_step(self, logits, labels):
         with tf.name_scope('loss_'+self.net_name):
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
-        cross_entropy_cost = tf.reduce_mean(cross_entropy)
+            cross_entropy_cost = tf.reduce_mean(cross_entropy)
+        self.cost = cross_entropy_cost
+        with tf.name_scope('optimizer_'+self.net_name):
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            with tf.control_dependencies(update_ops):
+                train_optimizer = tf.train.AdamOptimizer(1e-4)
+                grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost, tf.trainable_variables())
+                train_ops = train_optimizer.apply_gradients(grads_and_vars)
 
+        return train_optimizer, grads_and_vars, train_ops
+
+    def train(self, logits, labels):
+        with tf.name_scope('loss_'+self.net_name):
+            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
+            cross_entropy_cost = tf.reduce_mean(cross_entropy)
+        self.cost = cross_entropy_cost
         with tf.name_scope('optimizer_'+self.net_name):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):
@@ -45,10 +60,8 @@ class perceptron(object):
 
         return train_step
 
-    def getCost(self, logits, labels):
-        cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
-        cross_entropy_cost = tf.reduce_mean(cross_entropy)
-        return cross_entropy_cost
+    def getCost(self):
+        return self.cost
 
     def getModelInstanceName(self):
         return (self.net_name + " with layer: " + str(self.model_layer_num)) 

@@ -21,6 +21,7 @@ class convnet(object):
         self.batch_size = batch_size
         self.num_classes = num_classes
         self.model_size = 0
+        self.cost = 0
 
     def create_weights(self, shape):
         return tf.Variable(tf.truncated_normal(shape, stddev=0.05))
@@ -70,25 +71,38 @@ class convnet(object):
             #print(self.model_size)
         return logits
 
-    def cost(self, logits, labels):
+    def train_step(self, logits, labels):
         with tf.name_scope('loss_'+self.net_name):
             labels_padding = labels[0:self.batch_size,:,:,:]
             print("label padding shape:", labels_padding.shape)
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_padding, logits=logits)
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
+        self.cost = cross_entropy_cost
+
+        with tf.name_scope('optimizer_'+self.net_name):
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            with tf.control_dependencies(update_ops):
+                train_optimizer = tf.train.AdamOptimizer(1e-4)
+                grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost, tf.trainable_variables())
+                train_ops = train_optimizer.apply_gradients(grads_and_vars)
+        return train_optimizer, grads_and_vars, train_ops
+
+    def train(self, logits, labels):
+        with tf.name_scope('loss_'+self.net_name):
+            labels_padding = labels[0:self.batch_size,:,:,:]
+            print("label padding shape:", labels_padding.shape)
+            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_padding, logits=logits)
+            cross_entropy_cost = tf.reduce_mean(cross_entropy)
+        self.cost = cross_entropy_cost
 
         with tf.name_scope('optimizer_'+self.net_name):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):
                 train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy_cost)
-
         return train_step
 
     def getCost(self, logits, labels):
-        cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
-        cross_entropy_cost = tf.reduce_mean(cross_entropy)
-        return cross_entropy_cost
-
+        return self.cost
 
     def getModelInstanceName(self):
         return (self.net_name + " with layer: " + str(self.model_layer_num))
