@@ -146,10 +146,10 @@ class mobilenet_padding(object):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):
                 train_optimizer = tf.train.AdamOptimizer(1e-4)
-                grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost, tf.trainable_variables())
-                train_ops = train_optimizer.apply_gradients(grads_and_vars)
+                train_grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost, tf.trainable_variables())
+                train_ops = train_optimizer.apply_gradients(train_grads_and_vars)
         
-        return train_optimizer, grads_and_vars, train_ops
+        return train_optimizer, train_grads_and_vars, train_ops
 
        
     def train(self, logits, labels):

@@ -19,7 +19,7 @@ class mobilenet(object):
         self.normalizer = tc.layers.batch_norm
         self.bn_params = {'is_training': self.is_training}
         self.model_size = 0
-        self.cost
+        self.cost = 0
 
     def build(self, input):
         instance_name = self.net_name + '_instance'

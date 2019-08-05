@@ -33,15 +33,15 @@ args = parser.parse_args()
 
 #image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
 #image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
-bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-#bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
-label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-#label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
+#bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
+bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
+#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
 #profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir'
 profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir'
 
 gpuId = args.gpuid
-batchSize = args.batchsize
+maxBatchSize = args.batchsize
 imgWidth = args.imgw
 imgHeight = args.imgh
 numClasses = args.clazz
@@ -51,14 +51,14 @@ isShuffle = args.shuffle
 isDiffernetBatch = args.diff
 isProfile = args.profile
 
-features = tf.placeholder(tf.float32, [batchSize, imgWidth, imgHeight, numChannels])
-labels = tf.placeholder(tf.int64, [batchSize, numClasses])
+features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+labels = tf.placeholder(tf.int64, [None, numClasses])
 
 def prepareModelsMan():
     modelCollection = []
-    model_class_num = [1]
-    model_class = ["convnet"]
-    all_batch_list = [10]
+    model_class_num = [1,1]
+    model_class = ["mobilenet"]
+    all_batch_list = [50,50]
     #all_batch_list = np.random.choice([10,20,40,50], input_model_num, replace=False).tolist()
     #all_batch_list = np.repeat(batchSize, input_model_num).tolist()
     layer_list = np.repeat(1, sum(model_class_num)).tolist()
@@ -84,8 +84,8 @@ def buildPackedModels(model_collection):
         modelEntity = mc.getModelEntity()
         modelEntityCollection.append(modelEntity)
         modelLogit = modelEntity.build(features)
-        trainOps = modelEntity.train(modelLogit, labels)
-        #trainOptimizer, trainGradsVars, trainOps = modelEntity.train_step(modelLogit, labels)
+        #trainOps = modelEntity.train(modelLogit, labels)
+        trainOptimizer, trainGradsVars, trainOps = modelEntity.train_step(modelLogit, labels)
         trainCollection.append(trainOps)
     return trainCollection
 
@@ -98,12 +98,12 @@ def execPack(train_collection, num_epoch, X_train, Y_train):
         run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
         run_metadata = tf.RunMetadata()
         sess.run(tf.global_variables_initializer())
-        num_batch = Y_train.shape[0] // batchSize
+        num_batch = Y_train.shape[0] // maxBatchSize
         for e in range(num_epoch):
             for i in range(num_batch):
                 print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
-                batch_offset = i * batchSize
-                batch_end = (i+1) * batchSize
+                batch_offset = i * maxBatchSize
+                batch_end = (i+1) * maxBatchSize
                 X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
                 sess.run(train_collection, feed_dict={features:X_mini_batch_feed, labels:Y_mini_batch_feed})
@@ -114,4 +114,8 @@ if __name__ == '__main__':
     modelCollection = prepareModelsMan()
     printAllModels(modelCollection)
     trainCollection = buildPackedModels(modelCollection)
+    start_time = timer()
     execPack(trainCollection, numEpochs, X_data, Y_data)
+    end_time = timer()
+    train_time = end_time - start_time
+    print("training time:",train_time)

@@ -49,9 +49,9 @@ def prepareModelsMan():
     modelCollection = []
     #model_class_num = [1,1]
     model_class_num = [2]  
-    model_class = ["mobilenet"]
+    #model_class = ["mobilenet"]
     #all_batch_list = [40]
-    #model_class = ["mobilenet","mobilenet_padding"]
+    model_class = ["mobilenet"]
     all_batch_list = [10,10]
     #all_batch_list = [40,20,10,20,20,20,40,40,40,100]
     #all_batch_list = [20,10,40,50,20,10,40,20,40,20,10,10,40,20,40,10,20,40,50,100]
@@ -85,16 +85,12 @@ def buildModels(model_collection):
         modelEntity = mc.getModelEntity()
         modelLogit = modelEntity.build(features)
         #trainOps = modelEntity.train(modelLogit, labels)
-        trainOptimizer, trainGradsVars, trainOps = modelEntity.train_step(modelLogit, labels)
-        #train_vars_with_grad = [v for g, v in trainGradsVars if g is not None]
-        #trainOps = trainOptimizer.apply_gradients(train_vars_with_grad)
-        trainCollection.append(trainOps)
-        #trainCollection.append(train_vars_with_grad)
+        trainOptimizer, trainGradsVars, _ = modelEntity.train_step(modelLogit, labels)
+        train_vars_with_grad = [v for g, v in trainGradsVars if g is not None]
+        trainCollection.append(train_vars_with_grad)
     return trainCollection
 
 def execTrain(unit, num_epoch, X_train, Y_train):
-    step_time = 0
-    step_count = 0
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
@@ -111,30 +107,7 @@ def execTrain(unit, num_epoch, X_train, Y_train):
                 batch_end = (i+1) * maxBatchSize
                 X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                if (i+1) % 10 == 0:
-                    if isProfile:
-                        start_time = timer()
-                        sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata)
-                        end_time = timer()
-                        step_time += end_time - start_time
-                        step_count += 1
-                        trace = timeline.Timeline(step_stats=run_metadata.step_stats)
-                        trace_file = open('/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir/m10x3-brief/tf_packed_step'+str(i)+'.json', 'w')
-                        #trace_file = open('/home/ruiliu/Development/mtml-tf/mt-perf/exp-result/test/tf_packed_task'+str(i)+'.json', 'w')
-                        trace_file.write(trace.generate_chrome_trace_format())
-                    else:
-                        start_time = timer()
-                        sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-                        end_time = timer()
-                        dur_time = end_time - start_time
-                        print("step time:",dur_time)
-                        step_time += dur_time
-                        step_count += 1
-                else:
-                    sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-        print(step_time)
-        print(step_count)
-        print("average step time:", step_time / step_count * 1000)
+                sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
 if __name__ == '__main__':
     X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
@@ -142,5 +115,8 @@ if __name__ == '__main__':
     modelCollection = prepareModelsMan()
     printAllModels(modelCollection)
     trainCollection = buildModels(modelCollection)
+    start_time = timer()
     execTrain(trainCollection, numEpochs, X_data, Y_data)
-       
+    end_time = timer()
+    train_time = end_time - start_time
+    print("train_time:",train_time)

@@ -62,7 +62,7 @@ then
 fi
 
 #echo $PYCMD
-python3 packed_opt.py$PYCMD &
+python3 perf_step.py$PYCMD &
 nvidia-smi --query-gpu=$queryType --format=csv --loop-ms=$lms >> $FilePath &
 wait -n
 sleep 5

@@ -52,8 +52,8 @@ while getopts "f:q:g:e:b:w:h:sdl:" opt; do
 done
 
 #tank is a local disk of the server
-FilePath=/home/ruiliu/Development/mtml-tf/mt-perf/exp-result/$fileName 
-#FilePath=/tank/local/ruiliu/mtml-tf/mt-packed/exp-result/$fileName
+#FilePath=/home/ruiliu/Development/mtml-tf/mt-perf/exp-result/$fileName 
+FilePath=/tank/local/ruiliu/mtml-tf/mt-packed/exp-result/$fileName
 
 if [ -f $FilePath ]
 then

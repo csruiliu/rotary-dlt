@@ -19,7 +19,7 @@ class mobilenet(object):
         self.normalizer = tc.layers.batch_norm
         self.bn_params = {'is_training': self.is_training}
         self.model_size = 0
-        self.cost
+        self.cost = 0
 
     def build(self, input):
         instance_name = self.net_name + '_instance'
@@ -155,9 +155,10 @@ class mobilenet(object):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):
                 train_optimizer = tf.train.AdamOptimizer(1e-4)
-                grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost, tf.trainable_variables())
-                train_ops = train_optimizer.apply_gradients(grads_and_vars)
-        return train_optimizer, grads_and_vars, train_ops
+                train_grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost, tf.trainable_variables())
+                #train_vars_with_grads = [v for g, v in train_grads_and_vars if g is not None]
+                train_ops = train_optimizer.apply_gradients(train_grads_and_vars)
+        return train_optimizer, train_grads_and_vars, train_ops
 
 
     def getCost(self):
