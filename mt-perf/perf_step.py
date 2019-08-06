@@ -25,10 +25,10 @@ args = parser.parse_args()
 
 #image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
 image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
-#bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
-#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
+bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
+#bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
+label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+#label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
 #profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir'
 profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir'
 
@@ -48,11 +48,11 @@ labels = tf.placeholder(tf.int64, [None, numClasses])
 def prepareModelsMan():
     modelCollection = []
     #model_class_num = [1,1]
-    model_class_num = [2]  
+    model_class_num = [1]  
     model_class = ["mobilenet"]
     #all_batch_list = [40]
     #model_class = ["mobilenet","mobilenet_padding"]
-    all_batch_list = [10,10]
+    all_batch_list = [10]
     #all_batch_list = [40,20,10,20,20,20,40,40,40,100]
     #all_batch_list = [20,10,40,50,20,10,40,20,40,20,10,10,40,20,40,10,20,40,50,100]
     #all_batch_list = np.random.choice([10,20,40,50], input_model_num, replace=False).tolist()
@@ -86,9 +86,9 @@ def buildModels(model_collection):
         modelLogit = modelEntity.build(features)
         #trainOps = modelEntity.train(modelLogit, labels)
         trainOptimizer, trainGradsVars, trainOps = modelEntity.train_step(modelLogit, labels)
-        #train_vars_with_grad = [v for g, v in trainGradsVars if g is not None]
+        train_vars_with_grad = [v for g, v in trainGradsVars if g is not None]
         #trainOps = trainOptimizer.apply_gradients(train_vars_with_grad)
-        trainCollection.append(trainOps)
+        trainCollection.append(trainGradsVars)
         #trainCollection.append(train_vars_with_grad)
     return trainCollection
 
