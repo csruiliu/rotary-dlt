@@ -48,12 +48,12 @@ def prepareModelsMan():
     modelCollection = []
     #model_class_num = [5,5,5,5]
     #model_class_num = [3,3,2,2]
-    model_class_num = [1]  
-    model_class = ["mobilenet"]
+    model_class_num = [2]  
+    model_class = ["resnet"]
     #model_class = ["mobilenet"]
     #all_batch_list = [40]
     #model_class = ["mobilenet_padding","resnet_padding","perceptron_padding","convnet_padding"]
-    all_batch_list = [10]
+    all_batch_list = [32,32]
     #all_batch_list = [40,20,10,20,20,20,40,40,40,100]
     #all_batch_list = [20,10,40,50,20,10,40,20,40,20,10,10,40,20,40,10,20,40,50,100]
     #all_batch_list = np.random.choice([10,20,40,50], input_model_num, replace=False).tolist()
@@ -88,7 +88,7 @@ def buildModels(model_collection):
         modelBatchSize = midx.getBatchSize()
         modelName = midx.getModelName()
         modelLogit = modelEntity.build(features)
-        _,trainOps = modelEntity.train_step(modelLogit, labels)
+        trainOps = modelEntity.train(modelLogit, labels)
         trainUnit.append(trainOps)
         trainUnit.append(modelBatchSize)
         trainUnit.append(modelName)
