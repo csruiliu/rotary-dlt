@@ -3,7 +3,7 @@ import tensorflow as tf
 channel_num = 3
 
 class resnet(object):
-    def __init__(self, net_name, model_layer, input_h, input_w, batch_size, num_classes):
+    def __init__(self, net_name, model_layer, input_h, input_w, batch_size, num_classes, opt):
         self.net_name = net_name
         self.model_layer_num = model_layer
         self.img_h = input_h
@@ -11,6 +11,7 @@ class resnet(object):
         self.input_size = input_h * input_w * channel_num
         self.num_classes = num_classes
         self.batch_size = batch_size
+        self.optimzier = opt
         self.model_size = 0
         self.cost = 0
 
@@ -157,7 +158,13 @@ class resnet(object):
         with tf.name_scope('optimizer_'+self.net_name):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):
-                train_optimizer = tf.train.AdamOptimizer(1e-4)
+                if self.optimzier == "Adam":
+                    print("using Adam Optimizer")
+                    train_optimizer = tf.train.AdamOptimizer(1e-4)
+                elif self.optimzier == "SGD":
+                    print("using SGD Optimizer")
+                    train_optimizer = tf.train.GradientDescentOptimizer(1e-4)
+        
                 grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost, tf.trainable_variables())
                 train_ops = train_optimizer.apply_gradients(grads_and_vars)
         return train_optimizer, grads_and_vars, train_ops
@@ -170,8 +177,12 @@ class resnet(object):
         with tf.name_scope('optimizer_'+self.net_name):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):
-                train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy_cost)
-
+                if self.optimzier == "Adam":
+                    print("using Adam Optimizer")
+                    train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy_cost)
+                elif self.optimzier == "SGD":
+                    print("using SGD Optimizer")
+                    train_step = tf.train.GradientDescentOptimizer(1e-4).minimize(cross_entropy_cost)
         return train_step
 
     def getCost(self):
