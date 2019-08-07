@@ -19,15 +19,15 @@ parser.add_argument('-p', '--preproc', action='store_false', default=True, help=
 parser.add_argument('-d', '--samedata', action='store_false', default=True, help='use same training batch data or not')
 parser.add_argument('-o', '--sameoptimizer', action='store_false', default=True, help='use same optimizer or not')
 parser.add_argument('-b', '--samebatchsize', action='store_false', default=True, help='use same batch size or not')
-parser.add_argument('-t', '--trainstep', action='store_false', default=True, help='use same compute and apply to update gradient or not')
+parser.add_argument('-t', '--trainstep', action='store_true', default=False, help='use same compute and apply to update gradient or not')
 args = parser.parse_args()
 
 #########################
 # Global Variables
 #########################
 
-image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
-#image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
+#image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
+image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
 
 #bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
 bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
@@ -59,14 +59,14 @@ else:
     maxBatchSize = 50
 
 if sameTrainData:
+    features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+    labels = tf.placeholder(tf.int64, [None, numClasses])
+else:
     names = locals()
     input_dict = {}
     for idx in range(input_model_num):
         names['features' + str(idx)] = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
         names['labels' + str(idx)] = tf.placeholder(tf.int64, [None, numClasses])
-else:
-    features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
-    labels = tf.placeholder(tf.int64, [None, numClasses])
 
 def showExpConfig():
     print("Packing the same model:", sameModel)
@@ -120,18 +120,17 @@ def buildModels(model_collection):
         modelEntity = mc.getModelEntity()
         modelEntityCollection.append(modelEntity)
         if sameTrainData:
-            modelLogit = modelEntity.build(names['features' + str(midx)])
-            if trainStep:
-                trainOptimizer, trainGradsVars, trainOps = modelEntity.train_step(modelLogit, names['labels' + str(midx)])
-            else:
-                trainOps = modelEntity.train(modelLogit, labels)
-        else:
             modelLogit = modelEntity.build(features)
             if trainStep:
                 trainOptimizer, trainGradsVars, trainOps = modelEntity.train_step(modelLogit, labels)
             else:
                 trainOps = modelEntity.train(modelLogit, labels)
-
+        else:
+            modelLogit = modelEntity.build(names['features' + str(midx)])
+            if trainStep:
+                trainOptimizer, trainGradsVars, trainOps = modelEntity.train_step(modelLogit, names['labels' + str(midx)])
+            else:
+                trainOps = modelEntity.train(modelLogit, labels)
         trainCollection.append(trainOps)
     return trainCollection
 
@@ -147,7 +146,7 @@ def execTrain(unit, num_epoch, X_train, Y_train):
         num_batch_list = np.arange(num_batch)
         for e in range(num_epoch):
             for i in range(num_batch):
-                print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))/
+                print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
                 if sameTrainData:
                     batch_offset = i * maxBatchSize
                     batch_end = (i+1) * maxBatchSize
