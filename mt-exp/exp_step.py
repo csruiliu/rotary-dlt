@@ -74,38 +74,43 @@ def buildModels(model_collection):
     for mc in model_collection:
         modelEntity = mc.getModelEntity()
         modelLogit = modelEntity.build(features)
-        #trainOps = modelEntity.train(modelLogit, labels)
-        trainOptimizer, trainGradsVars, trainOps = modelEntity.train_step(modelLogit, labels)
+        trainOps = modelEntity.train(modelLogit, labels)
+        #trainOptimizer, trainGradsVars, trainOps = modelEntity.train_step(modelLogit, labels)
         #trainCollection.append(trainGradsVars)
-        train_vars_with_grad = [v for g, v in trainGradsVars if g is not None]
-        trainGradsCollection.append(train_vars_with_grad)
+        #train_vars_with_grad = [v for g, v in trainGradsVars if g is not None]
+        #trainGradsCollection.append(train_vars_with_grad)
+        #trainGradsCollection.append(trainGradsVars)
         #with tf.control_dependencies([trainOps]):
         #    dummy = tf.constant(0)
-        trainOpsCollection.append(trainOptimizer)
+        trainOpsCollection.append(trainOps)
+    return trainOpsCollection
+    #return trainGradsCollection, trainOpsCollection
 
-    return trainGradsCollection, trainOpsCollection
-
-def execTrain(trainGradsUnit, trainOpsUnit, num_epoch, X_train, Y_train):
+def execTrain(trainOpsUnit, num_epoch, X_train_path, Y_train):
     step_time = 0
     step_count = 0
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
+    image_list = sorted(os.listdir(X_train_path))
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
         num_batch = Y_train.shape[0] // maxBatchSize
         for e in range(num_epoch):
             for i in range(num_batch):
                 print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
+                #h = sess.partial_run_setup([trainGradsUnit,trainOpsUnit],[features, labels])
                 if (i+1) % 10 == 0:
                     start_time = timer()
                     batch_offset = i * maxBatchSize
                     batch_end = (i+1) * maxBatchSize
-                    X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
+                    batch_list = image_list[batch_offset:batch_end]  
+                    X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
+                    #X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
                     Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                    
-                    #h = sess.partial_run_setup([trainGradsUnit[0],trainOpsUnit],[features, labels]) 
-                    #sess.partial_run(h,trainGradsUnit[0],feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    sess.run(trainOpsUnit,feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    #h = sess.partial_run_setup([trainGradsUnit,trainOpsUnit],[features, labels]) 
+                    #sess.partial_run(h,trainGradsUnit,feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                     #sess.partial_run(h,trainOpsUnit)
                     
                     #sess.partial_run(h,[trainGradsUnit[0],trainGradsUnit[1]],feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
@@ -119,18 +124,17 @@ def execTrain(trainGradsUnit, trainOpsUnit, num_epoch, X_train, Y_train):
                 else:
                     batch_offset = i * maxBatchSize
                     batch_end = (i+1) * maxBatchSize
-                    X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
+                    batch_list = image_list[batch_offset:batch_end] 
+                    X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
+                    #X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
                     Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                    h = sess.partial_run_setup([trainGradsUnit[0],trainOpsUnit],[features, labels]) 
-                    sess.partial_run(h,trainGradsUnit[0],feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-                    sess.partial_run(h,trainOpsUnit)
- 
-                    
+                    #h = sess.partial_run_setup([trainGradsUnit,trainOpsUnit],[features, labels]) 
+                    #sess.partial_run(h,trainGradsUnit,feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    #sess.partial_run(h,trainOpsUnit)                  
                     #sess.partial_run(h,[trainGradsUnit[0],trainGradsUnit[1]],feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                     #sess.partial_run(h,trainGradsUnit,feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                     #sess.partial_run(h,trainOpsUnit)
-
-                    #sess.run(trainGradsUnit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    sess.run(trainOpsUnit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                 
         print(step_time)
         print(step_count)
@@ -138,9 +142,9 @@ def execTrain(trainGradsUnit, trainOpsUnit, num_epoch, X_train, Y_train):
 
 
 if __name__ == '__main__':
-    X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
+    #X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
     Y_data = load_labels_onehot(label_path, numClasses)
     modelCollection = prepareModelsMan()
     printAllModels(modelCollection)
-    trainGradsCollection,trainOpsCollection = buildModels(modelCollection)
-    execTrain(trainGradsCollection,trainOpsCollection, numEpochs, X_data, Y_data)
+    trainOpsCollection = buildModels(modelCollection)
+    execTrain(trainOpsCollection, numEpochs, image_dir, Y_data)

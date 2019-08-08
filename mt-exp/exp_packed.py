@@ -192,7 +192,7 @@ def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
-    image_dir = sorted(os.listdir(X_train_path))
+    image_list = sorted(os.listdir(X_train_path))
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
         num_batch = Y_train.shape[0] // maxBatchSize
@@ -205,8 +205,8 @@ def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
                         start_time = timer()
                         batch_offset = i * maxBatchSize
                         batch_end = (i+1) * maxBatchSize
-                        batch_list = image_dir[batch_offset:batch_end]   
-                        X_mini_batch_feed = load_image_dir(image_dir, batch_list, imgHeight, imgWidth)
+                        batch_list = image_list[batch_offset:batch_end]   
+                        X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
                         Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
                         sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                         end_time = timer()
@@ -217,8 +217,8 @@ def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
                     else:
                         batch_offset = i * maxBatchSize
                         batch_end = (i+1) * maxBatchSize
-                        batch_list = image_dir[batch_offset:batch_end]   
-                        X_mini_batch_feed = load_image_dir(image_dir, batch_list, imgHeight, imgWidth)
+                        batch_list = image_list[batch_offset:batch_end]   
+                        X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
                         Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
                         sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                 else:
@@ -228,8 +228,8 @@ def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
                             rand_idx = int(np.random.choice(num_batch_list, 1))
                             batch_offset = rand_idx * maxBatchSize
                             batch_end = (rand_idx+1) * maxBatchSize
-                            batch_list = image_dir[batch_offset:batch_end]
-                            names['X_mini_batch_feed' + str(ridx)] = load_image_dir(image_dir, batch_list, imgHeight, imgWidth)
+                            batch_list = image_list[batch_offset:batch_end]
+                            names['X_mini_batch_feed' + str(ridx)] = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
                             names['Y_mini_batch_feed' + str(ridx)] = Y_train[batch_offset:batch_end,:]
                             input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
                             input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
@@ -244,8 +244,8 @@ def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
                             rand_idx = int(np.random.choice(num_batch_list, 1))
                             batch_offset = rand_idx * maxBatchSize
                             batch_end = (rand_idx+1) * maxBatchSize
-                            batch_list = image_dir[batch_offset:batch_end]
-                            names['X_mini_batch_feed' + str(ridx)] = load_image_dir(image_dir, batch_list, imgHeight, imgWidth)
+                            batch_list = image_list[batch_offset:batch_end]
+                            names['X_mini_batch_feed' + str(ridx)] = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
                             names['Y_mini_batch_feed' + str(ridx)] = Y_train[batch_offset:batch_end,:]
                             input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
                             input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
