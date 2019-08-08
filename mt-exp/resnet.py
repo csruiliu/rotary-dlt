@@ -147,8 +147,27 @@ class resnet(object):
 
             logits = tf.layers.dense(x, units=self.num_classes, activation=tf.nn.softmax)
             self.model_size += (int(x.shape[1]) + 1) * self.num_classes
+        
+        #logit_name = self.net_name + '_instance'
 
         return logits
+    
+    def compute_grads(self, logits, labels):
+        with tf.name_scope('loss_'+self.net_name):
+            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
+            cross_entropy_cost = tf.reduce_mean(cross_entropy)
+        with tf.name_scope('optimizer_'+self.net_name):
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            with tf.control_dependencies(update_ops):
+                train_optimizer = tf.train.AdamOptimizer(1e-4) 
+                #train_grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost, tf.trainable_variables())
+                train_grads_and_vars = train_optimizer.compute_gradients(cross_entropy, tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,scope=self.net_name+'_instance'))
+                #train_gv = [(g,v) for g,v in train_grads_and_vars if g is not None]
+                #train_gv = [(g,v) for g,v in train_grads_and_vards if v :]
+                #train_gv = [v for g, v in train_grads_and_vars if g is not None]
+                train_step = train_optimizer.apply_gradients(train_grads_and_vars)        
+        return train_optimizer, train_grads_and_vars,  train_step
+
 
     def train_step(self, logits, labels):
         with tf.name_scope('loss_'+self.net_name):
@@ -165,7 +184,7 @@ class resnet(object):
                     print("using SGD Optimizer")
                     train_optimizer = tf.train.GradientDescentOptimizer(1e-4)
         
-                grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost, tf.trainable_variables())
+                grads_and_vars = train_optimizer.compute_gradients(cross_entropy, tf.trainable_variables())
                 train_ops = train_optimizer.apply_gradients(grads_and_vars)
         return train_optimizer, grads_and_vars, train_ops
 
@@ -187,6 +206,8 @@ class resnet(object):
 
     def getCost(self):
         return self.cost
+    
+    
 
     def weight_variable(self, shape):
         initial = tf.truncated_normal(shape, stddev=0.1)
