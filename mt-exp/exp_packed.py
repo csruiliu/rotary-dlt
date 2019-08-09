@@ -44,6 +44,8 @@ numClasses = 1000
 numChannels = 3
 numEpochs = 1
 
+remark = 3
+
 input_model_num = 2
 
 sameBatchSize = args.samebatchsize
@@ -148,7 +150,7 @@ def execTrain(unit, num_epoch, X_train, Y_train):
             for i in range(num_batch):
                 print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
                 if sameTrainData:
-                    if i != 0:
+                    if (i+1) % remark == 0:
                         start_time = timer()
                         batch_offset = i * maxBatchSize
                         batch_end = (i+1) * maxBatchSize
@@ -167,7 +169,7 @@ def execTrain(unit, num_epoch, X_train, Y_train):
                         Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
                         sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                 else:
-                    if (i+1) % 10 == 0:
+                    if (i+1) % remark == 0:
                         start_time = timer()
                         for ridx in range(input_model_num):
                             rand_idx = int(np.random.choice(num_batch_list, 1))
@@ -213,7 +215,7 @@ def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
             for i in range(num_batch):
                 print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
                 if sameTrainData:
-                    if (i+1) % 10 == 0:
+                    if (i+1) % remark == 0:
                         start_time = timer()
                         batch_offset = i * maxBatchSize
                         batch_end = (i+1) * maxBatchSize
@@ -234,7 +236,7 @@ def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
                         Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
                         sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                 else:
-                    if (i+1) % 10 == 0:
+                    if (i+1) % remark == 0:
                         start_time = timer()
                         for ridx in range(input_model_num):
                             rand_idx = int(np.random.choice(num_batch_list, 1))
