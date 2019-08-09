@@ -23,13 +23,16 @@ args = parser.parse_args()
 #########################
 
 #image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
-image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
+#image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
+image_dir = '/local/ruiliu/dataset/imagenet10k'
 
 #bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
+#bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
+bin_dir = '/local/ruiliu/dataset/imagenet10k.bin'
 
 #label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
+#label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
+label_path = '/local/ruiliu/dataset/imagenet10k-label.txt'
 
 #profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir'
 #profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir'
@@ -38,10 +41,9 @@ imgWidth = 224
 imgHeight = 224
 numClasses = 1000
 numChannels = 3
+perf_remark = 3
 maxBatchSize = args.batchsize
 numEpochs = args.epoch
-
-#input_model_num = 1
 
 features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
 labels = tf.placeholder(tf.int64, [None, numClasses])
@@ -99,7 +101,7 @@ def execTrain(trainOptUnit, trainGradsUnit, trainStepUnit, num_epoch, X_train, Y
         for e in range(num_epoch):
             for i in range(num_batch):
                 print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
-                if i != 0:
+                if (i+1) % perf_remark != 0:
                     start_time = timer()
                     batch_offset = i * maxBatchSize
                     batch_end = (i+1) * maxBatchSize
