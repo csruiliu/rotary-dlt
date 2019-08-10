@@ -25,7 +25,8 @@ class mobilenet(object):
     def build(self, input):
         instance_name = self.net_name + '_instance'
         with tf.variable_scope(instance_name):
-            net = self._conv2d_block(input, 32, 3, 2, self.is_training, 'conv1_1')
+            input_padding = input[0:self.batch_size,:,:,:]
+            net = self._conv2d_block(input_padding, 32, 3, 2, self.is_training, 'conv1_1')
             net = self._res_block(net, 1, 16, 1, self.is_training, block_name='res2_1')
             net = self._res_block(net, exp, 24, 2, self.is_training, block_name='res3_1')  # size/4
             net = self._res_block(net, exp, 24, 1, self.is_training, block_name='res3_2')
@@ -134,7 +135,8 @@ class mobilenet(object):
         with tf.name_scope('loss_'+self.net_name):
             #cross_entropy = tf.losses.hinge_loss(labels=labels, logits=logits)
             #cross_entropy = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
-            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
+            labels_padding = labels[0:self.batch_size:,]
+            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_padding, logits=logits)
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
         self.cost = cross_entropy_cost
 
@@ -151,7 +153,8 @@ class mobilenet(object):
         with tf.name_scope('loss_'+self.net_name):
             #cross_entropy = tf.losses.hinge_loss(labels=labels, logits=logits)
             #cross_entropy = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
-            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
+            labels_padding = labels[0:self.batch_size:,]
+            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_padding, logits=logits)
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
         self.cost = cross_entropy_cost
 

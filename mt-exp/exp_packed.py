@@ -72,7 +72,7 @@ else:
 
 def showExpConfig():
     print("Packing the same model:", sameModel)
-    print("Using the same train data:", sameModel)
+    print("Using the same train data:", sameTrainData)
     print("Using the preprocess:", preproc)
     print("Using the same optimizer:", sameOptimizer)
     print("Using the same batch size:", sameBatchSize)
@@ -132,7 +132,7 @@ def buildModels(model_collection):
             if trainStep:
                 trainOptimizer, trainGradsVars, trainOps = modelEntity.train_step(modelLogit, names['labels' + str(midx)])
             else:
-                trainOps = modelEntity.train(modelLogit, labels)
+                trainOps = modelEntity.train(modelLogit, names['labels'+str(midx)])
         trainCollection.append(trainOps)
     return trainCollection
 
@@ -270,17 +270,16 @@ def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
         print("average step time:", step_time / step_count * 1000)      
 
 
-
 if __name__ == '__main__':
     showExpConfig()    
     modelCollection = prepareModels()
     printAllModels(modelCollection)
-    trainCollection = buildModels(modelCollection)
+    trainCollection = buildModels(modelCollection) 
     if preproc:
+        Y_data = load_labels_onehot(label_path, numClasses)
+        execTrainPreproc(trainCollection, numEpochs, image_dir, Y_data)
+    else:
         X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
         Y_data = load_labels_onehot(label_path, numClasses)
         execTrain(trainCollection, numEpochs, X_data, Y_data)
-    else:
-        Y_data = load_labels_onehot(label_path, numClasses)
-        execTrainPreproc(trainCollection, numEpochs, image_dir, Y_data)
     

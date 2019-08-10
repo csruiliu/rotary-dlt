@@ -27,16 +27,16 @@ args = parser.parse_args()
 #########################
 
 #image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
-#image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
-image_dir = '/local/ruiliu/dataset/imagenet10k'
+image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
+#image_dir = '/local/ruiliu/dataset/imagenet10k'
 
 #bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-#bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
-bin_dir = '/local/ruiliu/dataset/imagenet10k.bin'
+bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
+#bin_dir = '/local/ruiliu/dataset/imagenet10k.bin'
 
 #label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-#label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
-label_path = '/local/ruiliu/dataset/imagenet10k-label.txt'
+label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
+#label_path = '/local/ruiliu/dataset/imagenet10k-label.txt'
 
 #profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir'
 #profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir'

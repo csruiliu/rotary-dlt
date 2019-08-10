@@ -83,7 +83,8 @@ class resnet(object):
     def build(self, input, training=True, keep_prob=0.5):
         #assert(x.shape == (x.shape[0],70,70,3))
         with tf.variable_scope(self.net_name + '_instance'):
-            x = tf.pad(input, tf.constant([[0, 0], [3, 3, ], [3, 3], [0, 0]]), "CONSTANT")
+            input_padding = input[0:self.batch_size,:,:,:]
+            x = tf.pad(input_padding, tf.constant([[0, 0], [3, 3, ], [3, 3], [0, 0]]), "CONSTANT")
             #training = tf.placeholder(tf.bool, name='training')
             w_conv1 = self.weight_variable([7, 7, 3, 64])
             x = tf.nn.conv2d(x, w_conv1, strides=[1, 2, 2, 1], padding='VALID')
@@ -171,7 +172,8 @@ class resnet(object):
 
     def train_step(self, logits, labels):
         with tf.name_scope('loss_'+self.net_name):
-            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
+            labels_padding = labels[0:self.batch_size:,]
+            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_padding, logits=logits)
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
         self.cost = cross_entropy_cost
         with tf.name_scope('optimizer_'+self.net_name):
@@ -190,7 +192,8 @@ class resnet(object):
 
     def train(self, logits, labels):
         with tf.name_scope('loss_'+self.net_name):
-            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
+            labels_padding = labels[0:self.batch_size:,]
+            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_padding, logits=logits)
         cross_entropy_cost = tf.reduce_mean(cross_entropy)
         self.cost = cross_entropy_cost
         with tf.name_scope('optimizer_'+self.net_name):
