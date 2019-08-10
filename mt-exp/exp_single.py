@@ -14,8 +14,12 @@ from dnn_model import DnnModel
 #########################
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-bs', '--batchsize', type=int, default=32, help='identify the training batch size')
-parser.add_argument('-e', '--epoch', type=int, default=1, help='identify the epoch numbers')
+parser.add_argument('-m', '--model', type=str, default='resnet', help='choose a model to run')
+parser.add_argument('-p', '--preproc', action='store_false', default=True, help='use preproc to transform the data before training or not')
+parser.add_argument('-s', '--trainstep', action='store_false', default=True, help='measure the single step or the whole model')
+parser.add_argument('-o', '--optimizer', type=str, default='Adam', help='identify an optimizer for training')
+parser.add_argument('-bs', '--batchsize', type=int, default=32, help='identify the batch size')
+parser.add_argument('-l', '--layersize', type=int, default=1, help='identify the layer of deep learning model')
 args = parser.parse_args()
 
 #########################
@@ -41,84 +45,82 @@ imgWidth = 224
 imgHeight = 224
 numClasses = 1000
 numChannels = 3
-perf_remark = 3
-maxBatchSize = args.batchsize
-numEpochs = args.epoch
+numEpochs = 1
+
+marker = 3
+
+trainModel = args.model
+trainBatchSize = args.batchsize
+preproc = args.preproc
+trainOptimizer = args.optimizer
+trainModelLayer = args.layersize
+trainStepMeasure = args.batchsize
 
 features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
 labels = tf.placeholder(tf.int64, [None, numClasses])
 
-def prepareModelsMan():
-    modelCollection = []
-    model_class_num = [1]  
-    model_class = ["mobilenet"]
-    all_batch_list = [50]
-    layer_list = np.repeat(1, sum(model_class_num)).tolist()
-    model_name_abbr = np.random.choice(100000, sum(model_class_num), replace=False).tolist()
-    for idx, mls in enumerate(model_class):
-        for _ in range(model_class_num[idx]):
-            dm = DnnModel(mls, str(model_name_abbr.pop()), model_layer=layer_list.pop(), input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, batch_size=all_batch_list.pop(),optimizer="SGD")
-            modelCollection.append(dm)
-    return modelCollection
+def showExpConfig():
+    print("run the model:", trainModel)
+    print("Using the preprocess:", preproc)
+    print("Using the optimizer:", trainOptimizer)
+    print("Using the batch size:", trainBatchSize)
 
-def printAllModels(model_collection):
-    print("Max Batch Size:",maxBatchSize)
-    for idm in model_collection:
-        print(idm.getInstanceName())
-        print(idm.getModelName())
-        print(idm.getModelLayer())
-        print(idm.getBatchSize())
-        print("===============")
+def prepareModel():
+    model_name_abbr = np.random.choice(100000, 1, replace=False).tolist()
+    dm = DnnModel(trainModel, str(model_name_abbr.pop()), model_layer=1, 
+                  input_w=imgWidth, input_h=imgHeight, num_classes=numClasses, 
+                  batch_size=trainBatchSize, optimizer=trainOptimizer)
+    return dm
 
-def buildModels(model_collection):
-    trainStepCollection = []
-    for mc in model_collection:
-        modelEntity = mc.getModelEntity()
-        modelLogit = modelEntity.build(features)
-        _, _, trainStep = modelEntity.train_step(modelLogit, labels)
-        trainStepCollection.append(trainStep)
-    return trainStepCollection
+def printModelDes(model):
+    print(model.getInstanceName())
+    print(model.getModelName())
+    print(model.getModelLayer())
+    print(model.getBatchSize())
+    print("===============")
 
-def execTrainStep(trainStepUnit, num_epoch, X_train, Y_train):
+def buildModel(model):
+    modelEntity = model.getModelEntity()
+    modelLogit = modelEntity.build(features)
+    _, _, trainStep = modelEntity.train_step(modelLogit, labels)
+    return trainStep
+
+def execTrainStep(trainStep, num_epoch, X_train, Y_train):
     step_time = 0
     step_count = 0
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
-    #image_list = sorted(os.listdir(X_train_path))
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
-        num_batch = Y_train.shape[0] // maxBatchSize
+        num_batch = Y_train.shape[0] // trainBatchSize
         for e in range(num_epoch):
             for i in range(num_batch):
                 print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
-                if (i+1) % perf_remark == 0:
+                if (i+1) % marker == 0:
                     start_time = timer()
-                    batch_offset = i * maxBatchSize
-                    batch_end = (i+1) * maxBatchSize
-                    #batch_list = image_list[batch_offset:batch_end]  
-                    #X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
+                    batch_offset = i * trainBatchSize
+                    batch_end = (i+1) * trainBatchSize
                     X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
                     Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                    sess.run(trainStepUnit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                     end_time = timer()
                     dur_time = end_time - start_time
                     print("step time:",dur_time)
                     step_time += dur_time
                     step_count += 1
                 else:
-                    batch_offset = i * maxBatchSize
-                    batch_end = (i+1) * maxBatchSize
-                    #batch_list = image_list[batch_offset:batch_end] 
-                    #X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
+                    batch_offset = i * trainBatchSize
+                    batch_end = (i+1) * trainBatchSize
                     X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
                     Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                    sess.run(trainStepUnit, feed_dict={features:X_mini_batch_feed, labels:Y_mini_batch_feed})
+                    sess.run(trainStep, feed_dict={features:X_mini_batch_feed, labels:Y_mini_batch_feed})
+        
         print(step_time)
         print(step_count)
         print("average step time:", step_time / step_count * 1000)
 
-def execTrainStepPreproc(trainStepUnit, num_epoch, X_train_path, Y_train):
+def execTrainStepPreproc(trainStep, num_epoch, X_train_path, Y_train):
     step_time = 0
     step_count = 0
     config = tf.ConfigProto()
@@ -127,70 +129,92 @@ def execTrainStepPreproc(trainStepUnit, num_epoch, X_train_path, Y_train):
     image_list = sorted(os.listdir(X_train_path))
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
-        num_batch = Y_train.shape[0] // maxBatchSize
+        num_batch = Y_train.shape[0] // trainBatchSize
         for e in range(num_epoch):
             for i in range(num_batch):
                 print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
-                if (i+1) % perf_remark == 0:
+                if (i+1) % marker == 0:
                     start_time = timer()
-                    batch_offset = i * maxBatchSize
-                    batch_end = (i+1) * maxBatchSize
+                    batch_offset = i * trainBatchSize
+                    batch_end = (i+1) * trainBatchSize
                     batch_list = image_list[batch_offset:batch_end]  
                     X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
-                    #X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
                     Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                    sess.run(trainStepUnit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                     end_time = timer()
                     dur_time = end_time - start_time
                     print("step time:",dur_time)
                     step_time += dur_time
                     step_count += 1
                 else:
-                    batch_offset = i * maxBatchSize
-                    batch_end = (i+1) * maxBatchSize
+                    batch_offset = i * trainBatchSize
+                    batch_end = (i+1) * trainBatchSize
                     batch_list = image_list[batch_offset:batch_end] 
                     X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
-                    #X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
                     Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                    sess.run(trainStepUnit, feed_dict={features:X_mini_batch_feed, labels:Y_mini_batch_feed})
+                    sess.run(trainStep, feed_dict={features:X_mini_batch_feed, labels:Y_mini_batch_feed})
         print(step_time)
         print(step_count)
         print("average step time:", step_time / step_count * 1000)
 
 
-
-
-def execTrainModel(trainStepUnit, num_epoch, X_train, Y_train):
+def execTrainModel(trainStep, num_epoch, X_train, Y_train):
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
-    #image_list = sorted(os.listdir(X_train_path))
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
-        num_batch = Y_train.shape[0] // maxBatchSize
+        num_batch = Y_train.shape[0] // trainBatchSize
         start_time = timer()
         for e in range(num_epoch):
             for i in range(num_batch):
                 print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
-                batch_offset = i * maxBatchSize
-                batch_end = (i+1) * maxBatchSize
-                #batch_list = image_list[batch_offset:batch_end]  
-                #X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
+                batch_offset = i * trainBatchSize
+                batch_end = (i+1) * trainBatchSize
                 X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                sess.run(trainStepUnit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
         end_time = timer()
         dur_time = end_time - start_time
-        print("run time:",dur_time)
-        
+        print("model training time:",dur_time)
+
+def execTrainModelPreproc(trainStep, num_epoch, X_train_path, Y_train):
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    config.allow_soft_placement = True
+    image_list = sorted(os.listdir(X_train_path))
+    with tf.Session(config=config) as sess:
+        sess.run(tf.global_variables_initializer())
+        num_batch = Y_train.shape[0] // trainBatchSize
+        start_time = timer()
+        for e in range(num_epoch):
+            for i in range(num_batch):
+                print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
+                batch_offset = i * trainBatchSize
+                batch_end = (i+1) * trainBatchSize
+                batch_list = image_list[batch_offset:batch_end]  
+                X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
+                Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
+                sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+        end_time = timer()
+        dur_time = end_time - start_time
+        print("model training time:",dur_time)
 
 if __name__ == '__main__':
-    X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
-    Y_data = load_labels_onehot(label_path, numClasses)
-    modelCollection = prepareModelsMan()
-    printAllModels(modelCollection)
-    trainStepCollection = buildModels(modelCollection)
-    execTrainStep(trainStepCollection, numEpochs, X_data, Y_data)
-    #execTrainStepPreproc(trainStepCollection, numEpochs, image_dir, Y_data)
-    #execTrainModel(trainStepCollection, numEpochs, X_data, Y_data)
+    trainModel = prepareModel()
+    printModelDes(trainModel)
+    trainStep = buildModel(trainModel)
+    if preproc:
+        Y_data = load_labels_onehot(label_path, numClasses)
+        if trainStepMeasure:
+            execTrainStepPreproc(trainStep, numEpochs, image_dir, Y_data)
+        else:
+            execTrainModelPreproc(trainStep, numEpochs, image_dir, Y_data)
+    else:
+        X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
+        Y_data = load_labels_onehot(label_path, numClasses)
+        if trainStepMeasure:
+            execTrainStep(trainStep, numEpochs, X_data, Y_data)
+        else:
+            execTrainModel(trainStep, numEpochs, X_data, Y_data)
     
