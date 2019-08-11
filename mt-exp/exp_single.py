@@ -54,7 +54,7 @@ trainBatchSize = args.batchsize
 preproc = args.preproc
 trainOptimizer = args.optimizer
 trainModelLayer = args.layersize
-trainStepMeasure = args.batchsize
+trainStepMeasure = args.trainstep
 
 features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
 labels = tf.placeholder(tf.int64, [None, numClasses])
