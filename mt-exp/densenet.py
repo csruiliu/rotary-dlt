@@ -5,7 +5,7 @@ from tensorflow.keras.layers import GlobalAveragePooling2D
 channel_num = 3
 class_num = 1000
 weight_decay = 1e-4
-growth_k = 24
+growth_k = 32
 
 #DenseNet-121
 class densenet(object):
