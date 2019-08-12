@@ -75,7 +75,97 @@ def prepareModels():
         modelCollection.append(dm)
     return modelCollection
 
-def execTrainPreproc(model, num_epoch, X_train_path, Y_train):
+def buildModels(model_collection):
+    modelEntityCollection = []
+    trainCollection = []
+    for midx, mc in enumerate(model_collection):
+        modelEntity = mc.getModelEntity()
+        modelEntityCollection.append(modelEntity)
+        if sameTrainData:
+            modelLogit = modelEntity.build(features)
+            if trainStep:
+                trainOptimizer, trainGradsVars, trainOps = modelEntity.train_step(modelLogit, labels)
+            else:
+                trainOps = modelEntity.train(modelLogit, labels)
+        else:
+            modelLogit = modelEntity.build(names['features' + str(midx)])
+            if trainStep:
+                trainOptimizer, trainGradsVars, trainOps = modelEntity.train_step(modelLogit, names['labels' + str(midx)])
+            else:
+                trainOps = modelEntity.train(modelLogit, labels)
+        trainCollection.append(trainOps)
+    return trainCollection
+
+def execTrain(unit, num_epoch, X_train, Y_train):
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    config.allow_soft_placement = True
+    batchSize = model.getBatchSize()
+    with tf.Session(config=config) as sess:
+        sess.run(tf.global_variables_initializer())
+        num_batch = Y_train.shape[0] // batchSize
+        num_batch_list = np.arange(num_batch)
+        for e in range(num_epoch):
+            for i in range(num_batch):
+                print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch)) 
+                batch_offset = i * batchSize
+                batch_end = (i+1) * batchSize
+                X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
+                Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
+                sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                
+def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    config.allow_soft_placement = True
+    image_list = sorted(os.listdir(X_train_path))
+    batchSize = model.getBatchSize()
+    with tf.Session(config=config) as sess:
+        sess.run(tf.global_variables_initializer())
+        num_batch = Y_train.shape[0] // batchSize
+        num_batch_list = np.arange(num_batch)
+        for e in range(num_epoch):
+            for i in range(num_batch):
+                print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))      
+                batch_offset = i * batchSize
+                batch_end = (i+1) * batchSize
+                batch_list = image_list[batch_offset:batch_end]   
+                X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
+                Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
+                sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+
+
+if __name__ == '__main__':
+    showExpConfig()
+    modelCollection = prepareModels()
+    trainCollection = buildModels(modelCollection)
+    
+    Y_data = load_labels_onehot(label_path, numClasses)
+    if preproc:
+        start_time = timer()
+        for tidx in trainCollection:
+            p = Process(target=execTrainPreproc, args=(tidx, numEpochs, image_dir, Y_data,))
+            p.start()
+            print(p.pid)
+            p.join()
+        end_time = timer()
+        dur_time = end_time - start_time
+        print("total training time:", dur_time)
+        
+    else:
+        X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
+        start_time = timer()
+        for tidx in trainCollectionn:
+            p = Process(target=execTrain, args=(tidx, numEpochs, X_data, Y_data,))
+            p.start()
+            print(p.pid)
+            p.join()
+        end_time = timer()
+        dur_time = end_time - start_time
+        print("total training time:", dur_time)
+
+
+""" def execTrainPreproc(model, num_epoch, X_train_path, Y_train):
     modelEntity = model.getModelEntity()
     modelLogit = modelEntity.build(features)
     trainStep = modelEntity.train(modelLogit, labels)
@@ -117,32 +207,4 @@ def execTrain(model, num_epoch, X_train, Y_train):
                 batch_end = (i+1) * batchSize
                 X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-
-if __name__ == '__main__':
-    showExpConfig()
-    modelCollection = prepareModels()
-    if preproc:
-        start_time = timer()
-        for midx in modelCollection:
-            Y_data = load_labels_onehot(label_path, numClasses)
-            p = Process(target=execTrainPreproc, args=(midx, numEpochs, image_dir, Y_data,))
-            p.start()
-            print(p.pid)
-            p.join()
-        end_time = timer()
-        dur_time = end_time - start_time
-        print("total training time:", dur_time)
-        
-    else:
-        start_time = timer()
-        for midx in modelCollection:
-            X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
-            Y_data = load_labels_onehot(label_path, numClasses)
-            p = Process(target=execTrain, args=(midx, numEpochs, image_dir, Y_data,))
-            p.start()
-            print(p.pid)
-            p.join()
-        end_time = timer()
-        dur_time = end_time - start_time
-        print("total training time:", dur_time)
+                sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}) """
