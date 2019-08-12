@@ -4,7 +4,6 @@ from tensorflow.keras.layers import GlobalAveragePooling2D
 
 channel_num = 3
 class_num = 1000
-weight_decay = 1e-4
 growth_k = 32
 
 #DenseNet-121
@@ -35,29 +34,22 @@ class densenet(object):
             return block
 
     def dense_block(self, input, dn_layers, block_name):
-        with tf.variable_scope(block_name):
-            layers_concat = list()
-            layers_concat.append(input)
-
+        with tf.variable_scope(block_name): 
             block = self.bottleneck_block(input, block_name=block_name+'_bottleneck_block_0')
-            
-            layers_concat.append(block)
-
+            block_input = tf.concat(values=[input, block],axis=3)
             for i in range(dn_layers - 1):
-                block = tf.concat(layers_concat, axis=3)
-                block = self.bottleneck_block(block, block_name=block_name+'_bottleneck_block_'+str(i+1))
-                layers_concat.append(block)
+                block = self.bottleneck_block(block_input, block_name=block_name+'_bottleneck_block_'+str(i+1))
+                block_input = tf.concat([block_input,block],axis=3)
             
-            block = tf.concat(layers_concat, axis=3)
-
             return block
     
     def transition_block(self, input, block_name):
-        block = tf.layers.batch_normalization(input, training=True, trainable=True, name=block_name+'_bn_0')
-        block = tf.layers.conv2d(block, filters=2*growth_k, kernel_size=(1,1), strides=1, padding='same', name=block_name+'_conv_0')
-        block = tf.layers.average_pooling2d(block, pool_size=(2,2), strides=2, padding='same', name=block_name+'_avgpool_0')
+        with tf.variable_scope(block_name):
+            block = tf.layers.batch_normalization(input, training=True, trainable=True, name=block_name+'_bn_0')
+            block = tf.layers.conv2d(block, filters=2*growth_k, kernel_size=(1,1), strides=1, padding='same', name=block_name+'_conv_0')
+            block = tf.layers.average_pooling2d(block, pool_size=(2,2), strides=2, padding='same', name=block_name+'_avgpool_0')
         
-        return block
+            return block
 
     def build(self, input):
         instance_name = self.net_name + '_instance'
@@ -69,9 +61,9 @@ class densenet(object):
             net = self.transition_block(net, block_name='trans_block_0')
             net = self.dense_block(net, dn_layers=12, block_name='dense_block_1')
             net = self.transition_block(net, block_name='trans_block_1')
-            net = self.dense_block(net, dn_layers=24, block_name='dense_block_2')
+            net = self.dense_block(net, dn_layers=48, block_name='dense_block_2')
             net = self.transition_block(net, block_name='trans_block_2')
-            net = self.dense_block(net, dn_layers=16, block_name='dense_block_3')
+            net = self.dense_block(net, dn_layers=32, block_name='dense_block_3')
             net = GlobalAveragePooling2D()(net)
             net = tc.layers.flatten(net)
             logits = tf.layers.dense(net, units=class_num, name='full_connected')

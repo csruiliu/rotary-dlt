@@ -59,9 +59,9 @@ sameOptimizer = args.sameoptimizer
 trainStep = args.trainstep
 
 if sameBatchSize:
-    maxBatchSize = 32
-else:
     maxBatchSize = 50
+else:
+    maxBatchSize = 64
 
 if sameTrainData:
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
@@ -91,9 +91,9 @@ def prepareModels():
         model_class = ["resnet","mobilenet"]
     
     if sameBatchSize:
-        batch_list = [32,32]
+        batch_list = [50,50]
     else:
-        batch_list = [32,50]
+        batch_list = [50,64]
 
     if sameOptimizer:
         opt_list = ["Adam","Adam"]
@@ -198,25 +198,19 @@ def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
                         input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
                     sess.run(unit, feed_dict=input_dict)     
 
+
 if __name__ == '__main__':
-    showExpConfig()    
+    showExpConfig()
+    start_time_prep = timer()
     modelCollection = prepareModels()
-    printAllModels(modelCollection)
-    trainCollection = buildModels(modelCollection)
+    #printAllModels(modelCollection)
+    trainCollection = buildModels(modelCollection) 
+    end_time_prep = timer()
+    dur_time_prep = end_time_prep - start_time_prep
+    print("prepare model time:",dur_time_prep)
     if preproc:
-        X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
         Y_data = load_labels_onehot(label_path, numClasses)
         start_time = timer()
-        for tidx in trainCollection:
-            p = Process(target=execTrain, args=(tidx, numEpochs, X_data, Y_data,))
-            p.start()
-            print(p.pid)
-            p.join()
-        end_time = timer()
-        dur_time = end_time - start_time
-        print("overall training time", dur_time)
-    else:
-        Y_data = load_labels_onehot(label_path, numClasses)
         for tidx in trainCollection:
             p = Process(target=execTrainPreproc, args=(tidx, numEpochs, image_dir, Y_data,))
             p.start()
@@ -224,4 +218,18 @@ if __name__ == '__main__':
             p.join()
         end_time = timer()
         dur_time = end_time - start_time
-        print("overall training time", dur_time)
+        print("overall training time:", dur_time)
+    else:
+        X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
+        Y_data = load_labels_onehot(label_path, numClasses)
+        start_time = timer()
+        for tidx in trainCollection:
+            #X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
+            #Y_data = load_labels_onehot(label_path, numClasses)
+            p = Process(target=execTrain, args=(tidx, numEpochs, X_data, Y_data,))
+            p.start()
+            print(p.pid)
+            p.join()
+        end_time = timer()
+        dur_time = end_time - start_time
+        print("overall training time:", dur_time)

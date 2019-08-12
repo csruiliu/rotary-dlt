@@ -56,9 +56,9 @@ sameOptimizer = args.sameoptimizer
 trainStep = args.trainstep
 
 if sameBatchSize:
-    maxBatchSize = 32
-else:
     maxBatchSize = 50
+else:
+    maxBatchSize = 64
 
 if sameTrainData:
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
@@ -88,9 +88,9 @@ def prepareModels():
         model_class = ["resnet","mobilenet"]
     
     if sameBatchSize:
-        batch_list = [32,32]
+        batch_list = [50,50]
     else:
-        batch_list = [32,50]
+        batch_list = [50,64]
 
     if sameOptimizer:
         opt_list = ["Adam","Adam"]
@@ -163,11 +163,22 @@ def execTrain(unit, num_epoch, X_train, Y_train):
                         step_time += dur_time
                         step_count += 1
                     else:
-                        batch_offset = i * maxBatchSize
-                        batch_end = (i+1) * maxBatchSize
-                        X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
-                        Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                        sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                        if i == 0:
+                            start_time = timer()
+                            batch_offset = i * maxBatchSize
+                            batch_end = (i+1) * maxBatchSize
+                            X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
+                            Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
+                            sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                            end_time = timer()
+                            dur_time = end_time - start_time
+                            print("first step time:", dur_time)
+                        else:
+                            batch_offset = i * maxBatchSize
+                            batch_end = (i+1) * maxBatchSize
+                            X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
+                            Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
+                            sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                 else:
                     if (i+1) % remark == 0:
                         start_time = timer()
@@ -229,12 +240,26 @@ def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
                         step_time += dur_time
                         step_count += 1
                     else:
-                        batch_offset = i * maxBatchSize
-                        batch_end = (i+1) * maxBatchSize
-                        batch_list = image_list[batch_offset:batch_end]   
-                        X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
-                        Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                        sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                        if i == 0:
+                            start_time = timer()
+                            batch_offset = i * maxBatchSize
+                            batch_end = (i+1) * maxBatchSize
+                            batch_list = image_list[batch_offset:batch_end]   
+                            X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
+                            Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
+                            sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                            end_time = timer()
+                            dur_time = end_time - start_time
+                            print("first step training:",dur_time)
+                        else:
+                            batch_offset = i * maxBatchSize
+                            batch_end = (i+1) * maxBatchSize
+                            batch_list = image_list[batch_offset:batch_end]   
+                            X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
+                            Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
+                            sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+
+
                 else:
                     if (i+1) % remark == 0:
                         start_time = timer()
@@ -272,9 +297,13 @@ def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
 
 if __name__ == '__main__':
     showExpConfig()    
+    start_time_prep = timer()
     modelCollection = prepareModels()
-    printAllModels(modelCollection)
+    #printAllModels(modelCollection)
     trainCollection = buildModels(modelCollection) 
+    end_time_prep = timer()
+    dur_time_prep = end_time_prep - start_time_prep
+    print("prep time:",dur_time_prep)
     if preproc:
         Y_data = load_labels_onehot(label_path, numClasses)
         execTrainPreproc(trainCollection, numEpochs, image_dir, Y_data)
