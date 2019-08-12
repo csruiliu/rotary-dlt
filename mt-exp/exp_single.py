@@ -165,7 +165,7 @@ def execTrainModel(trainStep, num_epoch, X_train, Y_train):
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
         num_batch = Y_train.shape[0] // trainBatchSize
-        start_time = timer()
+        #start_time = timer()
         for e in range(num_epoch):
             for i in range(num_batch):
                 print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
@@ -174,9 +174,9 @@ def execTrainModel(trainStep, num_epoch, X_train, Y_train):
                 X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
                 sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-        end_time = timer()
-        dur_time = end_time - start_time
-        print("model training time:",dur_time)
+        #end_time = timer()
+        #dur_time = end_time - start_time
+        #print("model training time:",dur_time)
 
 def execTrainModelPreproc(trainStep, num_epoch, X_train_path, Y_train):
     config = tf.ConfigProto()
@@ -186,7 +186,7 @@ def execTrainModelPreproc(trainStep, num_epoch, X_train_path, Y_train):
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
         num_batch = Y_train.shape[0] // trainBatchSize
-        start_time = timer()
+        #start_time = timer()
         for e in range(num_epoch):
             for i in range(num_batch):
                 print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
@@ -196,25 +196,33 @@ def execTrainModelPreproc(trainStep, num_epoch, X_train_path, Y_train):
                 X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
                 sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-        end_time = timer()
-        dur_time = end_time - start_time
-        print("model training time:",dur_time)
+        #end_time = timer()
+        #dur_time = end_time - start_time
+        #print("model training time:",dur_time)
 
 if __name__ == '__main__':
     trainModel = prepareModel()
     printModelDes(trainModel)
     trainStep = buildModel(trainModel)
+
     if preproc:
         Y_data = load_labels_onehot(label_path, numClasses)
         if trainStepMeasure:
             execTrainStepPreproc(trainStep, numEpochs, image_dir, Y_data)
         else:
+            start_time_model = timer()
             execTrainModelPreproc(trainStep, numEpochs, image_dir, Y_data)
+            end_time_model = timer()
+            dur_time_model = end_time_model - start_time_model
+            print("model training time:",dur_time_model)
     else:
         X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
         Y_data = load_labels_onehot(label_path, numClasses)
         if trainStepMeasure:
             execTrainStep(trainStep, numEpochs, X_data, Y_data)
         else:
+            start_time_model = timer()
             execTrainModel(trainStep, numEpochs, X_data, Y_data)
-    
+            end_time_model = timer()
+            dur_time_model = end_time_model - start_time_model
+            print("model training time:",dur_time_model)

@@ -201,13 +201,13 @@ def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
 
 if __name__ == '__main__':
     showExpConfig()
-    start_time_prep = timer()
+    #start_time_prep = timer()
     modelCollection = prepareModels()
-    #printAllModels(modelCollection)
+    printAllModels(modelCollection)
     trainCollection = buildModels(modelCollection) 
-    end_time_prep = timer()
-    dur_time_prep = end_time_prep - start_time_prep
-    print("prepare model time:",dur_time_prep)
+    #end_time_prep = timer()
+    #dur_time_prep = end_time_prep - start_time_prep
+    #print("prepare model time:",dur_time_prep)
     if preproc:
         Y_data = load_labels_onehot(label_path, numClasses)
         start_time = timer()
