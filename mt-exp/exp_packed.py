@@ -56,9 +56,9 @@ sameOptimizer = args.sameoptimizer
 trainStep = args.trainstep
 
 if sameBatchSize:
-    maxBatchSize = 50
+    maxBatchSize = 32
 else:
-    maxBatchSize = 64
+    maxBatchSize = 50
 
 if sameTrainData:
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
@@ -88,9 +88,9 @@ def prepareModels():
         model_class = ["resnet","mobilenet"]
     
     if sameBatchSize:
-        batch_list = [50,50]
+        batch_list = [32,32]
     else:
-        batch_list = [50,64]
+        batch_list = [32,50]
 
     if sameOptimizer:
         opt_list = ["Adam","Adam"]
