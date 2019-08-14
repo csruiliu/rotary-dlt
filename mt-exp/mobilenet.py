@@ -149,6 +149,21 @@ class mobilenet(object):
                     train_step = tf.train.GradientDescentOptimizer(1e-4).minimize(cross_entropy_cost)
         return train_step
 
+    def compute_grads(self, logits, labels):
+        with tf.name_scope('loss_'+self.net_name):
+            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
+            cross_entropy_cost = tf.reduce_mean(cross_entropy)
+        
+        with tf.name_scope('optimizer_'+self.net_name):
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            with tf.control_dependencies(update_ops):
+                if self.optimzier == "Adam":
+                    train_optimizer = tf.train.AdamOptimizer(1e-4)
+                elif self.optimzier == "SGD":
+                    train_optimizer = tf.train.GradientDescentOptimizer(1e-4)
+                train_grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost, tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,scope=self.net_name+'_instance'))        
+        return train_grads_and_vars
+
     def train_step(self, logits, labels):
         with tf.name_scope('loss_'+self.net_name):
             #cross_entropy = tf.losses.hinge_loss(labels=labels, logits=logits)
