@@ -3,9 +3,9 @@ import tensorflow as tf
 channel_num = 3
 
 class perceptron(object):
-    def __init__(self, net_name, model_layer=3, input_h, input_w, batch_size, num_classes, opt, is_training=True):
+    def __init__(self, net_name, model_layer, input_h, input_w, batch_size, num_classes, opt, is_training=True):
         self.net_name = net_name
-        self.model_layer_num = model_layer
+        self.model_layer_num = 3
         self.img_h = input_h
         self.img_w = input_w
         self.input_size = input_h * input_w * channel_num
@@ -47,7 +47,7 @@ class perceptron(object):
                 elif self.optimzier == "SGD":
                     train_optimizer = tf.train.GradientDescentOptimizer(1e-4)
                 train_grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost, tf.trainable_variables())
-                train_steps = train_optimizer.apply_gradients(grads_and_vars)
+                train_steps = train_optimizer.apply_gradients(train_grads_and_vars)
 
         return train_optimizer, train_grads_and_vars, train_steps
 

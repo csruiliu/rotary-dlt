@@ -56,7 +56,7 @@ sameOptimizer = args.sameoptimizer
 trainStep = args.trainstep
 
 if sameBatchSize:
-    maxBatchSize = 32
+    maxBatchSize = 86
 else:
     maxBatchSize = 50
 
@@ -85,10 +85,10 @@ def prepareModels():
         model_class = ["resnet","resnet"]       
     else:
         model_class_num = [1,1]
-        model_class = ["resnet","mobilenet"]
+        model_class = ["densenet","resnet"]
     
     if sameBatchSize:
-        batch_list = [32,32]
+        batch_list = [86,86]
     else:
         batch_list = [32,50]
 
@@ -299,7 +299,7 @@ if __name__ == '__main__':
     showExpConfig()    
     start_time_prep = timer()
     modelCollection = prepareModels()
-    #printAllModels(modelCollection)
+    printAllModels(modelCollection)
     trainCollection = buildModels(modelCollection) 
     end_time_prep = timer()
     dur_time_prep = end_time_prep - start_time_prep

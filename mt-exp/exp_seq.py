@@ -52,7 +52,7 @@ preproc = args.preproc
 sameOptimizer = args.sameoptimizer
 trainStep = args.trainstep
 
-model_list = ["resnet","resnet"]
+model_list = ["densenet","densenet"]
 batch_list = [32,32]
 opt_list = ["Adam","Adam"]
 
@@ -81,54 +81,45 @@ def buildModels(model_collection):
     for midx, mc in enumerate(model_collection):
         modelEntity = mc.getModelEntity()
         modelEntityCollection.append(modelEntity)
-        if sameTrainData:
-            modelLogit = modelEntity.build(features)
-            if trainStep:
-                trainOptimizer, trainGradsVars, trainOps = modelEntity.train_step(modelLogit, labels)
-            else:
-                trainOps = modelEntity.train(modelLogit, labels)
+        modelLogit = modelEntity.build(features)
+        if trainStep:
+            trainOptimizer, trainGradsVars, trainOps = modelEntity.train_step(modelLogit, labels)
         else:
-            modelLogit = modelEntity.build(names['features' + str(midx)])
-            if trainStep:
-                trainOptimizer, trainGradsVars, trainOps = modelEntity.train_step(modelLogit, names['labels' + str(midx)])
-            else:
-                trainOps = modelEntity.train(modelLogit, labels)
+            trainOps = modelEntity.train(modelLogit, labels)
         trainCollection.append(trainOps)
     return trainCollection
 
-def execTrain(unit, num_epoch, X_train, Y_train):
+def execTrain(unit, num_epoch, batch_size, X_train, Y_train):
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
-    batchSize = model.getBatchSize()
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
-        num_batch = Y_train.shape[0] // batchSize
+        num_batch = Y_train.shape[0] // batch_size
         num_batch_list = np.arange(num_batch)
         for e in range(num_epoch):
             for i in range(num_batch):
                 print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch)) 
-                batch_offset = i * batchSize
-                batch_end = (i+1) * batchSize
+                batch_offset = i * batch_size
+                batch_end = (i+1) * batch_size
                 X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
                 sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                 
-def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
+def execTrainPreproc(unit, num_epoch, batch_size, X_train_path, Y_train):
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
     image_list = sorted(os.listdir(X_train_path))
-    batchSize = model.getBatchSize()
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
-        num_batch = Y_train.shape[0] // batchSize
+        num_batch = Y_train.shape[0] // batch_size
         num_batch_list = np.arange(num_batch)
         for e in range(num_epoch):
             for i in range(num_batch):
                 print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))      
-                batch_offset = i * batchSize
-                batch_end = (i+1) * batchSize
+                batch_offset = i * batch_size
+                batch_end = (i+1) * batch_size
                 batch_list = image_list[batch_offset:batch_end]   
                 X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
@@ -143,8 +134,8 @@ if __name__ == '__main__':
     Y_data = load_labels_onehot(label_path, numClasses)
     if preproc:
         start_time = timer()
-        for tidx in trainCollection:
-            p = Process(target=execTrainPreproc, args=(tidx, numEpochs, image_dir, Y_data,))
+        for tidx, tc in enumerate(trainCollection):
+            p = Process(target=execTrainPreproc, args=(tc, numEpochs, batch_list[tidx], image_dir, Y_data,))
             p.start()
             print(p.pid)
             p.join()
@@ -155,8 +146,8 @@ if __name__ == '__main__':
     else:
         X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
         start_time = timer()
-        for tidx in trainCollectionn:
-            p = Process(target=execTrain, args=(tidx, numEpochs, X_data, Y_data,))
+        for tidx, tc in enumerate(trainCollectionn):
+            p = Process(target=execTrain, args=(tc,  numEpochs, batch_list[tidx], X_data, Y_data,))
             p.start()
             print(p.pid)
             p.join()
