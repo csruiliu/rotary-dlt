@@ -48,9 +48,9 @@ remark = 3
 
 model_class_num = [1,1]
 model_class = ["perceptron","perceptron"]       
-batch_list = [32,32]
+batch_list = [10,10]
 opt_list = ["Adam","Adam"]
-maxBatchSize = 32
+maxBatchSize = 10
 
 preproc = args.preproc
 
@@ -91,9 +91,9 @@ def buildModels(model_collection):
         modelEntity = mc.getModelEntity()
         modelEntityCollection.append(modelEntity)
         modelLogit = modelEntity.build(features)
-        #trainOps = modelEntity.compute_grads(modelLogit, labels)
+        trainOps = modelEntity.compute_grads(modelLogit, labels)
         #_, _, trainOps = modelEntity.train_step(modelLogit, labels)
-        trainOps = modelEntity.train(modelLogit, labels)
+        #trainOps = modelEntity.train(modelLogit, labels)
         trainCollection.append(trainOps)
     return trainCollection
 
@@ -128,8 +128,9 @@ def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
     #config.intra_op_parallelism_threads = 9
     image_list = sorted(os.listdir(X_train_path))
     with tf.Session(config=config) as sess:
-        #run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-        #run_metadata = tf.RunMetadata()
+        run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+        run_metadata = tf.RunMetadata()
+        trainUnit = unit 
         sess.run(tf.global_variables_initializer())
         num_batch = Y_train.shape[0] // maxBatchSize
         for e in range(num_epoch):
@@ -140,23 +141,23 @@ def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
                 batch_list = image_list[batch_offset:batch_end]   
                 X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                if (i+1) % remark == 0:
+                if i % 20 == 0:
                     start_time = timer()
-                    sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    sess.run(trainUnit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata)
                     end_time = timer()
-                    dur_time = end_time - start_time
-                    step_count += 1
-                    step_time += dur_time
+                    #dur_time = end_time - start_time
+                    #step_count += 1
+                    #step_time += dur_time
                     #sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata)
-                    #trace = timeline.Timeline(step_stats=run_metadata.step_stats)
+                    trace = timeline.Timeline(step_stats=run_metadata.step_stats)
                     #trace_file = open('/tank/local/ruiliu/mtml-tf/mt-padding/profile_dir/tf_packed_b20b40_'+str(i)+'.json', 'w')
-                    #trace_file = open('/home/ruiliu/Development/mtml-tf/mt-exp/profile_dir/tf_packed_'+str(i)+'.json', 'w')
-                    #trace_file.write(trace.generate_chrome_trace_format(show_dataflow=True))
+                    trace_file = open('/home/ruiliu/Development/mtml-tf/mt-exp/profile_dir/tf_packed_'+str(i)+'.json', 'w')
+                    trace_file.write(trace.generate_chrome_trace_format(show_dataflow=True))
                 else:
-                    sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-        print(step_time)
-        print(step_count)
-        print("average step time:", step_time / step_count * 1000)
+                    sess.run(trainUnit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+        #print(step_time)
+        #print(step_count)
+        #print("average step time:", step_time / step_count * 1000)
 
 
 if __name__ == '__main__':

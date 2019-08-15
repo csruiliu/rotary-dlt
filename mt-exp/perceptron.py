@@ -46,9 +46,11 @@ class perceptron(object):
                     train_optimizer = tf.train.AdamOptimizer(1e-4)
                 elif self.optimzier == "SGD":
                     train_optimizer = tf.train.GradientDescentOptimizer(1e-4)
-                grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost,  gate_gradients=0) 
-                train_grads_and_vars = [(g, v) for g, v in grads_and_vars if g is not None] 
+                train_grads_and_vars = tf.gradients(ys=cross_entropy_cost, xs=tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,scope=self.net_name+'_instance'), gate_gradients=True)
+                #train_grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost,  gate_gradients=train_optimizer.GATE_NONE) 
+                #train_grads_and_vars = [(g, v) for g, v in grads_and_vars if g is not None] 
         return train_grads_and_vars
+
 
     def train_step(self, logits, labels):
         with tf.name_scope('loss_'+self.net_name):
@@ -62,8 +64,10 @@ class perceptron(object):
                     train_optimizer = tf.train.AdamOptimizer(1e-4)
                 elif self.optimzier == "SGD":
                     train_optimizer = tf.train.GradientDescentOptimizer(1e-4)
-                train_grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost, tf.trainable_variables(), gate_gradients=0)
-                train_steps = train_optimizer.apply_gradients(train_grads_and_vars)
+                #train_grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost, tf.trainable_variables(), gate_gradients=train_optimizer.GATE_NONE)
+                train_grads_and_vars = tf.gradients(ys=cross_entropy_cost, xs=tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,scope=self.net_name+'_instance'), gate_gradients=True)
+                #train_steps = train_optimizer.apply_gradients(train_grads_and_vars)
+                train_steps = train_optimizer.apply_gradients(zip(train_grads_and_vars, tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,scope=self.net_name+'_instance')))
 
         return train_optimizer, train_grads_and_vars, train_steps
 
