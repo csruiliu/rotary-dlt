@@ -76,7 +76,7 @@ class densenet(object):
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
         
         with tf.name_scope('optimizer_'+self.net_name):
-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope=self.net_name+'_instance')
             with tf.control_dependencies(update_ops):
                 if self.optimzier == "Adam":
                     train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy_cost)
@@ -91,7 +91,7 @@ class densenet(object):
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
 
         with tf.name_scope('optimizer_'+self.net_name):
-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope=self.net_name+'_instance')
             with tf.control_dependencies(update_ops):
                 if self.optimzier == "Adam":
                     train_optimizer = tf.train.AdamOptimizer(1e-4)

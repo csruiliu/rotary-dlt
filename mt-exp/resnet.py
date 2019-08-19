@@ -158,7 +158,7 @@ class resnet(object):
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
         with tf.name_scope('optimizer_'+self.net_name):
-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope=self.net_name+'_instance')
             with tf.control_dependencies(update_ops):
                 train_optimizer = tf.train.AdamOptimizer(1e-4) 
                 #train_grads_and_vars = train_optimizer.compute_gradients(cross_entropy_cost, tf.trainable_variables())
@@ -167,7 +167,7 @@ class resnet(object):
                 #train_gv = [(g,v) for g,v in train_grads_and_vards if v :]
                 #train_gv = [v for g, v in train_grads_and_vars if g is not None]
                 train_step = train_optimizer.apply_gradients(train_grads_and_vars)        
-        return train_optimizer, train_grads_and_vars,  train_step
+        return train_grads_and_vars,  train_step
 
 
     def train_step(self, logits, labels):
@@ -177,7 +177,7 @@ class resnet(object):
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
         self.cost = cross_entropy_cost
         with tf.name_scope('optimizer_'+self.net_name):
-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS,scope=self.net_name+'_instance')
             with tf.control_dependencies(update_ops):
                 if self.optimzier == "Adam":
                     print("using Adam Optimizer")
@@ -197,7 +197,7 @@ class resnet(object):
         cross_entropy_cost = tf.reduce_mean(cross_entropy)
         self.cost = cross_entropy_cost
         with tf.name_scope('optimizer_'+self.net_name):
-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope=self.net_name+'_instance')
             with tf.control_dependencies(update_ops):
                 if self.optimzier == "Adam":
                     print("using Adam Optimizer")

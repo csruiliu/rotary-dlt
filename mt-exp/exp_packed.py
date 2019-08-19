@@ -56,7 +56,7 @@ sameOptimizer = args.sameoptimizer
 trainStep = args.trainstep
 
 if sameBatchSize:
-    maxBatchSize = 86
+    maxBatchSize = 32
 else:
     maxBatchSize = 50
 
@@ -82,13 +82,13 @@ def prepareModels():
     
     if sameModel:
         model_class_num = [1,1]
-        model_class = ["resnet","resnet"]       
+        model_class = ["mobilenet","mobilenet"]       
     else:
         model_class_num = [1,1]
         model_class = ["densenet","resnet"]
     
     if sameBatchSize:
-        batch_list = [86,86]
+        batch_list = [32,32]
     else:
         batch_list = [32,50]
 
