@@ -16,6 +16,7 @@ from dnn_model import DnnModel
 parser = argparse.ArgumentParser()
 #parser.add_argument('-m', '--samemodel', action='store_false', default=True, help='pack same model to train or not')
 parser.add_argument('-p', '--preproc', action='store_false', default=True, help='use preproc to transform the data before training or not')
+parser.add_argument('-r', '--profile', action='store_false', default=True, help='use tf.profiler to measure')
 #parser.add_argument('-d', '--samedata', action='store_false', default=True, help='use same training batch data or not')
 #parser.add_argument('-o', '--sameoptimizer', action='store_false', default=True, help='use same optimizer or not')
 #parser.add_argument('-b', '--samebatchsize', action='store_false', default=True, help='use same batch size or not')
@@ -44,7 +45,7 @@ numClasses = 1000
 numChannels = 3
 numEpochs = 1
 input_model_num = 2
-remark = 3
+marker = 20
 
 #model_class_num = [1,1,1,1,1]
 #model_class = ["mobilenet","mobilenet","mobilenet","mobilenet","mobilenet"]       
@@ -53,7 +54,7 @@ remark = 3
 #maxBatchSize = 10
 
 model_class_num = [1,1]
-model_class = ["densenet","densenet"]       
+model_class = ["resnet","resnet"]       
 batch_list = [32,32]
 opt_list = ["Adam","Adam"]
 maxBatchSize = 32
@@ -61,6 +62,8 @@ maxBatchSize = 32
 
 
 preproc = args.preproc
+profile = args.profile
+
 
 features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
 labels = tf.placeholder(tf.int64, [None, numClasses])
@@ -149,7 +152,7 @@ def execTrainPreprocProfile(unit, num_epoch, X_train_path, Y_train):
                 batch_list = image_list[batch_offset:batch_end]   
                 X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                if i % 20 == 0:
+                if i % marker == 0:
                     start_time = timer()
                     sess.run(trainUnit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata)
                     end_time = timer()
@@ -158,9 +161,9 @@ def execTrainPreprocProfile(unit, num_epoch, X_train_path, Y_train):
                     #step_time += dur_time
                     #sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata)
                     trace = timeline.Timeline(step_stats=run_metadata.step_stats)
-                    trace_file = open('/tank/local/ruiliu/mtml-tf/mt-exp/profile_dir/tf_single_comp_'+str(i)+'.json', 'w')
+                    trace_file = open('/tank/local/ruiliu/mtml-tf/mt-exp/profile_dir/exp2_packed_step'+str(i)+'.json', 'w')
                     #trace_file = open('/home/ruiliu/Development/mtml-tf/mt-exp/profile_dir/tf_packed_'+str(i)+'.json', 'w')
-                    trace_file.write(trace.generate_chrome_trace_format(show_dataflow=True))
+                    trace_file.write(trace.generate_chrome_trace_format(show_dataflow=True,show_memory=True))
                 else:
                     sess.run(trainUnit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
         #print(step_time)
@@ -196,12 +199,16 @@ if __name__ == '__main__':
     printAllModels(modelCollection)
     trainCollection = buildModels(modelCollection) 
     if preproc:
-        Y_data = load_labels_onehot(label_path, numClasses)
-        start_time = timer()
-        execTrainPreproc(trainCollection, numEpochs, image_dir, Y_data)
-        end_time = timer()
-        dur_time = end_time - start_time
-        print("overall time:",dur_time)
+        if profile:
+            Y_data = load_labels_onehot(label_path, numClasses)
+            execTrainPreprocProfile(trainCollection, numEpochs, image_dir, Y_data)
+        else:
+            Y_data = load_labels_onehot(label_path, numClasses)
+            start_time = timer()
+            execTrainPreproc(trainCollection, numEpochs, image_dir, Y_data)
+            end_time = timer()
+            dur_time = end_time - start_time
+            print("overall time:",dur_time)
     else:
         X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
         Y_data = load_labels_onehot(label_path, numClasses)

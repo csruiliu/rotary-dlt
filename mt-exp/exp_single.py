@@ -18,7 +18,7 @@ parser.add_argument('-m', '--model', type=str, default='resnet', help='choose a 
 parser.add_argument('-p', '--preproc', action='store_false', default=True, help='use preproc to transform the data before training or not')
 parser.add_argument('-s', '--trainstep', action='store_false', default=True, help='measure the single step or the whole model')
 parser.add_argument('-o', '--optimizer', type=str, default='Adam', help='identify an optimizer for training')
-parser.add_argument('-bs', '--batchsize', type=int, default=32, help='identify the batch size')
+parser.add_argument('-b', '--batchsize', type=int, default=32, help='identify the batch size')
 parser.add_argument('-l', '--layersize', type=int, default=1, help='identify the layer of deep learning model')
 args = parser.parse_args()
 
