@@ -144,28 +144,21 @@ def execTrain(unit, num_epoch, X_train, Y_train):
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
-    with tf.Session(config=config) as sess:
-        sess.run(tf.global_variables_initializer())
-        num_batch = Y_train.shape[0] // maxBatchSize
-        num_batch_list = np.arange(num_batch)
-        for e in range(num_epoch):
-            for i in range(num_batch):
-                print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
-                if sameTrainData:
-                    if (i+1) % remark == 0:
-                        start_time = timer()
-                        batch_offset = i * maxBatchSize
-                        batch_end = (i+1) * maxBatchSize
-                        X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
-                        Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                        sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-                        end_time = timer()
-                        dur_time = end_time - start_time
-                        print("step time:",dur_time)
-                        step_time += dur_time
-                        step_count += 1
-                    else:
-                        if i == 0:
+    if useCPU:
+        device_name = '/cpu:0'
+    else:
+        device_name = '/gpu:0'     
+
+    with tf.device(device_name):
+        with tf.Session(config=config) as sess:
+            sess.run(tf.global_variables_initializer())
+            num_batch = Y_train.shape[0] // maxBatchSize
+            num_batch_list = np.arange(num_batch)
+            for e in range(num_epoch):
+                for i in range(num_batch):
+                    print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
+                    if sameTrainData:
+                        if (i+1) % remark == 0:
                             start_time = timer()
                             batch_offset = i * maxBatchSize
                             batch_end = (i+1) * maxBatchSize
@@ -174,40 +167,53 @@ def execTrain(unit, num_epoch, X_train, Y_train):
                             sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                             end_time = timer()
                             dur_time = end_time - start_time
-                            print("first step time:", dur_time)
+                            print("step time:",dur_time)
+                            step_time += dur_time
+                            step_count += 1
                         else:
-                            batch_offset = i * maxBatchSize
-                            batch_end = (i+1) * maxBatchSize
-                            X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
-                            Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                            sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-                else:
-                    if (i+1) % remark == 0:
-                        start_time = timer()
-                        for ridx in range(input_model_num):
-                            rand_idx = int(np.random.choice(num_batch_list, 1))
-                            batch_offset = rand_idx * maxBatchSize
-                            batch_end = (rand_idx+1) * maxBatchSize
-                            names['X_mini_batch_feed' + str(ridx)] = X_train[batch_offset:batch_end,:,:,:]
-                            names['Y_mini_batch_feed' + str(ridx)] = Y_train[batch_offset:batch_end,:]
-                            input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
-                            input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
-                        sess.run(unit, feed_dict=input_dict)
-                        end_time = timer()
-                        dur_time = end_time - start_time
-                        print("step time:",dur_time)
-                        step_time += dur_time
-                        step_count += 1
+                            if i == 0:
+                                start_time = timer()
+                                batch_offset = i * maxBatchSize
+                                batch_end = (i+1) * maxBatchSize
+                                X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
+                                Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
+                                sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                                end_time = timer()
+                                dur_time = end_time - start_time
+                                print("first step time:", dur_time)
+                            else:
+                                batch_offset = i * maxBatchSize
+                                batch_end = (i+1) * maxBatchSize
+                                X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
+                                Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
+                                sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                     else:
-                        for ridx in range(input_model_num):
-                            rand_idx = int(np.random.choice(num_batch_list, 1))
-                            batch_offset = rand_idx * maxBatchSize
-                            batch_end = (rand_idx+1) * maxBatchSize
-                            names['X_mini_batch_feed' + str(ridx)] = X_train[batch_offset:batch_end,:,:,:]
-                            names['Y_mini_batch_feed' + str(ridx)] = Y_train[batch_offset:batch_end,:]
-                            input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
-                            input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
-                        sess.run(unit, feed_dict=input_dict)
+                        if (i+1) % remark == 0:
+                            start_time = timer()
+                            for ridx in range(input_model_num):
+                                rand_idx = int(np.random.choice(num_batch_list, 1))
+                                batch_offset = rand_idx * maxBatchSize
+                                batch_end = (rand_idx+1) * maxBatchSize
+                                names['X_mini_batch_feed' + str(ridx)] = X_train[batch_offset:batch_end,:,:,:]
+                                names['Y_mini_batch_feed' + str(ridx)] = Y_train[batch_offset:batch_end,:]
+                                input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
+                                input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
+                            sess.run(unit, feed_dict=input_dict)
+                            end_time = timer()
+                            dur_time = end_time - start_time
+                            print("step time:",dur_time)
+                            step_time += dur_time
+                            step_count += 1
+                        else:
+                            for ridx in range(input_model_num):
+                                rand_idx = int(np.random.choice(num_batch_list, 1))
+                                batch_offset = rand_idx * maxBatchSize
+                                batch_end = (rand_idx+1) * maxBatchSize
+                                names['X_mini_batch_feed' + str(ridx)] = X_train[batch_offset:batch_end,:,:,:]
+                                names['Y_mini_batch_feed' + str(ridx)] = Y_train[batch_offset:batch_end,:]
+                                input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
+                                input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
+                            sess.run(unit, feed_dict=input_dict)
             
         print(step_time)
         print(step_count)
@@ -220,7 +226,12 @@ def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
     image_list = sorted(os.listdir(X_train_path))
-    with tf.device('/cpu:0'):
+    if useCPU:
+        device_name = '/cpu:0'
+    else:
+        device_name = '/gpu:0'     
+
+    with tf.device(device_name):
         with tf.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
             num_batch = Y_train.shape[0] // maxBatchSize
