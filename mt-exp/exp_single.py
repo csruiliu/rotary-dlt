@@ -1,6 +1,7 @@
 from __future__ import division
 import tensorflow as tf
 from tensorflow.python.client import timeline
+import os
 import numpy as np
 from multiprocessing import Process
 import argparse
@@ -58,6 +59,9 @@ trainModelLayer = args.layersize
 trainStepMeasure = args.trainstep
 useCPU = args.usecpu
 
+if useCPU:
+    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+
 features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
 labels = tf.placeholder(tf.int64, [None, numClasses])
 
@@ -95,36 +99,30 @@ def execTrainStep(trainStep, num_epoch, X_train, Y_train):
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
 
-    if useCPU:
-        device_name = '/cpu:0'
-    else:
-        device_name = '/gpu:0'    
-        
-    with tf.device(device_name):
-        with tf.Session(config=config) as sess:
-            sess.run(tf.global_variables_initializer())
-            num_batch = Y_train.shape[0] // trainBatchSize
-            for e in range(num_epoch):
-                for i in range(num_batch):
-                    print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
-                    if (i+1) % marker == 0:
-                        start_time = timer()
-                        batch_offset = i * trainBatchSize
-                        batch_end = (i+1) * trainBatchSize
-                        X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
-                        Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                        sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-                        end_time = timer()
-                        dur_time = end_time - start_time
-                        print("step time:",dur_time)
-                        step_time += dur_time
-                        step_count += 1
-                    else:
-                        batch_offset = i * trainBatchSize
-                        batch_end = (i+1) * trainBatchSize
-                        X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
-                        Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                        sess.run(trainStep, feed_dict={features:X_mini_batch_feed, labels:Y_mini_batch_feed})
+    with tf.Session(config=config) as sess:
+        sess.run(tf.global_variables_initializer())
+        num_batch = Y_train.shape[0] // trainBatchSize
+        for e in range(num_epoch):
+            for i in range(num_batch):
+                print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
+                if (i+1) % marker == 0:
+                    start_time = timer()
+                    batch_offset = i * trainBatchSize
+                    batch_end = (i+1) * trainBatchSize
+                    X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
+                    Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
+                    sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    end_time = timer()
+                    dur_time = end_time - start_time
+                    print("step time:",dur_time)
+                    step_time += dur_time
+                    step_count += 1
+                else:
+                    batch_offset = i * trainBatchSize
+                    batch_end = (i+1) * trainBatchSize
+                    X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
+                    Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
+                    sess.run(trainStep, feed_dict={features:X_mini_batch_feed, labels:Y_mini_batch_feed})
         
         print(step_time)
         print(step_count)
@@ -137,38 +135,34 @@ def execTrainStepPreproc(trainStep, num_epoch, X_train_path, Y_train):
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
     image_list = sorted(os.listdir(X_train_path))
-    if useCPU:
-        device_name = '/cpu:0'
-    else:
-        device_name = '/gpu:0'
+    
+    with tf.Session(config=config) as sess:
+        sess.run(tf.global_variables_initializer())
+        num_batch = Y_train.shape[0] // trainBatchSize
+        for e in range(num_epoch):
+            for i in range(num_batch):
+                print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
+                if (i+1) % marker == 0:
+                    start_time = timer()
+                    batch_offset = i * trainBatchSize
+                    batch_end = (i+1) * trainBatchSize
+                    batch_list = image_list[batch_offset:batch_end]  
+                    X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
+                    Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
+                    sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    end_time = timer()
+                    dur_time = end_time - start_time
+                    print("step time:",dur_time)
+                    step_time += dur_time
+                    step_count += 1
+                else:
+                    batch_offset = i * trainBatchSize
+                    batch_end = (i+1) * trainBatchSize
+                    batch_list = image_list[batch_offset:batch_end] 
+                    X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
+                    Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
+                    sess.run(trainStep, feed_dict={features:X_mini_batch_feed, labels:Y_mini_batch_feed})
 
-    with tf.device(device_name):
-        with tf.Session(config=config) as sess:
-            sess.run(tf.global_variables_initializer())
-            num_batch = Y_train.shape[0] // trainBatchSize
-            for e in range(num_epoch):
-                for i in range(num_batch):
-                    print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
-                    if (i+1) % marker == 0:
-                        start_time = timer()
-                        batch_offset = i * trainBatchSize
-                        batch_end = (i+1) * trainBatchSize
-                        batch_list = image_list[batch_offset:batch_end]  
-                        X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
-                        Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                        sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-                        end_time = timer()
-                        dur_time = end_time - start_time
-                        print("step time:",dur_time)
-                        step_time += dur_time
-                        step_count += 1
-                    else:
-                        batch_offset = i * trainBatchSize
-                        batch_end = (i+1) * trainBatchSize
-                        batch_list = image_list[batch_offset:batch_end] 
-                        X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
-                        Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                        sess.run(trainStep, feed_dict={features:X_mini_batch_feed, labels:Y_mini_batch_feed})
         print(step_time)
         print(step_count)
         print("average step time:", step_time / step_count * 1000)
@@ -178,53 +172,43 @@ def execTrainModel(trainStep, num_epoch, X_train, Y_train):
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
-    if useCPU:
-        device_name = '/cpu:0'
-    else:
-        device_name = '/gpu:0'
-    with tf.device(device_name):
-        with tf.Session(config=config) as sess:
-            sess.run(tf.global_variables_initializer())
-            num_batch = Y_train.shape[0] // trainBatchSize
-            #start_time = timer()
-            for e in range(num_epoch):
-                for i in range(num_batch):
-                    print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
-                    batch_offset = i * trainBatchSize
-                    batch_end = (i+1) * trainBatchSize
-                    X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
-                    Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                    sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-        #end_time = timer()
-        #dur_time = end_time - start_time
-        #print("model training time:",dur_time)
+    
+    with tf.Session(config=config) as sess:
+        sess.run(tf.global_variables_initializer())
+        num_batch = Y_train.shape[0] // trainBatchSize
+        #start_time = timer()
+        for e in range(num_epoch):
+            for i in range(num_batch):
+                print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
+                batch_offset = i * trainBatchSize
+                batch_end = (i+1) * trainBatchSize
+                X_mini_batch_feed = X_train[batch_offset:batch_end,:,:,:]
+                Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
+                sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+       
 
 def execTrainModelPreproc(trainStep, num_epoch, X_train_path, Y_train):
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
     image_list = sorted(os.listdir(X_train_path))
-    if useCPU:
-        device_name = '/cpu:0'
-    else:
-        device_name = '/gpu:0'
-    with tf.device(device_name):
-        with tf.Session(config=config) as sess:
-            sess.run(tf.global_variables_initializer())
-            num_batch = Y_train.shape[0] // trainBatchSize
-            #start_time = timer()
-            for e in range(num_epoch):
-                for i in range(num_batch):
-                    print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
-                    batch_offset = i * trainBatchSize
-                    batch_end = (i+1) * trainBatchSize
-                    batch_list = image_list[batch_offset:batch_end]  
-                    X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
-                    Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
-                    sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-        #end_time = timer()
-        #dur_time = end_time - start_time
-        #print("model training time:",dur_time)
+    
+    with tf.Session(config=config) as sess:
+        sess.run(tf.global_variables_initializer())
+        num_batch = Y_train.shape[0] // trainBatchSize
+        #start_time = timer()
+        for e in range(num_epoch):
+            for i in range(num_batch):
+                print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
+                batch_offset = i * trainBatchSize
+                batch_end = (i+1) * trainBatchSize
+                batch_list = image_list[batch_offset:batch_end]  
+                X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
+                Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
+                sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+    #end_time = timer()
+    #dur_time = end_time - start_time
+    #print("model training time:",dur_time)
 
 if __name__ == '__main__':
     trainModel = prepareModel()
