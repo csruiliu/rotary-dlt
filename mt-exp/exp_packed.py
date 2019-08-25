@@ -28,14 +28,14 @@ args = parser.parse_args()
 # Global Variables
 #########################
 
-image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
-#image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
+#image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
+image_dir = '/tank/local/ruiliu/dataset/imagenet1k'
 
-bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-#bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
+#bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
+bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
 
-label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-#label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
+#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
 
 #profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir'
 #profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir'
@@ -62,7 +62,7 @@ if useCPU:
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 if sameBatchSize:
-    maxBatchSize = 32
+    maxBatchSize = 40
 else:
     maxBatchSize = 50
 
@@ -94,7 +94,7 @@ def prepareModels():
         model_class = ["resnet","mobilenet"]
     
     if sameBatchSize:
-        batch_list = [32,32]
+        batch_list = [40,40]
     else:
         batch_list = [32,50]
 
