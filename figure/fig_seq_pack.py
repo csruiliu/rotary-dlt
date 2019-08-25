@@ -7,20 +7,24 @@ import re
 
 import argparse
 parser = argparse.ArgumentParser()
+parser.add_argument('-t', '--title', type=str, default='MobileNet', help='model')
 parser.add_argument('-m', '--samemodel', action='store_true', default=False, help='pack same model to train or not')
 parser.add_argument('-p', '--preproc', action='store_true', default=False, help='use preproc to transform the data before training or not')
 parser.add_argument('-d', '--samedata', action='store_true', default=False, help='use same training batch data or not')
 parser.add_argument('-o', '--sameoptimizer', action='store_true', default=False, help='use same optimizer or not')
 parser.add_argument('-b', '--samebatchsize', action='store_true', default=False, help='use same batch size or not')
-parser.add_argument('-s', '--size', type=int, default=1200, help='identify the size of img')
+parser.add_argument('-c', '--usecpu', action='store_true', default=False, help='use cpu or not')
+parser.add_argument('-s', '--size', type=int, default=800, help='identify the size of img')
 args = parser.parse_args()
 
+modelTitle = args.title
 sameBatchSize = args.samebatchsize
 sameModel = args.samemodel
 preproc = args.preproc
 sameTrainData = args.samedata
 sameOptimizer = args.sameoptimizer
 outputSize = args.size
+useCPU = args.usecpu
 
 if sameModel:
     path = 'model'
@@ -48,9 +52,13 @@ elif sameBatchSize:
     title = 'Same Batch Size'
     mark = 'same'
 
+if useCPU:
+    csvpath = '/home/ruiliu/Development/mtml-tf/mt-exp/exp-result/exp-'+modelTitle+'-cpu.csv'
+    outpath = '/home/ruiliu/Development/mtml-tf/mt-exp/exp-result/cpu-seq-pack-' + modelTitle + '-' + path + '.pdf'
+else:
+    csvpath = '/home/ruiliu/Development/mtml-tf/mt-exp/exp-result/exp-'+modelTitle+'.csv'
+    outpath = '/home/ruiliu/Development/mtml-tf/mt-exp/exp-result/gpu-seq-pack-' + modelTitle + '-' + path + '.pdf'
 
-csvpath = '/home/ruiliu/Development/mtml-tf/mt-exp/exp-result/exp-resnet.csv'
-outpath = '/home/ruiliu/Development/mtml-tf/mt-exp/exp-result/exp-seq-pack-'+path+'-resnet.png'
 
 positive_list_x = []
 positive_list_y = []
@@ -74,21 +82,45 @@ with open(csvpath,'r') as csvfile:
 #print(y_pt)
 
 
-plt.figure(figsize=(6, 4), dpi=70)
+plt.figure(figsize=(5, 3.5), dpi=70)
 
 plt.plot(positive_list_x, positive_list_y, color='green', marker='^', linestyle='', markersize=10)
 
 plt.plot(negative_list_x, negative_list_y, color='red', marker='v', linestyle='', markersize=10)
 
 plt.axis([0, outputSize, 0, outputSize])
+
 a = np.linspace(0, outputSize, 1000)
+
 plt.plot(a, a, '-b')
-plt.tick_params(axis='y',direction='in',labelsize=14) 
-plt.tick_params(axis='x',direction='in',bottom='False',labelsize=14)
+
+if useCPU:
+    plt.plot(a, 0.8*a, color='royalblue', linestyle='-.', linewidth=0.9)
+    plt.plot(a, 1.2*a, color='royalblue', linestyle='-.', linewidth=0.9)
+
+    plt.annotate(r'$-20\%$', color='royalblue', xy=(0.76*outputSize, 0.88*outputSize),fontsize=8)
+    plt.annotate(r'$+20\%$', color='royalblue', xy=(0.86*outputSize, 0.65*outputSize),fontsize=8)
+
+    plt.plot(a, 0.6*a, color='royalblue', linestyle=':')
+    plt.plot(a, 1.4*a, color='royalblue', linestyle=':')
+    plt.annotate(r'$-40\%$', color='royalblue', xy=(0.67*outputSize, 0.92*outputSize),fontsize=8)
+    plt.annotate(r'$+40\%$', color='royalblue', xy=(0.8*outputSize, 0.42*outputSize),fontsize=8)
+else:
+    plt.plot(a, 0.8*a, color='royalblue', linestyle='-.',linewidth=0.9)
+    plt.plot(a, 1.2*a, color='royalblue', linestyle='-.',linewidth=0.9)
+
+    plt.annotate(r'$-20\%$', color='royalblue', xy=(0.6*outputSize, 0.88*outputSize))
+    plt.annotate(r'$+20\%$', color='royalblue', xy=(0.86*outputSize, 0.65*outputSize))
+    
+plt.xticks(np.arange(0,outputSize+1,outputSize/4))
+plt.yticks(np.arange(0,outputSize+1,outputSize/4))
+
+plt.tick_params(axis='y',direction='in',labelsize=16) 
+plt.tick_params(axis='x',direction='in',bottom='False',labelsize=16)
 plt.grid(linestyle='--')
-plt.title(title + ' (ResNet)')
-plt.xlabel("Time of one step of training two models in sequence (w/o switch overhead)", fontsize=11)
-plt.ylabel("Time of one step of packing two models", fontsize=11)
+plt.title(title + ' (' + modelTitle + ')', fontsize=16, pad=10)
+plt.xlabel(r'$T_s(Seq)$', fontsize=16)
+plt.ylabel(r'$T_s(Pack)$', fontsize=16)
 plt.tight_layout()
-plt.savefig(outpath,format='png')
+plt.savefig(outpath,format='pdf', bbox_inches='tight', pad_inches=0.05)
 
