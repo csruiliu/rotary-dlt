@@ -14,27 +14,31 @@ from dnn_model import DnnModel
 #########################
 
 parser = argparse.ArgumentParser()
-#parser.add_argument('-m', '--samemodel', action='store_false', default=True, help='pack same model to train or not')
+parser.add_argument('-m', '--model', type=str, default="perceptron", help='indicate model')
+parser.add_argument('-b', '--batchsize', type=int, default=32, help='indicate batch size')
 parser.add_argument('-p', '--preproc', action='store_false', default=True, help='use preproc to transform the data before training or not')
 parser.add_argument('-r', '--profile', action='store_false', default=True, help='use tf.profiler to measure')
-#parser.add_argument('-d', '--samedata', action='store_false', default=True, help='use same training batch data or not')
-#parser.add_argument('-o', '--sameoptimizer', action='store_false', default=True, help='use same optimizer or not')
-#parser.add_argument('-b', '--samebatchsize', action='store_false', default=True, help='use same batch size or not')
-#parser.add_argument('-t', '--trainstep', action='store_true', default=False, help='use same compute and apply to update gradient or not')
+parser.add_argument('-c', '--useCPU', action='store_true', default=False, help='use CPU or not')
 args = parser.parse_args()
+
+preproc = args.preproc
+profile = args.profile
+useCPU = args.useCPU
+trainModel = args.model
+trainBatchSize = args.batchsize
 
 #########################
 # Global Variables
 #########################
 
 #image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
-image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
+image_dir = '/tank/local/ruiliu/dataset/imagenet1k'
 
 #bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
+bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
 
 #label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
+label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
 
 #profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir'
 #profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir'
@@ -45,25 +49,13 @@ numClasses = 1000
 numChannels = 3
 numEpochs = 1
 input_model_num = 2
-marker = 20
+marker = 10
 
-#model_class_num = [1,1,1,1,1]
-#model_class = ["mobilenet","mobilenet","mobilenet","mobilenet","mobilenet"]       
-#batch_list = [10,10,10,10,10]
-#opt_list = ["Adam","Adam","Adam","Adam","Adam"]
-#maxBatchSize = 10
-
-model_class_num = [1,1]
-model_class = ["resnet","resnet"]       
-batch_list = [32,32]
+model_class_num = [1]
+model_class = ["perceptron"]       
+batch_list = [32]
 opt_list = ["Adam","Adam"]
 maxBatchSize = 32
-
-
-
-preproc = args.preproc
-profile = args.profile
-
 
 features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
 labels = tf.placeholder(tf.int64, [None, numClasses])
@@ -135,8 +127,6 @@ def execTrainPreprocProfile(unit, num_epoch, X_train_path, Y_train):
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
-    #config.inter_op_parallelism_threads = 9
-    #config.intra_op_parallelism_threads = 9
     image_list = sorted(os.listdir(X_train_path))
     with tf.Session(config=config) as sess:
         run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
@@ -153,15 +143,9 @@ def execTrainPreprocProfile(unit, num_epoch, X_train_path, Y_train):
                 X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
                 if i % marker == 0:
-                    start_time = timer()
                     sess.run(trainUnit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata)
-                    end_time = timer()
-                    #dur_time = end_time - start_time
-                    #step_count += 1
-                    #step_time += dur_time
-                    #sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata)
                     trace = timeline.Timeline(step_stats=run_metadata.step_stats)
-                    trace_file = open('/tank/local/ruiliu/mtml-tf/mt-exp/profile_dir/exp2_packed_step'+str(i)+'.json', 'w')
+                    trace_file = open('/tank/local/ruiliu/mtml-tf/mt-exp/profile_dir/MLP-'+str(maxBatchSize)+'-'+str(i)+'.json', 'w')
                     #trace_file = open('/home/ruiliu/Development/mtml-tf/mt-exp/profile_dir/tf_packed_'+str(i)+'.json', 'w')
                     trace_file.write(trace.generate_chrome_trace_format(show_dataflow=True,show_memory=True))
                 else:

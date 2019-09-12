@@ -18,6 +18,7 @@ parser.add_argument('-p', '--preproc', action='store_false', default=True, help=
 parser.add_argument('-o', '--sameoptimizer', action='store_false', default=True, help='use same optimizer or not')
 parser.add_argument('-b', '--samebatchsize', action='store_false', default=True, help='use same batch size or not')
 parser.add_argument('-t', '--trainstep', action='store_true', default=False, help='use same compute and apply to update gradient or not')
+parser.add_argument('-c', '--usecpu', action='store_true', default=False, help='use same compute and apply to update gradient or not')
 args = parser.parse_args()
 
 #########################
@@ -51,8 +52,12 @@ sameBatchSize = args.samebatchsize
 preproc = args.preproc
 sameOptimizer = args.sameoptimizer
 trainStep = args.trainstep
+useCPU = args.usecpu
 
-model_list = ["densenet","densenet"]
+if useCPU:
+    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+
+model_list = ["resnet","resnet"]
 batch_list = [32,32]
 opt_list = ["Adam","Adam"]
 

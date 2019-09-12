@@ -20,7 +20,7 @@ parser.add_argument('-p', '--preproc', action='store_false', default=True, help=
 parser.add_argument('-d', '--samedata', action='store_false', default=True, help='use same training batch data or not')
 parser.add_argument('-o', '--sameoptimizer', action='store_false', default=True, help='use same optimizer or not')
 parser.add_argument('-b', '--samebatchsize', action='store_false', default=True, help='use same batch size or not')
-parser.add_argument('-t', '--trainstep', action='store_true', default=False, help='use same compute and apply to update gradient or not')
+parser.add_argument('-t', '--trainstep', action='store_false', default=True, help='use same compute and apply to update gradient or not')
 parser.add_argument('-c', '--usecpu', action='store_true', default=False, help='use cpu to train')
 args = parser.parse_args()
 
@@ -29,13 +29,13 @@ args = parser.parse_args()
 #########################
 
 #image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
-image_dir = '/tank/local/ruiliu/dataset/imagenet1k'
+image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
 
 #bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
+bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
 
 #label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
+label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
 
 #profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir'
 #profile_dir = '/tank/local/ruiliu/mtml-tf/mt-perf/profile_dir'
@@ -62,7 +62,7 @@ if useCPU:
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 if sameBatchSize:
-    maxBatchSize = 40
+    maxBatchSize = 32
 else:
     maxBatchSize = 50
 
@@ -88,13 +88,13 @@ def prepareModels():
     
     if sameModel:
         model_class_num = [1,1]
-        model_class = ["mobilenet","mobilenet"]       
+        model_class = ["densenet","densenet"]       
     else:
         model_class_num = [1,1]
         model_class = ["resnet","mobilenet"]
     
     if sameBatchSize:
-        batch_list = [40,40]
+        batch_list = [32,32]
     else:
         batch_list = [32,50]
 
@@ -300,6 +300,39 @@ def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
         print(step_count)
         print("average step time:", step_time / step_count * 1000)      
 
+def execTrainAllStep(unit, num_epoch, X_train_path, Y_train):
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    config.allow_soft_placement = True
+    image_list = sorted(os.listdir(X_train_path))
+    
+    with tf.Session(config=config) as sess:
+        sess.run(tf.global_variables_initializer())
+        num_batch = Y_train.shape[0] // maxBatchSize
+        num_batch_list = np.arange(num_batch)
+        for e in range(num_epoch):
+            for i in range(num_batch):
+                print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
+                if sameTrainData:
+                    start_time = timer()
+                    batch_offset = i * maxBatchSize
+                    batch_end = (i+1) * maxBatchSize
+                    batch_list = image_list[batch_offset:batch_end]   
+                    X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
+                    Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
+                    sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                else:
+                    for ridx in range(input_model_num):
+                        rand_idx = int(np.random.choice(num_batch_list, 1))
+                        batch_offset = rand_idx * maxBatchSize
+                        batch_end = (rand_idx+1) * maxBatchSize
+                        batch_list = image_list[batch_offset:batch_end]
+                        names['X_mini_batch_feed' + str(ridx)] = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
+                        names['Y_mini_batch_feed' + str(ridx)] = Y_train[batch_offset:batch_end,:]
+                        input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
+                        input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
+                    sess.run(unit, feed_dict=input_dict)
+
 
 if __name__ == '__main__':
     showExpConfig()    
@@ -310,12 +343,18 @@ if __name__ == '__main__':
     end_time_prep = timer()
     dur_time_prep = end_time_prep - start_time_prep
     print("prep time:",dur_time_prep)
-
-    if preproc:
-        Y_data = load_labels_onehot(label_path, numClasses)
-        execTrainPreproc(trainCollection, numEpochs, image_dir, Y_data)
+    if trainStep:
+        if preproc:
+            Y_data = load_labels_onehot(label_path, numClasses)
+            execTrainPreproc(trainCollection, numEpochs, image_dir, Y_data)
+        else:
+            X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
+            Y_data = load_labels_onehot(label_path, numClasses)
+            execTrain(trainCollection, numEpochs, X_data, Y_data)
     else:
-        X_data = load_images_bin(bin_dir, numChannels, imgWidth, imgHeight)
         Y_data = load_labels_onehot(label_path, numClasses)
-        execTrain(trainCollection, numEpochs, X_data, Y_data)
-    
+        start_time = timer()
+        execTrainAllStep(trainCollection, numEpochs, image_dir, Y_data)        
+        end_time = timer()
+        dur_time = end_time - start_time
+        print("dur_time:",dur_time) 
