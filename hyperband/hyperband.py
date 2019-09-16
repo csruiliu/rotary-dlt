@@ -4,7 +4,7 @@ from timeit import default_timer as timer
 import hp_utils
 
 class Hyperband:
-	def __init__(self):
+	def __init__(self, getHyperPara, runHyperPara):
 		# maximun budget for single configuration, i.e., maximum iterations per configuration in example
 		self.R = 81
 		# defines configuration downsampling rate (default = 3)
@@ -18,12 +18,14 @@ class Hyperband:
 		self.counter = 0
 		self.best_loss = np.inf
 		self.best_counter = -1
+		self.get_hyperparams = getHyperPara
+		self.run_hyperParams = runHyperPara
 
 	def run(self, skip_last=0, dry_run=True):
 		for s in reversed(range(self.s_max + 1)):
 			n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
 			r = self.R * self.eta ** (-s)
-			T = hp_utils.init_hp(n)
+			T = self.get_hyperparams(n)
 			
 			for i in range(s + 1):
 				n_i = floor(n * self.eta ** (-i))
@@ -32,18 +34,17 @@ class Hyperband:
 				print("==============================================================")
 
 				val_losses = []
-				#early_stops = []
 
 				for t in T:
 					self.counter += 1
 					
-					
 					start_time = timer()
 
 					if dry_run:
+						self.run_hyperParams(t, r_i)
 						result = {'loss':np.random.random(),'auc':np.random.random()}
-					#else:
-						#result = self.try_params(n_iterations, t)	
+					else:
+						result = self.run_hyperParams(n_iterations, t)	
 					
 					# check the results format and if loss is generated 
 					assert(type(result) == dict)
@@ -86,7 +87,7 @@ class Hyperband:
 
 if __name__ == "__main__":
 	#hp_utils.init_hp(10)
-	hb = Hyperband()
+	hb = Hyperband(hp_utils.init_hp, hp_utils.run_params)
 	results = hb.run()
 	print("{} total, best:\n".format(len(results)))
 	best_hp = sorted(results, key = lambda x: x['loss'])[0]

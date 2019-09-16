@@ -17,3 +17,12 @@ def init_hp(n_conf):
 	return rand_conf
 	#print(rand_conf)
 	#print(type(hp_conf)
+
+def run_params(hyper_params, iterations):
+	batch_size = hyper_params[0]
+	opt = hyper_params[1]
+	input_data = hyper_params[2]
+	prep = hyper_params[3]
+	
+	print(hyper_params)
+	print(iterations)
