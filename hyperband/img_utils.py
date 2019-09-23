@@ -1,7 +1,7 @@
 import numpy as np
 import pickle
 import os
-import cv2
+from PIL import Image
 from matplotlib import pyplot as plt
 
 imgWidth = 224
@@ -15,7 +15,7 @@ def convert_image_bin(imgDir, img_h, img_w):
     all_arr = []
     for filename in sorted(os.listdir(imgDir)):
         print(filename)
-        arr_single = read_single_image(imgDir + '/'+ filename, img_h, img_w)
+        arr_single = read_single_image(imgDir + '/' + filename, img_h, img_w)
         if all_arr == []:
             all_arr = arr_single
         else:
@@ -52,15 +52,17 @@ def load_bin_pickle(path, num_channels, img_w, img_h):
     return raw_float
 
 def read_single_image(img_name, img_h, img_w):
-    img = plt.imread(img_name)
-    img = cv2.resize(img, (img_h, img_w))
-    img_ext = np.expand_dims(img, axis=0)
+    img = Image.open(img_name).convert("RGB")
+    img_resize = img.resize((img_h, img_w), Image.NEAREST)
+    np_im = np.array(img_resize)
+    img_ext = np.expand_dims(np_im, axis=0)
     return img_ext
+
 
 if __name__ == "__main__":
 
-    imgDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
-    outDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
+    imgDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k'
+    outDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
 
     #bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
     #bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
@@ -69,7 +71,10 @@ if __name__ == "__main__":
     
     arr_image = convert_image_bin(imgDir, imgWidth, imgHeight)
     save_bin_raw(arr_image, outDir)
-    #images = load_bin_raw('/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin')
+    images = load_bin_raw('/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin')
     
-    #plt.imshow(images[4,:,:,:])
+    print(images.shape)
+    #check_single_image(imgDir+'/ILSVRC2010_val_00001175.JPEG')
+
+    #plt.imshow(images[100,:,:,:])
     #plt.show()
