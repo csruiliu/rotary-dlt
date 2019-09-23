@@ -2,9 +2,7 @@ import numpy as np
 from multiprocessing import Process, Pipe
 from math import log, ceil, floor
 from timeit import default_timer as timer
-from hp_func import get_params, run_params, evaluate_model
-
-from img_utils import check_image_chn
+from hp_func import get_params, run_params, evaluate_model, load_bin_raw
 
 class Hyperband:
 
@@ -119,7 +117,7 @@ class Hyperband:
             return self.results
 
 if __name__ == "__main__":
-    check_image_chn('/home/ruiliu/Development/mtml-tf/dataset/imagenet50k')
+    load_bin_raw('/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-aaa.bin')
     #evaluate_model()
     #resource_conf = 27
     #down_rate = 3

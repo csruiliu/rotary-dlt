@@ -1,8 +1,8 @@
 import tensorflow as tf
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 import pickle
+import h5py
 import cv2
 import warnings
 
@@ -13,6 +13,7 @@ import warnings
 def convert_image_bin(imgDir, img_w, img_h):
     all_arr = []
     for filename in sorted(os.listdir(imgDir)):
+        print(filename)
         arr_single = read_single_image(imgDir + '/'+ filename, img_w, img_h)
         if all_arr == []:
             all_arr = arr_single
@@ -20,6 +21,15 @@ def convert_image_bin(imgDir, img_w, img_h):
             all_arr = np.concatenate((all_arr, arr_single))    
     return all_arr
 
+def save_bin_pickle(arr, output_file):
+    img_data = {'image': arr}
+    f = open(output_file, 'wb+')
+    pickle.dump(img_data, f, pickle.HIGHEST_PROTOCOL)
+    f.close()
+
+def save_bin_raw(arr, output_file):
+    with open(output_file, 'wb+') as of:
+        of.write(arr)
 
 def image_input(imgDir, img_w, img_h, img_num):
     all_arr = []
@@ -44,11 +54,7 @@ def read_single_image(img_name, img_w, img_h):
     img_ext = np.expand_dims(img, axis=0)
     return img_ext
 
-def pickle_save_bin(arr, output_file):
-    img_data = {'image': arr}
-    f = open(output_file, 'wb+')
-    pickle.dump(img_data, f)
-    f.close()
+
 
 ###############################
 # convert images to tfrecord
@@ -101,11 +107,13 @@ if __name__ == '__main__':
 
     #offset=int(np.random.randint(total_img-pack_img, size=1))
     #print(offset)
-    imgDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
-    outDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
+    imgDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k'
+    outDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-aaa.bin'
     #arr_input = image_input(imgDir, 224, 224, pack_img_num)
     arr_input = convert_image_bin(imgDir, 224, 224)
-    pickle_save_bin(arr_input, outDir)
+    
+    save_bin_raw(arr_input, outDir)
+    #save_bin_pickle(arr_input, outDir)
 
     #writer = tf.python_io.TFRecordWriter("../dataset/imagenet10k.tfrecords")
     #img_folder = "/home/ruiliu/Development/mtml-tf/dataset/imagenet10k"

@@ -4,8 +4,8 @@ import itertools
 from operator import itemgetter
 from datetime import datetime
 import sys
+from matplotlib import pyplot as plt
 
-from img_utils import load_images_bin, load_labels_onehot, check_image_chn
 from mobilenet import MobileNet
 
 
@@ -114,5 +114,3 @@ def evaluate_model():
         #acc_arg = sess.run(evalOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
         
         print("Accuracy:", acc_arg)
-
-
