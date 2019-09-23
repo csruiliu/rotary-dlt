@@ -10,6 +10,17 @@ import warnings
 # convert images to bin 
 ###############################
 
+def convert_image_bin(imgDir, img_w, img_h):
+    all_arr = []
+    for filename in sorted(os.listdir(imgDir)):
+        arr_single = read_single_image(imgDir + '/'+ filename, img_w, img_h)
+        if all_arr == []:
+            all_arr = arr_single
+        else:
+            all_arr = np.concatenate((all_arr, arr_single))    
+    return all_arr
+
+
 def image_input(imgDir, img_w, img_h, img_num):
     all_arr = []
     count = 0
@@ -85,14 +96,15 @@ def create_batch(img, label, batch_size):
 
 if __name__ == '__main__':
 
-    pack_img_num = 1000
+    #pack_img_num = 1000
     #total_img = 149000
 
     #offset=int(np.random.randint(total_img-pack_img, size=1))
     #print(offset)
-    imgDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet150k'
-    outDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-    arr_input = image_input(imgDir, 224, 224, pack_img_num)
+    imgDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
+    outDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
+    #arr_input = image_input(imgDir, 224, 224, pack_img_num)
+    arr_input = convert_image_bin(imgDir, 224, 224)
     pickle_save_bin(arr_input, outDir)
 
     #writer = tf.python_io.TFRecordWriter("../dataset/imagenet10k.tfrecords")
