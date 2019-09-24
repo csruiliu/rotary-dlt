@@ -17,10 +17,10 @@ numClasses = 1000
 
 data_eval_slice = 20 
 
-#bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
-bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-#label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
-label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
+#bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
+label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
+#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
 
 def get_params(n_conf):
     batch_size = np.arange(10,61,5)
@@ -50,10 +50,11 @@ def run_params_pack(batch_size, opt, iterations, conn):
         dt = datetime.now()
         np.random.seed(dt.microsecond)
         net_instnace = np.random.randint(sys.maxsize)
-        modelEntity = MobileNet("mobilenet_"+str(net_instnace), 1, imgHeight, imgWidth, batch_size, numClasses, opt)
+        modelEntity = MobileNet("mobilenet_"+str(net_instnace), 1, imgHeight, imgWidth, batch_size, numClasses, opt[0])
         modelLogit = modelEntity.build(features)
         trainOps = modelEntity.train(modelLogit, labels)
         evalOps = modelEntity.evaluate(modelLogit, labels)
+        acc_pack = []
         config = tf.ConfigProto()
         config.allow_soft_placement = True    
         with tf.Session(config=config) as sess:
@@ -69,9 +70,10 @@ def run_params_pack(batch_size, opt, iterations, conn):
                     sess.run(trainOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
             
             acc_arg = evalOps.eval({features: X_data_eval, labels: Y_data_eval})
-            conn.send(acc_arg)
+            acc_pack.append(acc_arg)
+            conn.send(acc_pack)
             conn.close()
-            print("Accuracy:", acc_arg)
+            print("Accuracy:", acc_pack)
     else:
         dt = datetime.now()
         np.random.seed(dt.microsecond)

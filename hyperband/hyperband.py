@@ -50,16 +50,17 @@ class Hyperband:
                     else:
                         params_dict[t[0]] = []
                         params_dict[t[0]].append(t[1])
-                #print(params_set) 
+                print(params_dict) 
                 for bs, opt in params_dict.items():
                     parent_conn, child_conn = Pipe()
                     p = Process(target=self.run_hyperParams, args=(bs, opt, r_i, child_conn))
                     p.start()
-                    acc = parent_conn.recv()
+                    acc_pack = parent_conn.recv()
                     parent_conn.close()
                     p.join()
-                    if len(acc) == 1:
+                    if len(acc_pack) == 1:
                         result = {'acc':-1, 'counter':-1}
+                        acc = acc_pack[0]
                         result['acc'] = acc
                         #esult['counter'] = self.counter
                         result['params'] = []
@@ -73,16 +74,16 @@ class Hyperband:
                         self.results.append(result)
 
                     else:
-                        for idx, a in enumerate(acc):
+                        for idx, acc in enumerate(acc_pack):
                             result = {'acc':-1, 'counter':-1}
-                            result['acc'] = a
+                            result['acc'] = acc
                             #result['counter'] = self.counter
                             result['params'] = []
                             result['params'].append(bs)
                             result['params'].append(opt[idx])
                             
-                            if self.best_acc < a:
-                                self.best_acc = a
+                            if self.best_acc < acc:
+                                self.best_acc = acc
                                 print("best accuracy so far: {:.5f} \n".format(self.best_acc))
                             self.results.append(result)
         return self.results        

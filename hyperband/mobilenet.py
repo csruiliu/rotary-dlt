@@ -140,7 +140,7 @@ class MobileNet(object):
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
         self.cost = cross_entropy_cost
 
-        with tf.name_scope('optimizer_'+self.net_name):
+        with tf.name_scope(self.optimzier+'_'+self.net_name):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS,scope=self.net_name+'_instance')
             with tf.control_dependencies(update_ops):
                 if self.optimzier == 'Adam':
