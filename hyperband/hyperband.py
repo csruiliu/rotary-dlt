@@ -36,7 +36,7 @@ class Hyperband:
                 r_i = int(r * self.eta ** (i))
                 print("\n*** {} bracket | {} configurations x {} iterations each ***".format(s, n_i, r_i))
                 print("==============================================================")
-                #val_acc = []
+                val_acc = []
                 
                 #params_set = set()
                 params_dict = dict()
@@ -61,6 +61,7 @@ class Hyperband:
                     if len(acc_pack) == 1:
                         result = {'acc':-1, 'counter':-1}
                         acc = acc_pack[0]
+                        val_acc.append(acc)
                         result['acc'] = acc
                         #esult['counter'] = self.counter
                         result['params'] = []
@@ -76,6 +77,7 @@ class Hyperband:
                     else:
                         for idx, acc in enumerate(acc_pack):
                             result = {'acc':-1, 'counter':-1}
+                            val_acc.append(acc)
                             result['acc'] = acc
                             #result['counter'] = self.counter
                             result['params'] = []
@@ -86,6 +88,11 @@ class Hyperband:
                                 self.best_acc = acc
                                 print("best accuracy so far: {:.5f} \n".format(self.best_acc))
                             self.results.append(result)
+                
+                indices = np.argsort(val_acc)
+                
+                T = [T[i] for i in indices]
+                T = T[0:floor(n_i / self.eta)]
         return self.results        
 
     def run_fake(self):
