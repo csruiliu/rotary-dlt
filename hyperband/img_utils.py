@@ -27,10 +27,10 @@ def save_bin_raw(arr, output_file):
     with open(output_file, 'wb+') as of:
         of.write(arr)
 
-def load_bin_raw(img_bin):
+def load_bin_raw(img_bin, num_channels, img_w, img_h):
     image_arr = np.fromfile(img_bin, dtype=np.uint8)
-    img_num = int(image_arr.size / imgWidth / imgHeight / numChannels)
-    images = image_arr.reshape((img_num, imgWidth, imgHeight, numChannels))
+    img_num = int(image_arr.size / img_w / img_h / num_channels)
+    images = image_arr.reshape((img_num, img_w, img_h, num_channels))
     return images
 
 # use pickle package to store, but it is slow
@@ -56,26 +56,32 @@ def read_single_image(img_name, img_h, img_w):
     img_ext = np.expand_dims(np_im, axis=0)
     return img_ext
 
+def load_labels_onehot(path, num_classes):
+    lines = open(path).readlines()
+    labels_array = np.zeros((len(lines), num_classes))
+    for idx, val in enumerate(lines):
+        hot = int(val.rstrip('\n'))
+        labels_array[idx, hot-1] = 1
+    return labels_array
+
+
 
 if __name__ == "__main__":
 
-    imgDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
-    outDir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
+    imgPath = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
+    binPath = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
 
-    #imgDir = '/tank/local/ruiliu/dataset/imagenet10k'
-    #outDir = '/home/local/ruiliu/dataset/imagenet10k.bin'
+    #imgPath = '/tank/local/ruiliu/dataset/imagenet10k'
+    #binPath = '/home/local/ruiliu/dataset/imagenet10k.bin'
 
-    #bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
-    #bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-    #label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
-    #label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+    #labelPath = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
+    #labelPath = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
     
     #arr_image = convert_image_bin(imgDir, imgWidth, imgHeight)
     #save_bin_raw(arr_image, outDir)
-    images = load_bin_raw('/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin')
+    images = load_bin_raw(binPath, numChannels, imgHeight, imgWidth)
     
     print(images.shape)
-    #check_single_image(imgDir+'/ILSVRC2010_val_00001175.JPEG')
 
     plt.imshow(images[100,:,:,:])
     plt.show()

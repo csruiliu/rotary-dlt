@@ -143,10 +143,14 @@ class MobileNet(object):
         with tf.name_scope('optimizer_'+self.net_name):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS,scope=self.net_name+'_instance')
             with tf.control_dependencies(update_ops):
-                if self.optimzier == "Adam":
+                if self.optimzier == 'Adam':
                     train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy_cost)
-                elif self.optimzier == "SGD":
+                elif self.optimzier == 'SGD':
                     train_step = tf.train.GradientDescentOptimizer(1e-4).minimize(cross_entropy_cost)
+                elif self.optimzier == 'Adagrad':
+                    train_step = tf.train.AdagradOptimizer(1e-4).minimize(cross_entropy_cost)
+                elif self.optimzier == 'Momentum':
+                    train_step = tf.train.MomentumOptimizer(1e-4,0.9).minimize(cross_entropy_cost)
         return train_step
 
     def evaluate(self, logits, labels):
@@ -154,7 +158,7 @@ class MobileNet(object):
             pred = tf.nn.softmax(logits)
             correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(labels, 1))
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
-        return correct_prediction
+        return accuracy
 
 
     def getCost(self):
