@@ -93,45 +93,8 @@ class Hyperband:
                 
                 T = [T[i] for i in indices]
                 T = T[0:floor(n_i / self.eta)]
+
         return self.results        
-
-    def run_fake(self):
-        for s in reversed(range(self.s_max + 1)):
-            n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
-            r = self.R * (self.eta ** (-s))
-            T = self.get_hyperparams(n)
-
-            for i in range(s + 1):
-                n_i = floor(n * self.eta ** (-i))
-                r_i = int(r * self.eta ** (i))
-                print("\n*** {} bracket | {} configurations x {} iterations each ***".format(s, n_i, r_i))
-                print("==============================================================")
-                # record all accuracy of current run for sorting
-                val_acc = []
-                for t in T:
-                    result = {'acc':-1, 'counter':-1}
-                    self.counter += 1
-                    # generate random accuracy
-                    acc = np.random.random()
-                    val_acc.append(acc)
-
-                    result['acc'] = acc
-                    result['counter'] = self.counter
-                    result['params'] = t
-
-                    # record the best result
-                    if self.best_acc < acc:
-                        self.best_acc = acc
-                        self.best_counter = self.counter
-                    print("current run {}, accuracy: {:.5f} | best accuracy so far: {:.5f} (run {})\n".format(self.counter, acc, self.best_acc, self.best_counter))
-                    self.results.append(result)
-                    
-                # sort the result
-                indices = np.argsort(val_acc)
-                
-                T = [T[i] for i in indices]
-                T = T[0:floor(n_i / self.eta)]
-        return self.results
 
     def run(self):
         for s in reversed(range(self.s_max + 1)):
@@ -179,16 +142,55 @@ class Hyperband:
                 T = [T[i] for i in indices]
                 T = T[0:floor(n_i / self.eta)]
 
-            return self.results
+        return self.results
+
+
+    def run_fake(self):
+        for s in reversed(range(self.s_max + 1)):
+            n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
+            r = self.R * (self.eta ** (-s))
+            T = self.get_hyperparams(n)
+
+            for i in range(s + 1):
+                n_i = floor(n * self.eta ** (-i))
+                r_i = int(r * self.eta ** (i))
+                print("\n*** {} bracket | {} configurations x {} iterations each ***".format(s, n_i, r_i))
+                print("==============================================================")
+                # record all accuracy of current run for sorting
+                val_acc = []
+                for t in T:
+                    result = {'acc':-1, 'counter':-1}
+                    self.counter += 1
+                    # generate random accuracy
+                    acc = np.random.random()
+                    val_acc.append(acc)
+
+                    result['acc'] = acc
+                    result['counter'] = self.counter
+                    result['params'] = t
+
+                    # record the best result
+                    if self.best_acc < acc:
+                        self.best_acc = acc
+                        self.best_counter = self.counter
+                    print("current run {}, accuracy: {:.5f} | best accuracy so far: {:.5f} (run {})\n".format(self.counter, acc, self.best_acc, self.best_counter))
+                    self.results.append(result)
+                    
+                # sort the result
+                indices = np.argsort(val_acc)
+                
+                T = [T[i] for i in indices]
+                T = T[0:floor(n_i / self.eta)]
+        return self.results
 
 if __name__ == "__main__":
     #evaluate_model()
     
     resource_conf = 27
     down_rate = 3
-    hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack)
+    hb = Hyperband(resource_conf, down_rate, get_params, run_params)
     start_time = timer()
-    results = hb.run_pack()
+    results = hb.run()
     end_time = timer()
     dur_time = end_time - start_time
     print("{} total, best:\n".format(len(results)))
