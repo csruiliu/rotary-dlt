@@ -1,9 +1,7 @@
 import tensorflow as tf
 
-channel_num = 3
-
-class mlp(object):
-    def __init__(self, net_name, model_layer, input_h, input_w, batch_size, num_classes, opt):
+class MLP(object):
+    def __init__(self, net_name, model_layer, input_h, input_w, channel_num, batch_size, num_classes, opt):
         self.net_name = net_name
         self.model_layer_num = model_layer
         self.img_h = input_h
@@ -33,13 +31,18 @@ class mlp(object):
         with tf.name_scope('loss_'+self.net_name):
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
-        with tf.name_scope('optimizer_'+self.net_name):
+
+        with tf.name_scope(self.optimzier+'_'+self.net_name):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS,scope=self.net_name+'_instance')
             with tf.control_dependencies(update_ops):
-                if self.optimzier == "Adam":
+                if self.optimzier == 'Adam':
                     train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy_cost)
-                elif self.optimzier == "SGD":
+                elif self.optimzier == 'SGD':
                     train_step = tf.train.GradientDescentOptimizer(1e-4).minimize(cross_entropy_cost)
+                elif self.optimzier == 'Adagrad':
+                    train_step = tf.train.AdagradOptimizer(1e-4).minimize(cross_entropy_cost)
+                elif self.optimzier == 'Momentum':
+                    train_step = tf.train.MomentumOptimizer(1e-4,0.9).minimize(cross_entropy_cost)
 
         return train_step
  

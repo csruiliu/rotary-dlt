@@ -6,63 +6,75 @@ from datetime import datetime
 import sys
 from matplotlib import pyplot as plt
 
-from img_utils import load_bin_raw, load_labels_onehot
+from img_utils import * 
 from mobilenet import MobileNet
+from mlp import MLP
 
 
-imgWidth = 224
-imgHeight = 224
-numChannels = 3
-numClasses = 1000
+imgWidth = 28
+imgHeight = 28
+numChannels = 1
+numClasses = 10
 
 data_eval_slice = 20 
 
-bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
+#bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
 #bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
+#label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
 #label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
 
-mnist_train_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-images.idx3-ubyte'
-mnist_train_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-labels.idx1-ubyte'
-mnist_t10k_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-images.idx3-ubyte'
-mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
+#mnist_train_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-images.idx3-ubyte'
+mnist_train_img_path = '/tank/local/ruiliu/dataset/mnist-train-images.idx3-ubyte'
+#mnist_train_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-labels.idx1-ubyte'
+mnist_train_label_path = '/tank/local/ruiliu/dataset/mnist-train-labels.idx1-ubyte'
+#mnist_t10k_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-images.idx3-ubyte'
+mnist_t10k_img_path = '/tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte'
+#mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
+mnist_t10k_label_path = '/tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte'
 
 def get_params(n_conf):
     batch_size = np.arange(10,61,5)
     opt_conf = ['Adam','SGD','Adagrad','Momentum']
+    model_layer = np.arange(0,6,1)
     #data_conf = ['Same','Diff']
     #preprocess_list = ['Include','Not Include']
     #all_conf = [batch_size,opt_conf,data_conf,preprocess_list]
-    all_conf = [batch_size,opt_conf]
+    all_conf = [batch_size, opt_conf, model_layer]
 
     hp_conf = list(itertools.product(*all_conf))
+    #print(len(hp_conf))
     idx_list = np.random.choice(np.arange(0, len(hp_conf)), n_conf, replace=False)
     rand_conf = itemgetter(*idx_list)(hp_conf)
 
     return rand_conf
 
-def run_params_pack_mnist():
-    print("use mnist database")
-
-    
-
-
-
-def run_params_pack(batch_size, opt, iterations, conn):
+def run_params_pack(hyper_params, iterations, conn):
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
 
-    X_data = load_bin_raw(bin_dir, numChannels, imgWidth, imgHeight)
-    Y_data = load_labels_onehot(label_path, numClasses)
+    #X_data = load_bin_raw(bin_dir, numChannels, imgWidth, imgHeight)
+    #Y_data = load_labels_onehot(label_path, numClasses)
 
-    X_data_eval = X_data[0:data_eval_slice,:,:,:]
-    Y_data_eval = Y_data[0:data_eval_slice,:]
+    #X_data_eval = X_data[0:data_eval_slice,:,:,:]
+    #Y_data_eval = Y_data[0:data_eval_slice,:]
+
+    X_data = load_mnist_image(mnist_train_img_path)
+    Y_data = load_mnist_label_onehot(mnist_train_label_path)
+    X_data_eval = load_mnist_image(mnist_t10k_img_path)
+    Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path)
 
     if len(opt) == 1:
         dt = datetime.now()
         np.random.seed(dt.microsecond)
         net_instnace = np.random.randint(sys.maxsize)
-        modelEntity = MobileNet("mobilenet_"+str(net_instnace), 1, imgHeight, imgWidth, batch_size, numClasses, opt[0])
+        
+        batch_size = hyper_params[0]
+        opt = hyper_params[1]
+        model_layer = hyper_params[2]
+        print("\n*** batch size: {} | opt: {} | model layer: {}***".format(batch_size, opt, model_layer))
+        
+        #modelEntity = MobileNet("mobilenet_"+str(net_instnace), 1, imgHeight, imgWidth, batch_size, numClasses, opt[0])
+        modelEntity = MLP("mlp_"+str(net_instnace), 1, imgHeight, imgWidth, 1, batch_size, numClasses, opt)
         modelLogit = modelEntity.build(features)
         trainOps = modelEntity.train(modelLogit, labels)
         evalOps = modelEntity.evaluate(modelLogit, labels)
@@ -125,27 +137,24 @@ def run_params_pack(batch_size, opt, iterations, conn):
             print("Accuracy:", acc_pack)
     
 
-
 def run_params(hyper_params, iterations, conn):
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
-
-    X_data = load_bin_raw(bin_dir, numChannels, imgWidth, imgHeight)
-    Y_data = load_labels_onehot(label_path, numClasses)
-    
-    X_data_eval = X_data[0:data_eval_slice,:,:,:]
-    Y_data_eval = Y_data[0:data_eval_slice,:]
+    X_data = load_mnist_image(mnist_train_img_path)
+    Y_data = load_mnist_label_onehot(mnist_train_label_path)
+    X_data_eval = load_mnist_image(mnist_t10k_img_path)
+    Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path)
 
     dt = datetime.now()
     np.random.seed(dt.microsecond)
     net_instnace = np.random.randint(sys.maxsize)
     batch_size = hyper_params[0]
     opt = hyper_params[1]
-    print("\n*** batch size: {} | Opt: {} ***".format(batch_size, opt))
-    #input_data = hyper_params[2]
-    #prep = hyper_params[3]
+    model_layer = hyper_params[2]
+    print("\n*** batch size: {} | opt: {} | model layer: {}***".format(batch_size, opt, model_layer))
 
-    modelEntity = MobileNet("mobilenet_"+str(net_instnace), 1, imgHeight, imgWidth, batch_size, numClasses, opt)
+    #modelEntity = MobileNet("mobilenet_"+str(net_instnace), 1, imgHeight, imgWidth, batch_size, numClasses, opt)
+    modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt)
     modelLogit = modelEntity.build(features)
     trainOps = modelEntity.train(modelLogit, labels)
     evalOps = modelEntity.evaluate(modelLogit, labels)
@@ -168,30 +177,44 @@ def run_params(hyper_params, iterations, conn):
         conn.send(acc_arg)
         conn.close()
         print("Accuracy:", acc_arg)
-        #print("Accuracy:", evalOps.eval({features: X_data, labels: Y_data}))
 
 def evaluate_model():
+    numChannels = 1
+    numClasses = 10
+    imgWidth = 28
+    imgHeight = 28
+
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
 
-    X_data = load_bin_raw(bin_dir, numChannels, imgWidth, imgHeight)
-    Y_data = load_labels_onehot(label_path, numClasses)
-    X_data_eval = X_data[0:data_eval_slice,:,:,:]
-    Y_data_eval = Y_data[0:data_eval_slice,:]
-
+    #X_data = load_bin_raw(bin_dir, numChannels, imgWidth, imgHeight)
+    #Y_data = load_labels_onehot(label_path, numClasses)
+    #X_data_eval = X_data[0:data_eval_slice,:,:,:]
+    #Y_data_eval = Y_data[0:data_eval_slice,:]
+    
+    X_data = load_mnist_image(mnist_train_img_path)
+    Y_data = load_mnist_label_onehot(mnist_train_label_path)
+    X_data_eval = load_mnist_image(mnist_t10k_img_path)
+    Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path)
+    
+    #plt.imshow(X_data_eval[99,:,:,0], cmap='gray')
+    #print(Y_data_eval[99,9])
+    #plt.show()
+    
     dt = datetime.now()
     np.random.seed(dt.microsecond)
     net_instnace = np.random.randint(sys.maxsize)
 
-    batch_size = 32
+    batch_size = 40
     opt = 'Adam'
 
-    modelEntity = MobileNet("mobilenet_"+str(net_instnace), 1, imgHeight, imgWidth, batch_size, numClasses, opt)
+    #modelEntity = MobileNet("mobilenet_"+str(net_instnace), 1, imgHeight, imgWidth, batch_size, numClasses, opt)
+    modelEntity = MLP("mlp_"+str(net_instnace), 0, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt)
     modelLogit = modelEntity.build(features)
     trainOps = modelEntity.train(modelLogit, labels)
     evalOps = modelEntity.evaluate(modelLogit, labels)
     
-    iterations = 20
+    iterations = 30
 
     config = tf.ConfigProto()
     config.allow_soft_placement = True
@@ -211,5 +234,3 @@ def evaluate_model():
         #acc_arg = sess.run(evalOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
         acc_arg = evalOps.eval({features: X_data_eval, labels: Y_data_eval})
         print('accuracy:',acc_arg)
-        
-        

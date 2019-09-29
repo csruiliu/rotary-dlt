@@ -43,17 +43,19 @@ class Hyperband:
 
                 for t in T:
                     self.counter += 1
-                    print("current run {}, current params: batch size {}, opt {} | \n".format(self.counter, t[0], t[1]))
-                    #params_set.add(t[0])
+                    print("current run {}, current params: batch size {}, opt {}, model layer: {} | \n".format(self.counter, t[0], t[1], t[2]))
                     if t[0] in params_dict:
                         params_dict[t[0]].append(t[1])
+                        params_dict[t[0]].append(t[2])
                     else:
                         params_dict[t[0]] = []
                         params_dict[t[0]].append(t[1])
+                        params_dict[t[0]].append(t[2])
                 print(params_dict) 
-                for bs, opt in params_dict.items():
+
+                for t in params_dict:
                     parent_conn, child_conn = Pipe()
-                    p = Process(target=self.run_hyperParams, args=(bs, opt, r_i, child_conn))
+                    p = Process(target=self.run_hyperParams, args=(t, r_i, child_conn))
                     p.start()
                     acc_pack = parent_conn.recv()
                     parent_conn.close()
@@ -64,9 +66,7 @@ class Hyperband:
                         val_acc.append(acc)
                         result['acc'] = acc
                         #esult['counter'] = self.counter
-                        result['params'] = []
-                        result['params'].append(bs)
-                        result['params'].append(opt)
+                        result['params'] = t
 
                         if self.best_acc < acc:
                             self.best_acc = acc
@@ -125,7 +125,6 @@ class Hyperband:
                     p.join()
 
                     list_acc.append(acc)
-
                     if self.best_acc < acc:
                         self.best_acc = acc
                         self.best_counter = self.counter
@@ -134,11 +133,9 @@ class Hyperband:
                     result['params'] = t
 
                     print("current run {}, accuracy: {:.5f} | best accuracy so far: {:.5f} (run {})\n".format(self.counter, acc, self.best_acc, self.best_counter))
-
                     self.results.append(result)
                 
                 indices = np.argsort(list_acc)
-
                 T = [T[i] for i in indices]
                 T = T[0:floor(n_i / self.eta)]
 
@@ -185,9 +182,8 @@ class Hyperband:
 
 if __name__ == "__main__":
     #evaluate_model()
-    run_params_pack_mnist()
-    '''
-    resource_conf = 27
+    #run_params_pack_mnist()
+    resource_conf = 81
     down_rate = 3
     hb = Hyperband(resource_conf, down_rate, get_params, run_params)
     start_time = timer()
@@ -198,4 +194,3 @@ if __name__ == "__main__":
     best_hp = sorted(results, key = lambda x: x['acc'])[-1]
     print(best_hp)
     print('total exp time:',dur_time)
-    '''
