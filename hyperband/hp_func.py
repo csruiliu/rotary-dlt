@@ -22,6 +22,11 @@ bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
 label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
 #label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
 
+mnist_train_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-images.idx3-ubyte'
+mnist_train_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-labels.idx1-ubyte'
+mnist_t10k_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-images.idx3-ubyte'
+mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
+
 def get_params(n_conf):
     batch_size = np.arange(10,61,5)
     opt_conf = ['Adam','SGD','Adagrad','Momentum']
@@ -35,6 +40,13 @@ def get_params(n_conf):
     rand_conf = itemgetter(*idx_list)(hp_conf)
 
     return rand_conf
+
+def run_params_pack_mnist():
+    print("use mnist database")
+
+    
+
+
 
 def run_params_pack(batch_size, opt, iterations, conn):
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])

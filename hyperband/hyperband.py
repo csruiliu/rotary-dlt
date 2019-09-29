@@ -2,7 +2,7 @@ import numpy as np
 from multiprocessing import Process, Pipe
 from math import log, ceil, floor
 from timeit import default_timer as timer
-from hp_func import get_params, run_params, run_params_pack, evaluate_model, load_bin_raw
+from hp_func import *
 
 class Hyperband:
 
@@ -185,7 +185,8 @@ class Hyperband:
 
 if __name__ == "__main__":
     #evaluate_model()
-    
+    run_params_pack_mnist()
+    '''
     resource_conf = 27
     down_rate = 3
     hb = Hyperband(resource_conf, down_rate, get_params, run_params)
@@ -197,3 +198,4 @@ if __name__ == "__main__":
     best_hp = sorted(results, key = lambda x: x['acc'])[-1]
     print(best_hp)
     print('total exp time:',dur_time)
+    '''
