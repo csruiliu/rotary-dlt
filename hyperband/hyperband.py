@@ -25,7 +25,7 @@ class Hyperband:
         self.get_hyperparams = getHyperPara
         self.run_hyperParams = runHyperPara
 
-    def run_pack(self):
+    def run_pack_naive(self):
         for s in reversed(range(self.s_max + 1)):
             n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
             r = self.R * (self.eta ** (-s))
@@ -38,36 +38,38 @@ class Hyperband:
                 print("==============================================================")
                 val_acc = []
                 
-                #params_set = set()
                 params_dict = dict()
-
+                
                 for t in T:
-                    self.counter += 1
-                    print("current run {}, current params: batch size {}, opt {}, model layer: {} | \n".format(self.counter, t[0], t[1], t[2]))
+                    #print("current run {}, current params: batch size {}, opt {}, model layer: {} | \n".format(self.counter, t[0], t[1], t[2]))
+                    
                     if t[0] in params_dict:
                         params_dict[t[0]].append(t[1])
                         params_dict[t[0]].append(t[2])
                     else:
-                        params_dict[t[0]] = []
+                        params_dict[t[0]] = [] 
                         params_dict[t[0]].append(t[1])
                         params_dict[t[0]].append(t[2])
-                print(params_dict) 
-
-                for t in params_dict:
+                #print(params_dict) 
+                for bs, conf in params_dict.items():
+                    print("current params: batch size {}, conf {} | \n".format(bs, conf))
                     parent_conn, child_conn = Pipe()
-                    p = Process(target=self.run_hyperParams, args=(t, r_i, child_conn))
+                    p = Process(target=self.run_hyperParams, args=(bs, conf, r_i, child_conn))
                     p.start()
                     acc_pack = parent_conn.recv()
                     parent_conn.close()
                     p.join()
                     if len(acc_pack) == 1:
-                        result = {'acc':-1, 'counter':-1}
+                        result = {'acc':-1}
                         acc = acc_pack[0]
                         val_acc.append(acc)
                         result['acc'] = acc
                         #esult['counter'] = self.counter
-                        result['params'] = t
-
+                        result['params'] = []
+                        result['params'].append(bs)
+                        result['params'].append(conf[0])
+                        result['params'].append(conf[1])
+                            
                         if self.best_acc < acc:
                             self.best_acc = acc
                             #self.best_counter = self.counter
@@ -76,21 +78,21 @@ class Hyperband:
 
                     else:
                         for idx, acc in enumerate(acc_pack):
-                            result = {'acc':-1, 'counter':-1}
+                            result = {'acc':-1}
                             val_acc.append(acc)
                             result['acc'] = acc
                             #result['counter'] = self.counter
                             result['params'] = []
                             result['params'].append(bs)
-                            result['params'].append(opt[idx])
+                            result['params'].append(conf[idx*2])
+                            result['params'].append(conf[idx*2+1])
                             
                             if self.best_acc < acc:
                                 self.best_acc = acc
                                 print("best accuracy so far: {:.5f} \n".format(self.best_acc))
                             self.results.append(result)
-                
+
                 indices = np.argsort(val_acc)
-                
                 T = [T[i] for i in indices]
                 T = T[0:floor(n_i / self.eta)]
 
@@ -182,12 +184,12 @@ class Hyperband:
 
 if __name__ == "__main__":
     #evaluate_model()
-    #run_params_pack_mnist()
-    resource_conf = 81
+    #run_params_pack_mnist()    
+    resource_conf = 36
     down_rate = 3
-    hb = Hyperband(resource_conf, down_rate, get_params, run_params)
+    hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_naive)
     start_time = timer()
-    results = hb.run()
+    results = hb.run_pack_naive()
     end_time = timer()
     dur_time = end_time - start_time
     print("{} total, best:\n".format(len(results)))

@@ -10,7 +10,6 @@ from img_utils import *
 from mobilenet import MobileNet
 from mlp import MLP
 
-
 imgWidth = 28
 imgHeight = 28
 numChannels = 1
@@ -32,6 +31,7 @@ mnist_t10k_img_path = '/tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte'
 #mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
 mnist_t10k_label_path = '/tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte'
 
+
 def get_params(n_conf):
     batch_size = np.arange(10,61,5)
     opt_conf = ['Adam','SGD','Adagrad','Momentum']
@@ -48,33 +48,25 @@ def get_params(n_conf):
 
     return rand_conf
 
-def run_params_pack(hyper_params, iterations, conn):
+def run_params_pack_naive(batch_size, confs, iterations, conn):
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
-
-    #X_data = load_bin_raw(bin_dir, numChannels, imgWidth, imgHeight)
-    #Y_data = load_labels_onehot(label_path, numClasses)
-
-    #X_data_eval = X_data[0:data_eval_slice,:,:,:]
-    #Y_data_eval = Y_data[0:data_eval_slice,:]
-
     X_data = load_mnist_image(mnist_train_img_path)
     Y_data = load_mnist_label_onehot(mnist_train_label_path)
     X_data_eval = load_mnist_image(mnist_t10k_img_path)
     Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path)
 
-    if len(opt) == 1:
+    if len(confs) == 2:
         dt = datetime.now()
         np.random.seed(dt.microsecond)
         net_instnace = np.random.randint(sys.maxsize)
         
-        batch_size = hyper_params[0]
-        opt = hyper_params[1]
-        model_layer = hyper_params[2]
-        print("\n*** batch size: {} | opt: {} | model layer: {}***".format(batch_size, opt, model_layer))
+        opt = confs[0]
+        model_layer = confs[1]
+        #print("\n*** batch size: {} | opt: {} | model layer: {}***".format(batch_size, opt, model_layer))
         
         #modelEntity = MobileNet("mobilenet_"+str(net_instnace), 1, imgHeight, imgWidth, batch_size, numClasses, opt[0])
-        modelEntity = MLP("mlp_"+str(net_instnace), 1, imgHeight, imgWidth, 1, batch_size, numClasses, opt)
+        modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt)
         modelLogit = modelEntity.build(features)
         trainOps = modelEntity.train(modelLogit, labels)
         evalOps = modelEntity.evaluate(modelLogit, labels)
@@ -101,18 +93,21 @@ def run_params_pack(hyper_params, iterations, conn):
     else:
         dt = datetime.now()
         np.random.seed(dt.microsecond)
-        net_instnace = np.random.randint(sys.maxsize, size=len(opt))
+        #print(len(confs))
+        net_instnace = np.random.randint(sys.maxsize, size=len(confs)//2)
+        
         train_pack = []
         eval_pack = [] 
         acc_pack = []
 
-        for idx, o in enumerate(opt):
-            modelEntity = MobileNet("mobilenet_"+str(net_instnace[idx]), 1, imgHeight, imgWidth, batch_size, numClasses, o)
-            modelLogit = modelEntity.build(features)
-            trainOps = modelEntity.train(modelLogit, labels)
-            evalOps = modelEntity.evaluate(modelLogit, labels)
-            train_pack.append(trainOps)
-            eval_pack.append(evalOps)
+        for idx, _ in enumerate(confs):
+            if (idx+1) % 2 == 0:
+                modelEntity = MLP("mlp_"+str(net_instnace[(idx-1)//2]), confs[idx], imgHeight, imgWidth, numChannels, batch_size, numClasses, confs[idx-1])
+                modelLogit = modelEntity.build(features)
+                trainOps = modelEntity.train(modelLogit, labels)
+                evalOps = modelEntity.evaluate(modelLogit, labels)
+                train_pack.append(trainOps)
+                eval_pack.append(evalOps)
         
         config = tf.ConfigProto()
         config.allow_soft_placement = True   
@@ -136,7 +131,6 @@ def run_params_pack(hyper_params, iterations, conn):
             conn.close()
             print("Accuracy:", acc_pack)
     
-
 def run_params(hyper_params, iterations, conn):
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
