@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 class MLP(object):
-    def __init__(self, net_name, model_layer, input_h, input_w, channel_num, batch_size, num_classes, opt):
+    def __init__(self, net_name, model_layer, input_h, input_w, channel_num, batch_size, num_classes, opt, epochs):
         self.net_name = net_name
         self.model_layer_num = model_layer
         self.img_h = input_h
@@ -10,6 +10,8 @@ class MLP(object):
         self.batch_size = batch_size
         self.optimzier = opt
         self.input_size = input_h * input_w * channel_num
+        self.progress = 0
+        self.epochs = epochs
 
     def perceptron_layer(self, input):
         weights = tf.Variable(tf.random_normal([int(input.shape[1]), self.num_classes]))
@@ -18,8 +20,9 @@ class MLP(object):
         return layer 
 
     def build(self, input):
+        input_padding = input[0:self.batch_size,:,:,:]
         with tf.variable_scope(self.net_name + '_instance'):
-            input_image = tf.reshape(input, [-1, self.input_size])
+            input_image = tf.reshape(input_padding, [-1, self.input_size])
             layer = self.perceptron_layer(input_image)
             if self.model_layer_num >= 1:
                 for _ in range(self.model_layer_num - 1):
@@ -54,3 +57,11 @@ class MLP(object):
         
         return accuracy
 
+    def getProgress(self):
+        return self.progress
+
+    def getEpochs(self):
+        return self.epochs
+
+    def setProgress(self, cur_prog):
+        self.progress += cur_prog
