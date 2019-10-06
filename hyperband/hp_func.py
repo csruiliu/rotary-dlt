@@ -48,9 +48,93 @@ def get_params(n_conf):
 
     return rand_conf
 
-def run_params_pack_random():
-    print("run random packing")
+def run_params_pack_random(confs, epochs, conn):
+    print("running configurations:", confs)
+    print("epochs:",epochs)
+    
+    features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+    labels = tf.placeholder(tf.int64, [None, numClasses])
+    X_data = load_mnist_image(mnist_train_img_path)
+    Y_data = load_mnist_label_onehot(mnist_train_label_path)
+    X_data_eval = load_mnist_image(mnist_t10k_img_path)
+    Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path)
 
+    dt = datetime.now()
+    np.random.seed(dt.microsecond)    
+    net_instnace = np.random.randint(sys.maxsize, size=len(confs))
+    
+    desire_epochs = epochs
+    
+    entity_pack = []
+    train_pack = []
+    eval_pack = [] 
+    acc_pack = []
+    batch_size_set = set()
+
+    for cidx, cf in enumerate(confs):
+        batch_size = cf[0]
+        batch_size_set.add(batch_size)
+        opt = cf[1]
+        model_layer = cf[2]
+        
+        desire_steps = Y_data.shape[0] // batch_size
+        modelEntity = MLP("mlp_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt)
+        modelEntity.setDesireEpochs(desire_epochs)
+        modelEntity.setDesireSteps(desire_steps)
+        modelLogit = modelEntity.build(features)
+        trainOps = modelEntity.train(modelLogit, labels)
+        evalOps = modelEntity.evaluate(modelLogit, labels)
+        entity_pack.append(modelEntity)
+        train_pack.append(trainOps)
+        eval_pack.append(evalOps)
+
+    config = tf.ConfigProto()
+    config.allow_soft_placement = True   
+    with tf.Session(config=config) as sess:
+        sess.run(tf.global_variables_initializer())
+        max_bs = max(batch_size_set)
+        
+        complete_flag = False
+
+        while len(train_pack) != 0:
+            print("current max batch size:",max_bs)
+            num_steps = Y_data.shape[0] // max_bs
+            for i in range(num_steps):
+                #print("step {}/{}".format(i+1, num_steps))
+                batch_offset = i * max_bs
+                batch_end = (i+1) * max_bs
+                X_mini_batch_feed = X_data[batch_offset:batch_end,:,:,:]
+                Y_mini_batch_feed = Y_data[batch_offset:batch_end,:]
+                sess.run(train_pack, feed_dict = {features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                for me in entity_pack:
+                    me.setCurStep()
+                    if me.isCompleteTrain():
+                        print("model has been trained completely:",me.getModelInstance())
+                        sess.run(me.setBatchSize(Y_data_eval.shape[0]))
+                        train_pack.remove(me.getTrainOp())
+                        complete_flag = True   
+                
+                if len(train_pack) == 0:
+                    break
+                
+                if complete_flag:
+                    batch_size_set.discard(max_bs)
+                    max_bs = max(batch_size_set)
+                    complete_flag = False
+                    break
+    
+        print("models have been training this run, start to evaluate")
+        for ep in eval_pack:
+            #num_steps = Y_data.shape[0] // max_bs
+            acc_arg = ep.eval({features: X_data_eval, labels: Y_data_eval})
+            #acc_arg = sess.run(ep, feed_dict = {features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+            acc_pack.append(acc_arg)
+            print(acc_arg)
+        
+        conn.send(acc_pack)
+        conn.close()
+        print("Accuracy:", acc_pack)
+        
 def run_params_pack_stack():
     print("run packing stack")
 
@@ -74,7 +158,6 @@ def run_params_pack_naive(batch_size, confs, iterations, conn):
         model_layer = confs[1]
         #print("\n*** batch size: {} | opt: {} | model layer: {}***".format(batch_size, opt, model_layer))
         
-        #modelEntity = MobileNet("mobilenet_"+str(net_instnace), 1, imgHeight, imgWidth, batch_size, numClasses, opt[0])
         modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt)
         modelLogit = modelEntity.build(features)
         trainOps = modelEntity.train(modelLogit, labels)
@@ -180,62 +263,6 @@ def run_params(hyper_params, iterations, conn):
         conn.send(acc_arg)
         conn.close()
         print("Accuracy:", acc_arg)
-
-def evaluate_diff_batch():
-    numChannels = 1
-    numClasses = 10
-    imgWidth = 28
-    imgHeight = 28
-
-    features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
-    labels = tf.placeholder(tf.int64, [None, numClasses])
-
-    X_data = load_mnist_image(mnist_train_img_path)
-    Y_data = load_mnist_label_onehot(mnist_train_label_path)
-    X_data_eval = load_mnist_image(mnist_t10k_img_path)
-    Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path)
-
-    net_instnace = 1
-    batch_size = 50
-    opt = 'Adam'
-    epochs = 20
-
-    modelEntity1 = MLP("mlp_"+str(net_instnace), 0, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, epochs)
-    modelLogit1 = modelEntity1.build(features)
-    trainOps1 = modelEntity1.train(modelLogit1, labels)
-    evalOps1 = modelEntity1.evaluate(modelLogit1, labels)
-
-    net_instnace = 1
-    batch_size = 40
-    opt = 'SGD'
-    epochs = 25
-
-    modelEntity2 = MLP("mlp_"+str(net_instnace), 0, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, epochs)
-    modelLogit2 = modelEntity2.build(features)
-    trainOps2 = modelEntity2.train(modelLogit2, labels)
-    evalOps2 = modelEntity2.evaluate(modelLogit2, labels)
-    
-    trainOps = [trainOps1,trainOps2]
-
-    iterations = 10
-
-    config = tf.ConfigProto()
-    config.allow_soft_placement = True
-
-    batch_size_one = 40
-
-    with tf.Session(config=config) as sess:
-        sess.run(tf.global_variables_initializer())
-        num_batch = Y_data.shape[0] // batch_size_one
-        for e in range(iterations):
-            for i in range(num_batch):
-                print('epoch %d / %d, step %d / %d' %(e+1, iterations, i+1, num_batch))
-                batch_offset = i * batch_size_one
-                batch_end = (i+1) * batch_size_one
-                X_mini_batch_feed = X_data[batch_offset:batch_end,:,:,:]
-                Y_mini_batch_feed = Y_data[batch_offset:batch_end,:]
-                sess.run(trainOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-                
 
 def evaluate_model():
     numChannels = 1

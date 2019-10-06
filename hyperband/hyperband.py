@@ -25,6 +25,57 @@ class Hyperband:
         self.get_hyperparams = getHyperPara
         self.run_hyperParams = runHyperPara
 
+    def run_pack_random(self, random_size):
+        for s in reversed(range(self.s_max + 1)):
+            n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
+            r = self.R * (self.eta ** (-s))
+            T = self.get_hyperparams(n)
+
+            for i in range(s + 1):
+                n_i = floor(n * self.eta ** (-i))
+                r_i = int(r * self.eta ** (i))
+                print("\n*** {} bracket | {} configurations x {} iterations each ***".format(s, n_i, r_i))
+                print("==============================================================")
+                val_acc = []
+                params_list = []
+                num_para_list = ceil(len(T) / random_size) 
+                print(num_para_list)
+                if num_para_list == 1:
+                    params_list.append(T)
+                else:
+                    for n in range(num_para_list-1):
+                        params_list.append(T[n*random_size:(n+1)*random_size])
+                    params_list.append(T[(num_para_list-1)*random_size:])
+                
+                for pidx in range(num_para_list):
+                    parent_conn, child_conn = Pipe()
+                    selected_confs = params_list[pidx]
+                    p = Process(target=self.run_hyperParams, args=(selected_confs, r_i, child_conn))
+                    p.start()
+                    acc_pack = parent_conn.recv()
+                    parent_conn.close()
+                    p.join()
+
+                    for idx, acc in enumerate(acc_pack):
+                        result = {'acc':-1}
+                        val_acc.append(acc)
+                        result['acc'] = acc
+                        result['params'] = []
+                        result['params'].append(selected_confs[idx][0])
+                        result['params'].append(selected_confs[idx][1])
+                        result['params'].append(selected_confs[idx][2])
+                        
+                        if self.best_acc < acc:
+                            self.best_acc = acc
+                            print("best accuracy so far: {:.5f} \n".format(self.best_acc))
+                        self.results.append(result)
+
+                indices = np.argsort(val_acc)
+                T = [T[i] for i in indices]
+                T = T[0:floor(n_i / self.eta)]
+
+        return self.results
+
     def run_pack_naive(self):
         for s in reversed(range(self.s_max + 1)):
             n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
@@ -41,8 +92,6 @@ class Hyperband:
                 params_dict = dict()
                 
                 for t in T:
-                    #print("current run {}, current params: batch size {}, opt {}, model layer: {} | \n".format(self.counter, t[0], t[1], t[2]))
-                    
                     if t[0] in params_dict:
                         params_dict[t[0]].append(t[1])
                         params_dict[t[0]].append(t[2])
@@ -185,17 +234,16 @@ class Hyperband:
 if __name__ == "__main__":
     #evaluate_model()
     #run_params_pack_mnist()    
-    evaluate_diff_batch()
-    '''
+    #evaluate_diff_batch()
     resource_conf = 81
     down_rate = 3
-    hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_naive)
+    hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_random)
     start_time = timer()
-    results = hb.run_pack_naive()
+    results = hb.run_pack_random(9)
     end_time = timer()
     dur_time = end_time - start_time
     print("{} total, best:\n".format(len(results)))
     best_hp = sorted(results, key = lambda x: x['acc'])[-1]
     print(best_hp)
     print('total exp time:',dur_time)
-    '''
+    
