@@ -26,7 +26,6 @@ class MLP(object):
 
     def build(self, input):
         input_padding = input[0:self.batch_size,:,:,:]
-        print(input_padding.shape[0])
         with tf.variable_scope(self.net_name + '_instance'):
             input_image = tf.reshape(input_padding, [-1, self.input_size])
             layer = self.perceptron_layer(input_image)

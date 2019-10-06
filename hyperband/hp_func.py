@@ -71,6 +71,8 @@ def run_params_pack_random(confs, epochs, conn):
     acc_pack = []
     batch_size_set = set()
 
+    max_bs = np.NINF
+
     for cidx, cf in enumerate(confs):
         batch_size = cf[0]
         batch_size_set.add(batch_size)
@@ -131,9 +133,9 @@ def run_params_pack_random(confs, epochs, conn):
             acc_pack.append(acc_arg)
             print(acc_arg)
         
-        conn.send(acc_pack)
-        conn.close()
-        print("Accuracy:", acc_pack)
+    conn.send(acc_pack)
+    conn.close()
+    print("Accuracy:", acc_pack)
         
 def run_params_pack_stack():
     print("run packing stack")

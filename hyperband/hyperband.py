@@ -235,6 +235,7 @@ if __name__ == "__main__":
     #evaluate_model()
     #run_params_pack_mnist()    
     #evaluate_diff_batch()
+    
     resource_conf = 81
     down_rate = 3
     hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_random)
