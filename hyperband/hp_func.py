@@ -22,14 +22,14 @@ data_eval_slice = 20
 #label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
 #label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
 
-#mnist_train_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-images.idx3-ubyte'
-mnist_train_img_path = '/tank/local/ruiliu/dataset/mnist-train-images.idx3-ubyte'
-#mnist_train_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-labels.idx1-ubyte'
-mnist_train_label_path = '/tank/local/ruiliu/dataset/mnist-train-labels.idx1-ubyte'
-#mnist_t10k_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-images.idx3-ubyte'
-mnist_t10k_img_path = '/tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte'
-#mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
-mnist_t10k_label_path = '/tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte'
+mnist_train_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-images.idx3-ubyte'
+#mnist_train_img_path = '/tank/local/ruiliu/dataset/mnist-train-images.idx3-ubyte'
+mnist_train_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-labels.idx1-ubyte'
+#mnist_train_label_path = '/tank/local/ruiliu/dataset/mnist-train-labels.idx1-ubyte'
+mnist_t10k_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-images.idx3-ubyte'
+#mnist_t10k_img_path = '/tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte'
+mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
+#mnist_t10k_label_path = '/tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte'
 
 
 def get_params(n_conf):
@@ -42,6 +42,7 @@ def get_params(n_conf):
     all_conf = [batch_size, opt_conf, model_layer]
 
     hp_conf = list(itertools.product(*all_conf))
+    np.random.seed(0)
     #print(len(hp_conf))
     idx_list = np.random.choice(np.arange(0, len(hp_conf)), n_conf, replace=False)
     rand_conf = itemgetter(*idx_list)(hp_conf)
@@ -190,6 +191,7 @@ def run_params_pack_naive(batch_size, confs, iterations, conn):
         #print(len(confs))
         net_instnace = np.random.randint(sys.maxsize, size=len(confs)//2)
         
+        setbs_pack = []
         train_pack = []
         eval_pack = [] 
         acc_pack = []
@@ -200,6 +202,7 @@ def run_params_pack_naive(batch_size, confs, iterations, conn):
                 modelLogit = modelEntity.build(features)
                 trainOps = modelEntity.train(modelLogit, labels)
                 evalOps = modelEntity.evaluate(modelLogit, labels)
+                setbs_pack.append(modelEntity.setBatchSize(Y_data_eval.shape[0]))
                 train_pack.append(trainOps)
                 eval_pack.append(evalOps)
         
@@ -217,6 +220,9 @@ def run_params_pack_naive(batch_size, confs, iterations, conn):
                     Y_mini_batch_feed = Y_data[batch_offset:batch_end,:]
                     sess.run(train_pack, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
             
+            
+            sess.run(setbs_pack)
+
             for evalOps in eval_pack:
                 acc_arg = evalOps.eval({features: X_data_eval, labels: Y_data_eval})
                 acc_pack.append(acc_arg)
@@ -261,6 +267,8 @@ def run_params(hyper_params, iterations, conn):
                 Y_mini_batch_feed = Y_data[batch_offset:batch_end,:]
                 sess.run(trainOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
         
+
+        sess.run(modelEntity.setBatchSize(Y_data_eval.shape[0]))
         acc_arg = evalOps.eval({features: X_data_eval, labels: Y_data_eval})
         conn.send(acc_arg)
         conn.close()
