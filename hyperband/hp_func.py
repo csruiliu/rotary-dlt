@@ -22,14 +22,14 @@ data_eval_slice = 20
 #label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
 #label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
 
-mnist_train_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-images.idx3-ubyte'
-#mnist_train_img_path = '/tank/local/ruiliu/dataset/mnist-train-images.idx3-ubyte'
-mnist_train_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-labels.idx1-ubyte'
-#mnist_train_label_path = '/tank/local/ruiliu/dataset/mnist-train-labels.idx1-ubyte'
-mnist_t10k_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-images.idx3-ubyte'
-#mnist_t10k_img_path = '/tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte'
-mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
-#mnist_t10k_label_path = '/tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte'
+#mnist_train_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-images.idx3-ubyte'
+mnist_train_img_path = '/tank/local/ruiliu/dataset/mnist-train-images.idx3-ubyte'
+#mnist_train_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-labels.idx1-ubyte'
+mnist_train_label_path = '/tank/local/ruiliu/dataset/mnist-train-labels.idx1-ubyte'
+#mnist_t10k_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-images.idx3-ubyte'
+mnist_t10k_img_path = '/tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte'
+#mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
+mnist_t10k_label_path = '/tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte'
 
 
 def get_params(n_conf):
@@ -165,7 +165,9 @@ def run_params_pack_naive(batch_size, confs, iterations, conn):
         modelLogit = modelEntity.build(features)
         trainOps = modelEntity.train(modelLogit, labels)
         evalOps = modelEntity.evaluate(modelLogit, labels)
+        setbsOps= modelEntity.setBatchSize(Y_data_eval.shape[0]) 
         acc_pack = []
+
         config = tf.ConfigProto()
         config.allow_soft_placement = True    
         with tf.Session(config=config) as sess:
@@ -180,6 +182,8 @@ def run_params_pack_naive(batch_size, confs, iterations, conn):
                     Y_mini_batch_feed = Y_data[batch_offset:batch_end,:]
                     sess.run(trainOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
             
+            
+            sess.run(setbsOps)
             acc_arg = evalOps.eval({features: X_data_eval, labels: Y_data_eval})
             acc_pack.append(acc_arg)
             conn.send(acc_pack)
