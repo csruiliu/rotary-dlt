@@ -251,4 +251,3 @@ if __name__ == "__main__":
     best_hp = sorted(results, key = lambda x: x['acc'])[-1]
     print(best_hp)
     print('total exp time:',dur_time)
-    

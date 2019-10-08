@@ -66,7 +66,7 @@ def load_labels_onehot(path, num_classes):
 
 
 # read mnist database
-def load_mnist_image(path):
+def load_mnist_image(path, rd_seed):
     mnist_numChannels = 1
     with open(path, 'rb') as bytestream:
         _ = int.from_bytes(bytestream.read(4), byteorder='big')
@@ -76,9 +76,11 @@ def load_mnist_image(path):
         buf = bytestream.read(mnist_imgWidth * mnist_imgHeight * num_images)
         img_raw = np.frombuffer(buf, dtype=np.uint8).astype(np.float32) / 255.0
         img = img_raw.reshape(num_images, mnist_imgHeight, mnist_imgWidth, mnist_numChannels)
+        np.random.seed(rd_seed)
+        np.random.shuffle(img)
     return img
 
-def load_mnist_label_onehot(path):
+def load_mnist_label_onehot(path, rd_seed):
     num_classes = 10
     with open(path, 'rb') as bytestream:
         _ = int.from_bytes(bytestream.read(4), byteorder='big')
@@ -89,7 +91,8 @@ def load_mnist_label_onehot(path):
         labels_array = np.zeros((num_images, num_classes))
         for lidx, lval in enumerate(labels):
             labels_array[lidx, lval] = 1 
-
+    np.random.seed(rd_seed)
+    np.random.shuffle(labels_array)
     return labels_array
 
 if __name__ == "__main__":
@@ -101,25 +104,29 @@ if __name__ == "__main__":
     #labelPath = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k-label.txt'
     #labelPath = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
 
-    #mnist_train_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-images.idx3-ubyte'
-    mnist_train_label_path = '/tank/local/ruiliu/dataset/mnist-train-images.idx3-ubyte'
-    #mnist_train_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-labels.idx1-ubyte'
-    mnist_train_label_path = '/tank/local/ruiliu/dataset/mnist-train-labels.idx1-ubyte'
-    #mnist_t10k_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-images.idx3-ubyte'
-    mnist_t10k_img_path = '/tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte'
-    #mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
-    mnist_t10k_label_path = '/tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte'
+    mnist_train_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-images.idx3-ubyte'
+    #mnist_train_label_path = '/tank/local/ruiliu/dataset/mnist-train-images.idx3-ubyte'
+    mnist_train_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-labels.idx1-ubyte'
+    #mnist_train_label_path = '/tank/local/ruiliu/dataset/mnist-train-labels.idx1-ubyte'
+    mnist_t10k_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-images.idx3-ubyte'
+    #mnist_t10k_img_path = '/tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte'
+    mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
+    #mnist_t10k_label_path = '/tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte'
 
     
     #images = load_mnist_image(mnist_t10k_img_path)
+    #rd.shuffle(images)
     #print(images[100,:,:,:])
-    #labels = read_mnist_label(mnist_t10k_label_path)
+    
+    #labels = load_mnist_label_onehot(mnist_t10k_label_path)
     
     #arr_image = convert_image_bin(imgDir, imgWidth, imgHeight)
     #save_bin_raw(arr_image, outDir)
     #images = load_bin_raw(binPath, numChannels, imgHeight, imgWidth)
     
     #print(images.shape)
-    #print(labels[99])
-    #plt.imshow(images[99,:,:,1], cmap='gray')
+    #print(labels[103,2])
+    #plt.imshow(images[103,:,:,0], cmap='gray')
     #plt.show()
+
+    print(np.random.randint(10000))

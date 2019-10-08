@@ -6,6 +6,7 @@ from datetime import datetime
 import sys
 from matplotlib import pyplot as plt
 
+
 from img_utils import * 
 from mobilenet import MobileNet
 from mlp import MLP
@@ -42,7 +43,7 @@ def get_params(n_conf):
     all_conf = [batch_size, opt_conf, model_layer]
 
     hp_conf = list(itertools.product(*all_conf))
-    np.random.seed(0)
+    np.random.seed(100)
     #print(len(hp_conf))
     idx_list = np.random.choice(np.arange(0, len(hp_conf)), n_conf, replace=False)
     rand_conf = itemgetter(*idx_list)(hp_conf)
@@ -50,15 +51,15 @@ def get_params(n_conf):
     return rand_conf
 
 def run_params_pack_random(confs, epochs, conn):
-    print("running configurations:", confs)
-    print("epochs:",epochs)
-    
+    #print("running configurations:", confs)
+    #print("epochs:",epochs)
+    seed = np.random.randint(10000)
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
-    X_data = load_mnist_image(mnist_train_img_path)
-    Y_data = load_mnist_label_onehot(mnist_train_label_path)
-    X_data_eval = load_mnist_image(mnist_t10k_img_path)
-    Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path)
+    X_data = load_mnist_image(mnist_train_img_path, seed)
+    Y_data = load_mnist_label_onehot(mnist_train_label_path, seed)
+    X_data_eval = load_mnist_image(mnist_t10k_img_path, seed)
+    Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path, seed)
 
     dt = datetime.now()
     np.random.seed(dt.microsecond)    
@@ -138,19 +139,14 @@ def run_params_pack_random(confs, epochs, conn):
     conn.close()
     print("Accuracy:", acc_pack)
         
-def run_params_pack_stack():
-    print("run packing stack")
-
-def run_params_pack_pool():
-    print("run packing pool")
-
 def run_params_pack_naive(batch_size, confs, iterations, conn):
+    seed = np.random.randint(10000)
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
-    X_data = load_mnist_image(mnist_train_img_path)
-    Y_data = load_mnist_label_onehot(mnist_train_label_path)
-    X_data_eval = load_mnist_image(mnist_t10k_img_path)
-    Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path)
+    X_data = load_mnist_image(mnist_train_img_path, seed)
+    Y_data = load_mnist_label_onehot(mnist_train_label_path, seed)
+    X_data_eval = load_mnist_image(mnist_t10k_img_path, seed)
+    Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path, seed)
 
     if len(confs) == 2:
         dt = datetime.now()
@@ -236,12 +232,13 @@ def run_params_pack_naive(batch_size, confs, iterations, conn):
             print("Accuracy:", acc_pack)
     
 def run_params(hyper_params, iterations, conn):
+    seed = np.random.randint(10000)
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
-    X_data = load_mnist_image(mnist_train_img_path)
-    Y_data = load_mnist_label_onehot(mnist_train_label_path)
-    X_data_eval = load_mnist_image(mnist_t10k_img_path)
-    Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path)
+    X_data = load_mnist_image(mnist_train_img_path,seed)
+    Y_data = load_mnist_label_onehot(mnist_train_label_path,seed)
+    X_data_eval = load_mnist_image(mnist_t10k_img_path,seed)
+    Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path,seed)
 
     dt = datetime.now()
     np.random.seed(dt.microsecond)
@@ -271,7 +268,6 @@ def run_params(hyper_params, iterations, conn):
                 Y_mini_batch_feed = Y_data[batch_offset:batch_end,:]
                 sess.run(trainOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
         
-
         sess.run(modelEntity.setBatchSize(Y_data_eval.shape[0]))
         acc_arg = evalOps.eval({features: X_data_eval, labels: Y_data_eval})
         conn.send(acc_arg)
