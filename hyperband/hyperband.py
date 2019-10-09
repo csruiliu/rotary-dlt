@@ -38,7 +38,6 @@ class Hyperband:
                 val_acc = []
                 params_list = []
                 num_para_list = ceil(len(T) / random_size) 
-                print(num_para_list)
                 if num_para_list == 1:
                     params_list.append(T)
                 else:
@@ -86,7 +85,6 @@ class Hyperband:
                 r_i = int(r * self.eta ** (i))
                 print("\n*** {} bracket | {} configurations x {} iterations each ***".format(s, n_i, r_i))
                 val_acc = []
-                
                 params_dict = dict()
                 
                 for t in T:
@@ -97,9 +95,8 @@ class Hyperband:
                         params_dict[t[0]] = [] 
                         params_dict[t[0]].append(t[1])
                         params_dict[t[0]].append(t[2])
-                #print(params_dict) 
+
                 for bs, conf in params_dict.items():
-                    #print("current params: batch size {}, conf {} | \n".format(bs, conf))
                     parent_conn, child_conn = Pipe()
                     p = Process(target=self.run_hyperParams, args=(bs, conf, r_i, child_conn))
                     p.start()
@@ -111,7 +108,6 @@ class Hyperband:
                         acc = acc_pack[0]
                         val_acc.append(acc)
                         result['acc'] = acc
-                        #esult['counter'] = self.counter
                         result['params'] = []
                         result['params'].append(bs)
                         result['params'].append(conf[0])
@@ -119,7 +115,6 @@ class Hyperband:
                             
                         if self.best_acc < acc:
                             self.best_acc = acc
-                            #self.best_counter = self.counter
                             print("best accuracy so far: {:.5f} \n".format(self.best_acc))
                         self.results.append(result)
 
@@ -128,7 +123,6 @@ class Hyperband:
                             result = {'acc':-1}
                             val_acc.append(acc)
                             result['acc'] = acc
-                            #result['counter'] = self.counter
                             result['params'] = []
                             result['params'].append(bs)
                             result['params'].append(conf[idx*2])
@@ -154,8 +148,7 @@ class Hyperband:
             for i in range(s + 1):
                 n_i = floor(n * self.eta ** (-i))
                 r_i = int(r * self.eta ** (i))
-                print("\n*** {} bracket | {} configurations x {} iterations each ***".format(s, n_i, r_i))
-                # init list of accuracy of confs                
+                print("\n*** {} bracket | {} configurations x {} iterations each ***".format(s, n_i, r_i))            
                 list_acc = []
 
                 for t in T:
