@@ -75,6 +75,8 @@ def run_params_pack_random(confs, epochs, conn):
 
     max_bs = np.NINF
 
+    print('models will be trained:',len(confs))
+
     for cidx, cf in enumerate(confs):
         batch_size = cf[0]
         batch_size_set.add(batch_size)
@@ -113,7 +115,7 @@ def run_params_pack_random(confs, epochs, conn):
                 for me in entity_pack:
                     me.setCurStep()
                     if me.isCompleteTrain():
-                        print("model has been trained completely:",me.getModelInstance())
+                        #print("model has been trained completely:",me.getModelInstance())
                         sess.run(me.setBatchSize(Y_data_eval.shape[0]))
                         train_pack.remove(me.getTrainOp())
                         complete_flag = True   
@@ -127,7 +129,7 @@ def run_params_pack_random(confs, epochs, conn):
                     complete_flag = False
                     break
     
-        print("models have been training this run, start to evaluate")
+        #print("models have been training this run, start to evaluate")
         for ep in eval_pack:
             #num_steps = Y_data.shape[0] // max_bs
             acc_arg = ep.eval({features: X_data_eval, labels: Y_data_eval})
@@ -147,6 +149,8 @@ def run_params_pack_naive(batch_size, confs, iterations, conn):
     Y_data = load_mnist_label_onehot(mnist_train_label_path, seed)
     X_data_eval = load_mnist_image(mnist_t10k_img_path, seed)
     Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path, seed)
+
+    print('confs will be trained:', len(confs))
 
     if len(confs) == 2:
         dt = datetime.now()
@@ -171,7 +175,7 @@ def run_params_pack_naive(batch_size, confs, iterations, conn):
             num_batch = Y_data.shape[0] // batch_size
             for e in range(iterations):
                 for i in range(num_batch):
-                    print('epoch %d / %d, step %d / %d' %(e+1, iterations, i+1, num_batch))
+                    #print('epoch %d / %d, step %d / %d' %(e+1, iterations, i+1, num_batch))
                     batch_offset = i * batch_size
                     batch_end = (i+1) * batch_size
                     X_mini_batch_feed = X_data[batch_offset:batch_end,:,:,:]
@@ -213,7 +217,7 @@ def run_params_pack_naive(batch_size, confs, iterations, conn):
             num_batch = Y_data.shape[0] // batch_size
             for e in range(iterations):
                 for i in range(num_batch):
-                    print('epoch %d / %d, step %d / %d' %(e+1, iterations, i+1, num_batch))
+                    #print('epoch %d / %d, step %d / %d' %(e+1, iterations, i+1, num_batch))
                     batch_offset = i * batch_size
                     batch_end = (i+1) * batch_size
                     X_mini_batch_feed = X_data[batch_offset:batch_end,:,:,:]

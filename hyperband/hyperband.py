@@ -235,16 +235,15 @@ if __name__ == "__main__":
     #evaluate_model()
     #run_params_pack_mnist()    
     #evaluate_diff_batch()
-    
     resource_conf = 81
     down_rate = 3
     #hb = Hyperband(resource_conf, down_rate, get_params, run_params)
-    #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_naive)
-    hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_random)
+    hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_naive)
+    #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_random)
     start_time = timer()
     #results = hb.run()
-    #results = hb.run_pack_naive()
-    results = hb.run_pack_random(9)
+    results = hb.run_pack_naive()
+    #results = hb.run_pack_random(9)
     end_time = timer()
     dur_time = end_time - start_time
     print("{} total, best:\n".format(len(results)))
