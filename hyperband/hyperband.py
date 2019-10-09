@@ -35,7 +35,6 @@ class Hyperband:
                 n_i = floor(n * self.eta ** (-i))
                 r_i = int(r * self.eta ** (i))
                 print("\n*** {} bracket | {} configurations x {} iterations each ***".format(s, n_i, r_i))
-                print("==============================================================")
                 val_acc = []
                 params_list = []
                 num_para_list = ceil(len(T) / random_size) 
@@ -43,8 +42,8 @@ class Hyperband:
                 if num_para_list == 1:
                     params_list.append(T)
                 else:
-                    for n in range(num_para_list-1):
-                        params_list.append(T[n*random_size:(n+1)*random_size])
+                    for npl in range(num_para_list-1):
+                        params_list.append(T[npl*random_size:(npl+1)*random_size])
                     params_list.append(T[(num_para_list-1)*random_size:])
                 
                 for pidx in range(num_para_list):
@@ -69,7 +68,7 @@ class Hyperband:
                             self.best_acc = acc
                             print("best accuracy so far: {:.5f} \n".format(self.best_acc))
                         self.results.append(result)
-
+                
                 indices = np.argsort(val_acc)
                 T = [T[i] for i in indices]
                 T = T[0:floor(n_i / self.eta)]
@@ -86,7 +85,6 @@ class Hyperband:
                 n_i = floor(n * self.eta ** (-i))
                 r_i = int(r * self.eta ** (i))
                 print("\n*** {} bracket | {} configurations x {} iterations each ***".format(s, n_i, r_i))
-                print("==============================================================")
                 val_acc = []
                 
                 params_dict = dict()
@@ -101,7 +99,7 @@ class Hyperband:
                         params_dict[t[0]].append(t[2])
                 #print(params_dict) 
                 for bs, conf in params_dict.items():
-                    print("current params: batch size {}, conf {} | \n".format(bs, conf))
+                    #print("current params: batch size {}, conf {} | \n".format(bs, conf))
                     parent_conn, child_conn = Pipe()
                     p = Process(target=self.run_hyperParams, args=(bs, conf, r_i, child_conn))
                     p.start()
@@ -157,8 +155,6 @@ class Hyperband:
                 n_i = floor(n * self.eta ** (-i))
                 r_i = int(r * self.eta ** (i))
                 print("\n*** {} bracket | {} configurations x {} iterations each ***".format(s, n_i, r_i))
-                print("==============================================================")
-
                 # init list of accuracy of confs                
                 list_acc = []
 
@@ -235,15 +231,15 @@ if __name__ == "__main__":
     #evaluate_model()
     #run_params_pack_mnist()    
     #evaluate_diff_batch()
-    resource_conf = 81
+    resource_conf = 27
     down_rate = 3
     #hb = Hyperband(resource_conf, down_rate, get_params, run_params)
-    hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_naive)
-    #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_random)
+    #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_naive)
+    hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_random)
     start_time = timer()
     #results = hb.run()
-    results = hb.run_pack_naive()
-    #results = hb.run_pack_random(9)
+    #results = hb.run_pack_naive()
+    results = hb.run_pack_random(9)
     end_time = timer()
     dur_time = end_time - start_time
     print("{} total, best:\n".format(len(results)))

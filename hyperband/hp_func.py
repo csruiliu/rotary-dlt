@@ -75,8 +75,6 @@ def run_params_pack_random(confs, epochs, conn):
 
     max_bs = np.NINF
 
-    print('models will be trained:',len(confs))
-
     for cidx, cf in enumerate(confs):
         batch_size = cf[0]
         batch_size_set.add(batch_size)
@@ -103,7 +101,7 @@ def run_params_pack_random(confs, epochs, conn):
         complete_flag = False
 
         while len(train_pack) != 0:
-            print("current max batch size:",max_bs)
+            #print("current max batch size:",max_bs)
             num_steps = Y_data.shape[0] // max_bs
             for i in range(num_steps):
                 #print("step {}/{}".format(i+1, num_steps))
@@ -115,7 +113,7 @@ def run_params_pack_random(confs, epochs, conn):
                 for me in entity_pack:
                     me.setCurStep()
                     if me.isCompleteTrain():
-                        #print("model has been trained completely:",me.getModelInstance())
+                        print("model has been trained completely:",me.getModelInstance())
                         sess.run(me.setBatchSize(Y_data_eval.shape[0]))
                         train_pack.remove(me.getTrainOp())
                         complete_flag = True   
@@ -135,7 +133,7 @@ def run_params_pack_random(confs, epochs, conn):
             acc_arg = ep.eval({features: X_data_eval, labels: Y_data_eval})
             #acc_arg = sess.run(ep, feed_dict = {features: X_mini_batch_feed, labels: Y_mini_batch_feed})
             acc_pack.append(acc_arg)
-            print(acc_arg)
+            #print(acc_arg)
         
     conn.send(acc_pack)
     conn.close()
@@ -149,8 +147,6 @@ def run_params_pack_naive(batch_size, confs, iterations, conn):
     Y_data = load_mnist_label_onehot(mnist_train_label_path, seed)
     X_data_eval = load_mnist_image(mnist_t10k_img_path, seed)
     Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path, seed)
-
-    print('confs will be trained:', len(confs))
 
     if len(confs) == 2:
         dt = datetime.now()
@@ -188,7 +184,7 @@ def run_params_pack_naive(batch_size, confs, iterations, conn):
             acc_pack.append(acc_arg)
             conn.send(acc_pack)
             conn.close()
-            print("Accuracy:", acc_pack)
+            #print("Accuracy:", acc_pack)
     else:
         dt = datetime.now()
         np.random.seed(dt.microsecond)
@@ -233,7 +229,7 @@ def run_params_pack_naive(batch_size, confs, iterations, conn):
             
             conn.send(acc_pack)
             conn.close()
-            print("Accuracy:", acc_pack)
+            #print("Accuracy:", acc_pack)
     
 def run_params(hyper_params, iterations, conn):
     seed = np.random.randint(10000)
