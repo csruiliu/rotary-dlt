@@ -278,10 +278,10 @@ def evaluate_model():
     #X_data_eval = X_data[0:data_eval_slice,:,:,:]
     #Y_data_eval = Y_data[0:data_eval_slice,:]
     seed = np.random.randint(10000)
-    X_data = load_mnist_image(mnist_train_img_path， seed)
-    Y_data = load_mnist_label_onehot(mnist_train_label_path， seed)
-    X_data_eval = load_mnist_image(mnist_t10k_img_path， seed)
-    Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path， seed)
+    X_data = load_mnist_image(mnist_train_img_path, seed)
+    Y_data = load_mnist_label_onehot(mnist_train_label_path, seed)
+    X_data_eval = load_mnist_image(mnist_t10k_img_path, seed)
+    Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path, seed)
     
     #plt.imshow(X_data_eval[99,:,:,0], cmap='gray')
     #print(Y_data_eval[99,9])
