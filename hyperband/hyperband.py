@@ -3,6 +3,7 @@ from multiprocessing import Process, Pipe
 from math import log, ceil, floor
 from timeit import default_timer as timer
 from hp_func import *
+from trial_engine import pack_trial
 
 class Hyperband:
 
@@ -25,6 +26,49 @@ class Hyperband:
         self.get_hyperparams = getHyperPara
         self.run_hyperParams = runHyperPara
 
+    def run_pack_knn(self, topk):
+        for s in reversed(range(self.s_max + 1)):
+            n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
+            r = self.R * (self.eta ** (-s))
+            T = self.get_hyperparams(n)
+
+            for i in range(s + 1):
+                n_i = floor(n * self.eta ** (-i))
+                r_i = int(r * self.eta ** (i))
+                print("\n*** {} bracket | {} configurations x {} iterations each ***".format(s, n_i, r_i))
+                
+                val_acc = []
+                trial_pack_collection = pack_trial(T, topk)
+                
+                '''
+                for tpidx in trial_pack_collection:
+                    parent_conn, child_conn = Pipe()
+                    p = Process(target=self.run_hyperParams, args=(tpidx, r_i, child_conn))
+                    p.start()
+                    acc_pack = parent_conn.recv()
+                    parent_conn.close()
+                    p.join()
+                
+                    for idx, acc in enumerate(acc_pack):
+                        result = {'acc':-1}
+                        val_acc.append(acc)
+                        result['acc'] = acc
+                        result['params'] = []
+                        result['params'].append(tpidx[idx][0])
+                        result['params'].append(tpidx[idx][1])
+                        result['params'].append(tpidx[idx][2])
+                        
+                        if self.best_acc < acc:
+                            self.best_acc = acc
+                            print("best accuracy so far: {:.5f} \n".format(self.best_acc))
+                        self.results.append(result)
+                
+                indices = np.argsort(val_acc)
+                T = [T[i] for i in indices]
+                T = T[0:floor(n_i / self.eta)]
+                '''
+        return self.results
+        
     def run_pack_random(self, random_size):
         for s in reversed(range(self.s_max + 1)):
             n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
@@ -181,7 +225,6 @@ class Hyperband:
 
         return self.results
 
-
     def run_fake(self):
         for s in reversed(range(self.s_max + 1)):
             n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
@@ -221,18 +264,21 @@ class Hyperband:
         return self.results
 
 if __name__ == "__main__":
+    
     #evaluate_model()
     #run_params_pack_mnist()    
     #evaluate_diff_batch()
-    resource_conf = 27
+    resource_conf = 12
     down_rate = 3
     #hb = Hyperband(resource_conf, down_rate, get_params, run_params)
     #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_naive)
-    hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_random)
+    #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_random)
+    hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_knn)
     start_time = timer()
     #results = hb.run()
     #results = hb.run_pack_naive()
-    results = hb.run_pack_random(9)
+    #results = hb.run_pack_random(9)
+    results = hb.run_pack_knn(9)
     end_time = timer()
     dur_time = end_time - start_time
     print("{} total, best:\n".format(len(results)))
