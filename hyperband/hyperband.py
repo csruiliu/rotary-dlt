@@ -3,7 +3,7 @@ from multiprocessing import Process, Pipe
 from math import log, ceil, floor
 from timeit import default_timer as timer
 from hp_func import *
-from trial_engine import pack_trial
+from trial_engine import pack_trial_sort
 
 class Hyperband:
 
@@ -26,7 +26,7 @@ class Hyperband:
         self.get_hyperparams = getHyperPara
         self.run_hyperParams = runHyperPara
 
-    def run_pack_knn(self, topk):
+    def run_pack_knn(self, topk):        
         for s in reversed(range(self.s_max + 1)):
             n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
             r = self.R * (self.eta ** (-s))
@@ -38,9 +38,8 @@ class Hyperband:
                 print("\n*** {} bracket | {} configurations x {} iterations each ***".format(s, n_i, r_i))
                 
                 val_acc = []
-                trial_pack_collection = pack_trial(T, topk)
+                trial_pack_collection = pack_trial_sort(T, topk)
                 
-                '''
                 for tpidx in trial_pack_collection:
                     parent_conn, child_conn = Pipe()
                     p = Process(target=self.run_hyperParams, args=(tpidx, r_i, child_conn))
@@ -66,7 +65,7 @@ class Hyperband:
                 indices = np.argsort(val_acc)
                 T = [T[i] for i in indices]
                 T = T[0:floor(n_i / self.eta)]
-                '''
+                
         return self.results
         
     def run_pack_random(self, random_size):
@@ -268,13 +267,14 @@ if __name__ == "__main__":
     #evaluate_model()
     #run_params_pack_mnist()    
     #evaluate_diff_batch()
-    resource_conf = 12
+    
+    start_time = timer()
+    resource_conf = 81
     down_rate = 3
     #hb = Hyperband(resource_conf, down_rate, get_params, run_params)
     #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_naive)
     #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_random)
     hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_knn)
-    start_time = timer()
     #results = hb.run()
     #results = hb.run_pack_naive()
     #results = hb.run_pack_random(9)
@@ -285,3 +285,4 @@ if __name__ == "__main__":
     best_hp = sorted(results, key = lambda x: x['acc'])[-1]
     print(best_hp)
     print('total exp time:',dur_time)
+    

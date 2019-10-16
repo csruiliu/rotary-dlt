@@ -132,7 +132,6 @@ def run_params_pack_knn(confs, epochs, conn):
     conn.close()
     print("Accuracy:", acc_pack)
 
-
 def run_params_pack_random(confs, epochs, conn):
     seed = np.random.randint(10000)
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])

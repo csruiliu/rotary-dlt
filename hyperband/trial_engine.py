@@ -10,20 +10,21 @@ from timeit import default_timer as timer
 
 from mlp import MLP
 from img_utils import * 
+from utils import sort_list
 
 imgWidth = 28
 imgHeight = 28
 numChannels = 1
 numClasses = 10
 
-mnist_train_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-images.idx3-ubyte'
-#mnist_train_img_path = '/tank/local/ruiliu/dataset/mnist-train-images.idx3-ubyte'
-mnist_train_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-labels.idx1-ubyte'
-#mnist_train_label_path = '/tank/local/ruiliu/dataset/mnist-train-labels.idx1-ubyte'
-mnist_t10k_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-images.idx3-ubyte'
-#mnist_t10k_img_path = '/tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte'
-mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
-#mnist_t10k_label_path = '/tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte'
+#mnist_train_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-images.idx3-ubyte'
+mnist_train_img_path = '/tank/local/ruiliu/dataset/mnist-train-images.idx3-ubyte'
+#mnist_train_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-labels.idx1-ubyte'
+mnist_train_label_path = '/tank/local/ruiliu/dataset/mnist-train-labels.idx1-ubyte'
+#mnist_t10k_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-images.idx3-ubyte'
+mnist_t10k_img_path = '/tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte'
+#mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
+mnist_t10k_label_path = '/tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte'
 
 def gen_confs(n_conf):
     batch_size = np.arange(10,61,5)
@@ -99,7 +100,7 @@ def eval_trial_pair(conf_a, conf_b, conn):
     conn.send(result)
     conn.close()
 
-def prep_trial(conf_list):
+def prep_trial_total(conf_list):
     trial_dict = dict()
     for cidx in conf_list:
         trial_dict[cidx] = list()
@@ -108,7 +109,7 @@ def prep_trial(conf_list):
                 trial_dict[cidx].append(didx)
     return trial_dict
 
-def run_trial(trial_dict):
+def run_trial_total(trial_dict):
     trial_result_dict = dict()
     for key, value in trial_dict.items():
         trial_result_dict[key] = dict()
@@ -125,6 +126,63 @@ def run_trial(trial_dict):
             trial_result_dict[key][vidx] = result
     
     return trial_result_dict
+
+def pack_trial_total(confs, topk):
+    confs_list = list(confs)
+    trial_dict = prep_trial_total(confs_list)
+    trial_result_dict = run_trial_total(trial_dict)
+    
+    trial_pack_collection = []
+
+    while len(confs_list) > 1:
+        trial_packed_list = []
+        spoint = rd.choice(confs_list)
+        #print("spoint:",spoint)
+        trial_packed_list.append(spoint)
+        
+        spoint_list = trial_result_dict.get(spoint) 
+        ssl = sorted(spoint_list.items(), key=lambda kv: kv[1], reverse=True)
+        
+        if topk <= len(ssl):
+            for sidx in range(topk):
+                selected_conf = ssl[sidx][0]
+                #print("selected_conf:",selected_conf)
+                trial_packed_list.append(selected_conf)
+                confs_list.remove(selected_conf)
+
+                trial_dict.pop(selected_conf)
+                trial_result_dict.pop(selected_conf)
+
+                for didx in trial_dict:
+                    trial_dict.get(didx).remove(selected_conf)
+                for ridx in trial_result_dict:
+                    trial_result_dict.get(ridx).pop(selected_conf)
+
+        else:
+            for sidx in ssl:
+                selected_conf = sidx[0]
+                #print("selected_conf:",selected_conf)
+                trial_packed_list.append(selected_conf)
+                confs_list.remove(selected_conf)
+                trial_dict.pop(selected_conf)
+                trial_result_dict.pop(selected_conf)
+
+                for didx in trial_dict:
+                    trial_dict.get(didx).remove(selected_conf)
+                for ridx in trial_result_dict:
+                    trial_result_dict.get(ridx).pop(selected_conf)
+
+        confs_list.remove(spoint)
+        trial_dict.pop(spoint)
+        trial_result_dict.pop(spoint)
+        for didx in trial_dict:
+            trial_dict.get(didx).remove(spoint)
+        for ridx in trial_result_dict:
+            trial_result_dict.get(ridx).pop(spoint)
+
+        trial_pack_collection.append(trial_packed_list)
+
+    return trial_pack_collection
 
 def pack_trial_standalone(confs, t_dict, tr_dict):
     #print("confs:",confs)
@@ -182,10 +240,35 @@ def pack_trial_standalone(confs, t_dict, tr_dict):
 
         print(trial_packed_list)
 
-def pack_trial(confs, topk):
+def prep_trial_sort(conf_list):
+    trial_dict = dict()
+    for cidx in conf_list:
+        trial_dict[cidx] = list()
+        for didx in conf_list:
+            if cidx != didx:
+                trial_dict[cidx].append(didx)
+    
+    return trial_dict
+
+def run_trial_sort(trial_dict):
+    trial_result_dict = dict()
+    for key, value in trial_dict.items():
+        trial_result_dict[key] = list()
+        trial_distance_index = list()
+        for vidx in value:
+            distance = abs(key[0] - vidx[0])
+            trial_distance_index.append(distance)
+        sorted_value = sort_list(value, trial_distance_index)
+        trial_result_dict[key] = sorted_value
+        #print(value)
+        #trial_result_dict[key][vidx] =
+    return trial_result_dict
+
+def pack_trial_sort(confs, topk):
     confs_list = list(confs)
-    trial_dict = prep_trial(confs_list)
-    trial_result_dict = run_trial(trial_dict)
+    trial_dict = prep_trial_sort(confs_list)
+    trial_result_dict = run_trial_sort(trial_dict)
+    #print(trial_result_dict)
     
     trial_pack_collection = []
 
@@ -195,50 +278,49 @@ def pack_trial(confs, topk):
         #print("spoint:",spoint)
         trial_packed_list.append(spoint)
         
-        spoint_list = trial_result_dict.get(spoint) 
-        ssl = sorted(spoint_list.items(), key=lambda kv: kv[1], reverse=True)
+        ssl = trial_result_dict.get(spoint) 
+        #ssl = sorted(spoint_list.items(), key=lambda kv: kv[1], reverse=True)
         
         if topk <= len(ssl):
-            for sidx in range(topk):
-                selected_conf = ssl[sidx][0]
+            for stidx in range(topk):
+                selected_conf = ssl[stidx]
                 #print("selected_conf:",selected_conf)
                 trial_packed_list.append(selected_conf)
                 confs_list.remove(selected_conf)
-
-                trial_dict.pop(selected_conf)
                 trial_result_dict.pop(selected_conf)
-
-                for didx in trial_dict:
-                    trial_dict.get(didx).remove(selected_conf)
+                
                 for ridx in trial_result_dict:
-                    trial_result_dict.get(ridx).pop(selected_conf)
+                    if ridx != spoint:
+                        trial_result_dict.get(ridx).remove(selected_conf)
+
+            #for stidx in range(topk):
+            trial_result_dict[spoint] = trial_result_dict[spoint][topk:]
 
         else:
             for sidx in ssl:
-                selected_conf = sidx[0]
+                selected_conf = sidx
                 #print("selected_conf:",selected_conf)
                 trial_packed_list.append(selected_conf)
                 confs_list.remove(selected_conf)
-                trial_dict.pop(selected_conf)
                 trial_result_dict.pop(selected_conf)
 
-                for didx in trial_dict:
-                    trial_dict.get(didx).remove(selected_conf)
                 for ridx in trial_result_dict:
-                    trial_result_dict.get(ridx).pop(selected_conf)
+                    if ridx != spoint:
+                        trial_result_dict.get(ridx).remove(selected_conf)
+
+            trial_result_dict[spoint] = trial_result_dict[spoint][topk:]
+            #for sidx in range(topk):
+            #    del trial_result_dict.get(spoint)[sidx]
 
         confs_list.remove(spoint)
-        trial_dict.pop(spoint)
         trial_result_dict.pop(spoint)
-        for didx in trial_dict:
-            trial_dict.get(didx).remove(spoint)
         for ridx in trial_result_dict:
-            trial_result_dict.get(ridx).pop(spoint)
+            trial_result_dict.get(ridx).remove(spoint)
 
         trial_pack_collection.append(trial_packed_list)
 
     return trial_pack_collection
-
+    
 
 if __name__ == "__main__":
     confs_num = 6
