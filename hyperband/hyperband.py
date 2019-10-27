@@ -3,7 +3,7 @@ from multiprocessing import Process, Pipe
 from math import log, ceil, floor
 from timeit import default_timer as timer
 from hp_func import *
-from trial_engine import pack_trial_sort
+from trial_engine import knn_conf_bs
 
 class Hyperband:
 
@@ -38,7 +38,7 @@ class Hyperband:
                 print("\n*** {} bracket | {} configurations x {} iterations each ***".format(s, n_i, r_i))
                 
                 val_acc = []
-                trial_pack_collection = pack_trial_sort(T, topk)
+                trial_pack_collection = knn_conf_bs(T, topk)
                 
                 for tpidx in trial_pack_collection:
                     parent_conn, child_conn = Pipe()
