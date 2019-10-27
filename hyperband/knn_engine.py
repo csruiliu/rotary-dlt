@@ -31,9 +31,12 @@ def gen_confs(n_conf):
     batch_size = np.arange(10,61,5)
     opt_conf = ['Adam','SGD','Adagrad','Momentum']
     model_layer = np.arange(0,6,1)
-    all_conf = [batch_size, opt_conf, model_layer]
-
+    learning_rate = [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1]
+    activation = ['sigmoid','leaky_relu','tanh','relu']
+    
+    all_conf = [batch_size, opt_conf, model_layer, learning_rate, activation]
     hp_conf = list(itertools.product(*all_conf))
+    
     np.random.seed(100)
     idx_list = np.random.choice(np.arange(0, len(hp_conf)), n_conf, replace=False)
     rand_conf_list = list(itemgetter(*idx_list)(hp_conf))
@@ -310,11 +313,16 @@ def knn_conf_bs(confs, topk):
 
     return trial_pack_collection
     
+# schedule confs using euclid-based knn
+def knn_conf_euclid(confs, topk):
+    print("sch conf based on euclid distance")
+
 
 if __name__ == "__main__":
-    confs_num = 6
+    confs_num = 81
     confs_list = gen_confs(confs_num)
-    trial_dict = prep_trial(confs_list)
-    trial_result_dict = sort_conf_trial(trial_dict)
-    pack_trial_standalone(confs_list, trial_dict, trial_result_dict)
+    print(len(confs_list))
+    #trial_dict = prep_trial(confs_list)
+    #trial_result_dict = sort_conf_trial(trial_dict)
+    #pack_trial_standalone(confs_list, trial_dict, trial_result_dict)
 

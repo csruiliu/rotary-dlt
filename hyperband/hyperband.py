@@ -3,7 +3,7 @@ from multiprocessing import Process, Pipe
 from math import log, ceil, floor
 from timeit import default_timer as timer
 from hp_func import *
-from trial_engine import knn_conf_bs
+from knn_engine import knn_conf_bs
 
 class Hyperband:
 

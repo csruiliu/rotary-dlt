@@ -32,7 +32,18 @@ class MLP(object):
             if self.model_layer_num >= 1:
                 for _ in range(self.model_layer_num - 1):
                     layer = self.perceptron_layer(input = layer)
+            
+            
+            self.model_logit = tf.nn.sigmoid(layer)
+
+            self.model_logit = tf.nn.softmax(layer)
+
+            self.model_logit = tf.nn.leaky_relu(layer)
+            
+            self.model_logit = tf.nn.tanh(layer)
+            
             self.model_logit = tf.nn.relu(layer)
+
         return self.model_logit
 
     def train(self, logits, labels):
