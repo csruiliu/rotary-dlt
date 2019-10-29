@@ -26,6 +26,14 @@ mnist_t10k_img_path = '/tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte'
 #mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
 mnist_t10k_label_path = '/tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte'
 
+batch_size_global = np.arange(10,61,5)
+opt_conf_global = ['Adam','SGD','Adagrad','Momentum']
+model_layer_global = np.arange(0,6,1)
+learning_rate_global = [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1]
+activation_global = ['sigmoid','leaky_relu','tanh','relu']
+
+switcher={0:'batch_size_global',1:'opt_conf_global',2:'model_layer_global',3:'learning_rate_global',4:'activation_global'}
+
 # generate the configurations 
 def gen_confs(n_conf):
     batch_size = np.arange(10,61,5)
@@ -201,6 +209,33 @@ def sort_conf_bs(trial_dict):
     
     return trial_result_dict
 
+# sort the configurations according to euclid distance
+def sort_conf_euclid(trial_dict):
+    trial_result_dict = dict()
+    for key, value in trial_dict.items():
+        trial_result_dict[key] = list()
+        trial_distance_index = list()
+        for vidx in value:
+            distance = compute_euclid(key, vidx)
+            trial_distance_index.append(distance)
+        sorted_value = sort_list(value, trial_distance_index)
+        trial_result_dict[key] = sorted_value
+    return trial_result_dict
+
+# compute the euclid distance of two configurations 
+def compute_euclid(conf_a, conf_b):
+    pair_euclid_distance = 0
+    for cfi, cfv in enumerate(conf_a): 
+        if isinstance(cfv, str):
+            if conf_a[cfi] != conf_b[cfi]:
+                pair_euclid_distance += 1
+        else:
+            conf_list = list(globals()[switcher.get(cfi)])
+            conf_a_conf_idx = conf_list.index(cfv)
+            conf_b_conf_idx = conf_list.index(conf_b[cfi])
+            pair_euclid_distance += abs(conf_a_conf_idx - conf_b_conf_idx)  
+    return pair_euclid_distance     
+        
 # schedule confs using trial-based knn
 def knn_conf_trial(confs, topk):
     confs_list = list(confs)
@@ -315,13 +350,70 @@ def knn_conf_bs(confs, topk):
     
 # schedule confs using euclid-based knn
 def knn_conf_euclid(confs, topk):
-    print("sch conf based on euclid distance")
+    confs_list = list(confs)
+    trial_dict = prep_trial(confs_list)
+    trial_result_dict = sort_conf_euclid(trial_dict)
+    
+    trial_pack_collection = []
+    
+    while len(confs_list) > 1:
+        trial_packed_list = []
+        spoint = rd.choice(confs_list)
+        trial_packed_list.append(spoint)
+        ssl = trial_result_dict.get(spoint) 
+        
+        if topk <= len(ssl):
+            for stidx in range(topk):
+                selected_conf = ssl[stidx]
+                #print("selected_conf:",selected_conf)
+                trial_packed_list.append(selected_conf)
+                confs_list.remove(selected_conf)
+                trial_result_dict.pop(selected_conf)
+                
+                for ridx in trial_result_dict:
+                    if ridx != spoint:
+                        trial_result_dict.get(ridx).remove(selected_conf)
+
+            trial_result_dict[spoint] = trial_result_dict[spoint][topk:]
+
+        else:
+            for sidx in ssl:
+                selected_conf = sidx
+                #print("selected_conf:",selected_conf)
+                trial_packed_list.append(selected_conf)
+                confs_list.remove(selected_conf)
+                trial_result_dict.pop(selected_conf)
+
+                for ridx in trial_result_dict:
+                    if ridx != spoint:
+                        trial_result_dict.get(ridx).remove(selected_conf)
+
+            trial_result_dict[spoint] = trial_result_dict[spoint][topk:]
+
+        confs_list.remove(spoint)
+        trial_result_dict.pop(spoint)
+        for ridx in trial_result_dict:
+            trial_result_dict.get(ridx).remove(spoint)
+
+        trial_pack_collection.append(trial_packed_list)
+
+    return trial_pack_collection
+
+
+# unify knn method, later 
+def knn_conf(confs, topk, sort_method):
+    confs_list = list(confs)
+    trial_dict = prep_trial(confs_list)
+    trial_result_dict = sort_method(trial_dict)
+    print(trial_result_dict)
 
 
 if __name__ == "__main__":
-    confs_num = 81
+    confs_num = 12
     confs_list = gen_confs(confs_num)
-    print(len(confs_list))
+    #print(len(confs_list))
+    #knn_conf(confs_list,1, sort_conf_euclid)
+    knn_conf_euclid(confs_list, 3)
     #trial_dict = prep_trial(confs_list)
     #trial_result_dict = sort_conf_trial(trial_dict)
     #pack_trial_standalone(confs_list, trial_dict, trial_result_dict)

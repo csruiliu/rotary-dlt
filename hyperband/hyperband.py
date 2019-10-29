@@ -3,7 +3,7 @@ from multiprocessing import Process, Pipe
 from math import log, ceil, floor
 from timeit import default_timer as timer
 from hp_func import *
-from knn_engine import knn_conf_bs
+from knn_engine import knn_conf_bs, knn_conf_euclid, knn_conf_trial
 
 class Hyperband:
 
@@ -26,7 +26,7 @@ class Hyperband:
         self.get_hyperparams = getHyperPara
         self.run_hyperParams = runHyperPara
 
-    def run_pack_knn(self, topk):        
+    def run_pack_knn(self, topk, knn_method):        
         for s in reversed(range(self.s_max + 1)):
             n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
             r = self.R * (self.eta ** (-s))
@@ -38,7 +38,7 @@ class Hyperband:
                 print("\n*** {} bracket | {} configurations x {} iterations each ***".format(s, n_i, r_i))
                 
                 val_acc = []
-                trial_pack_collection = knn_conf_bs(T, topk)
+                trial_pack_collection = knn_method(T, topk)
                 
                 for tpidx in trial_pack_collection:
                     parent_conn, child_conn = Pipe()
@@ -269,7 +269,7 @@ if __name__ == "__main__":
     #evaluate_diff_batch()
     
     start_time = timer()
-    resource_conf = 81
+    resource_conf = 12
     down_rate = 3
     #hb = Hyperband(resource_conf, down_rate, get_params, run_params)
     #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_naive)
@@ -278,7 +278,7 @@ if __name__ == "__main__":
     #results = hb.run()
     #results = hb.run_pack_naive()
     #results = hb.run_pack_random(9)
-    results = hb.run_pack_knn(9)
+    results = hb.run_pack_knn(9, knn_conf_euclid)
     end_time = timer()
     dur_time = end_time - start_time
     print("{} total, best:\n".format(len(results)))
