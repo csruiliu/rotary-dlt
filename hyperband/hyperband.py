@@ -53,9 +53,8 @@ class Hyperband:
                         val_acc.append(acc)
                         result['acc'] = acc
                         result['params'] = []
-                        result['params'].append(tpidx[idx][0])
-                        result['params'].append(tpidx[idx][1])
-                        result['params'].append(tpidx[idx][2])
+                        for param in tpidx[idx]:
+                            result['params'].append(param)
                         
                         if self.best_acc < acc:
                             self.best_acc = acc
@@ -102,9 +101,8 @@ class Hyperband:
                         val_acc.append(acc)
                         result['acc'] = acc
                         result['params'] = []
-                        result['params'].append(selected_confs[idx][0])
-                        result['params'].append(selected_confs[idx][1])
-                        result['params'].append(selected_confs[idx][2])
+                        for params in selected_confs[idx]:
+                            result['params'].append(params)
                         
                         if self.best_acc < acc:
                             self.best_acc = acc
@@ -134,10 +132,14 @@ class Hyperband:
                     if t[0] in params_dict:
                         params_dict[t[0]].append(t[1])
                         params_dict[t[0]].append(t[2])
+                        params_dict[t[0]].append(t[3])
+                        params_dict[t[0]].append(t[4])
                     else:
                         params_dict[t[0]] = [] 
                         params_dict[t[0]].append(t[1])
                         params_dict[t[0]].append(t[2])
+                        params_dict[t[0]].append(t[3])
+                        params_dict[t[0]].append(t[4])
 
                 for bs, conf in params_dict.items():
                     parent_conn, child_conn = Pipe()
@@ -269,7 +271,7 @@ if __name__ == "__main__":
     #evaluate_diff_batch()
     
     start_time = timer()
-    resource_conf = 12
+    resource_conf = 9
     down_rate = 3
     #hb = Hyperband(resource_conf, down_rate, get_params, run_params)
     #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_naive)
@@ -278,7 +280,7 @@ if __name__ == "__main__":
     #results = hb.run()
     #results = hb.run_pack_naive()
     #results = hb.run_pack_random(9)
-    results = hb.run_pack_knn(9, knn_conf_euclid)
+    results = hb.run_pack_knn(15, knn_conf_euclid)
     end_time = timer()
     dur_time = end_time - start_time
     print("{} total, best:\n".format(len(results)))

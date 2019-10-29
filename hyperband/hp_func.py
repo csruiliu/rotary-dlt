@@ -37,8 +37,10 @@ def get_params(n_conf):
     batch_size = np.arange(10,61,5)
     opt_conf = ['Adam','SGD','Adagrad','Momentum']
     model_layer = np.arange(0,6,1)
-    all_conf = [batch_size, opt_conf, model_layer]
+    learning_rate = [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1]
+    activation = ['sigmoid','leaky_relu','tanh','relu']
 
+    all_conf = [batch_size, opt_conf, model_layer, learning_rate, activation]
     hp_conf = list(itertools.product(*all_conf))
     np.random.seed(100)
     idx_list = np.random.choice(np.arange(0, len(hp_conf)), n_conf, replace=False)
@@ -74,9 +76,11 @@ def run_params_pack_knn(confs, epochs, conn):
         batch_size_set.add(batch_size)
         opt = cf[1]
         model_layer = cf[2]
-        
+        learning_rate = cf[3]
+        activation = cf[4]
+
         desire_steps = Y_data.shape[0] // batch_size
-        modelEntity = MLP("mlp_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt)
+        modelEntity = MLP("mlp_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
         modelEntity.setDesireEpochs(desire_epochs)
         modelEntity.setDesireSteps(desire_steps)
         modelLogit = modelEntity.build(features)
@@ -160,9 +164,11 @@ def run_params_pack_random(confs, epochs, conn):
         batch_size_set.add(batch_size)
         opt = cf[1]
         model_layer = cf[2]
+        learning_rate = cf[3]
+        activation = cf[4]
         
         desire_steps = Y_data.shape[0] // batch_size
-        modelEntity = MLP("mlp_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt)
+        modelEntity = MLP("mlp_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
         modelEntity.setDesireEpochs(desire_epochs)
         modelEntity.setDesireSteps(desire_steps)
         modelLogit = modelEntity.build(features)
@@ -233,8 +239,10 @@ def run_params_pack_naive(batch_size, confs, iterations, conn):
         
         opt = confs[0]
         model_layer = confs[1]
+        learning_rate = confs[2]
+        activation = confs[3]
         
-        modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt)
+        modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
         modelLogit = modelEntity.build(features)
         trainOps = modelEntity.train(modelLogit, labels)
         evalOps = modelEntity.evaluate(modelLogit, labels)
@@ -322,10 +330,12 @@ def run_params(hyper_params, iterations, conn):
     batch_size = hyper_params[0]
     opt = hyper_params[1]
     model_layer = hyper_params[2]
-    print("\n*** batch size: {} | opt: {} | model layer: {}***".format(batch_size, opt, model_layer))
+    learning_rate = hyper_params[3]
+    activation = hyper_params[4]
+    print("\n*** batch size: {} | opt: {} | model layer: {} | learning rate: {} | activation: {} ***".format(batch_size, opt, model_layer, learning_rate, activation))
 
     #modelEntity = MobileNet("mobilenet_"+str(net_instnace), 1, imgHeight, imgWidth, batch_size, numClasses, opt)
-    modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt)
+    modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
     modelLogit = modelEntity.build(features)
     trainOps = modelEntity.train(modelLogit, labels)
     evalOps = modelEntity.evaluate(modelLogit, labels)
@@ -380,9 +390,11 @@ def evaluate_model():
 
     batch_size = 40
     opt = 'Adam'
+    learning_rate = 0.0001
+    activation = 'relu'
 
     #modelEntity = MobileNet("mobilenet_"+str(net_instnace), 1, imgHeight, imgWidth, batch_size, numClasses, opt)
-    modelEntity = MLP("mlp_"+str(net_instnace), 0, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt)
+    modelEntity = MLP("mlp_"+str(net_instnace), 0, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
     modelLogit = modelEntity.build(features)
     trainOps = modelEntity.train(modelLogit, labels)
     evalOps = modelEntity.evaluate(modelLogit, labels)

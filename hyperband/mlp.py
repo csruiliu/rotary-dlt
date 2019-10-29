@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 class MLP(object):
-    def __init__(self, net_name, model_layer, input_h, input_w, channel_num, batch_size, num_classes, opt):
+    def __init__(self, net_name, model_layer, input_h, input_w, channel_num, batch_size, num_classes, opt, learning_rate, activation):
         self.net_name = net_name
         self.model_layer_num = model_layer
         self.img_h = input_h
@@ -9,6 +9,8 @@ class MLP(object):
         self.num_classes = num_classes
         self.batch_size = tf.Variable(batch_size)
         self.optimzier = opt
+        self.activation = activation
+        self.learn_rate = learning_rate
         self.input_size = input_h * input_w * channel_num
         self.cur_step = 1
         self.cur_epoch = 1
@@ -32,17 +34,15 @@ class MLP(object):
             if self.model_layer_num >= 1:
                 for _ in range(self.model_layer_num - 1):
                     layer = self.perceptron_layer(input = layer)
-            
-            
-            self.model_logit = tf.nn.sigmoid(layer)
 
-            self.model_logit = tf.nn.softmax(layer)
-
-            self.model_logit = tf.nn.leaky_relu(layer)
-            
-            self.model_logit = tf.nn.tanh(layer)
-            
-            self.model_logit = tf.nn.relu(layer)
+            if self.activation == 'sigmoid':
+                self.model_logit = tf.nn.sigmoid(layer)
+            elif self.activation == 'leaky_relu':
+                self.model_logit = tf.nn.leaky_relu(layer)
+            elif self.activation == 'tanh':
+                self.model_logit = tf.nn.tanh(layer)
+            elif self.activation == 'relu':
+                self.model_logit = tf.nn.relu(layer)
 
         return self.model_logit
 
@@ -56,13 +56,13 @@ class MLP(object):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS,scope=self.net_name+'_instance')
             with tf.control_dependencies(update_ops):
                 if self.optimzier == 'Adam':
-                    self.train_op = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy_cost)
+                    self.train_op = tf.train.AdamOptimizer(self.learn_rate).minimize(cross_entropy_cost)
                 elif self.optimzier == 'SGD':
-                    self.train_op = tf.train.GradientDescentOptimizer(1e-4).minimize(cross_entropy_cost)
+                    self.train_op = tf.train.GradientDescentOptimizer(self.learn_rate).minimize(cross_entropy_cost)
                 elif self.optimzier == 'Adagrad':
-                    self.train_op = tf.train.AdagradOptimizer(1e-4).minimize(cross_entropy_cost)
+                    self.train_op = tf.train.AdagradOptimizer(self.learn_rate).minimize(cross_entropy_cost)
                 elif self.optimzier == 'Momentum':
-                    self.train_op = tf.train.MomentumOptimizer(1e-4,0.9).minimize(cross_entropy_cost)
+                    self.train_op = tf.train.MomentumOptimizer(self.learn_rate,0.9).minimize(cross_entropy_cost)
 
         return self.train_op
  
