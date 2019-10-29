@@ -232,16 +232,16 @@ def run_params_pack_naive(batch_size, confs, iterations, conn):
     X_data_eval = load_mnist_image(mnist_t10k_img_path, seed)
     Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path, seed)
 
-    if len(confs) == 2:
+    if len(confs) == 1:
         dt = datetime.now()
         np.random.seed(dt.microsecond)
         net_instnace = np.random.randint(sys.maxsize)
-        
-        opt = confs[0]
-        model_layer = confs[1]
-        learning_rate = confs[2]
-        activation = confs[3]
-        
+
+        opt = confs[1]
+        model_layer = confs[2]
+        learning_rate = confs[3]
+        activation = confs[4]
+
         modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
         modelLogit = modelEntity.build(features)
         trainOps = modelEntity.train(modelLogit, labels)
@@ -262,34 +262,37 @@ def run_params_pack_naive(batch_size, confs, iterations, conn):
                     X_mini_batch_feed = X_data[batch_offset:batch_end,:,:,:]
                     Y_mini_batch_feed = Y_data[batch_offset:batch_end,:]
                     sess.run(trainOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-            
-            
+
             sess.run(setbsOps)
             acc_arg = evalOps.eval({features: X_data_eval, labels: Y_data_eval})
             acc_pack.append(acc_arg)
             conn.send(acc_pack)
             conn.close()
             print("Accuracy:", acc_pack)
-    else:
+    else:    
         dt = datetime.now()
         np.random.seed(dt.microsecond)
-        net_instnace = np.random.randint(sys.maxsize, size=len(confs)//2)
-        
+        net_instnace = np.random.randint(sys.maxsize, size=len(confs))
+
         setbs_pack = []
         train_pack = []
         eval_pack = [] 
         acc_pack = []
 
-        for idx, _ in enumerate(confs):
-            if (idx+1) % 2 == 0:
-                modelEntity = MLP("mlp_"+str(net_instnace[(idx-1)//2]), confs[idx], imgHeight, imgWidth, numChannels, batch_size, numClasses, confs[idx-1])
-                modelLogit = modelEntity.build(features)
-                trainOps = modelEntity.train(modelLogit, labels)
-                evalOps = modelEntity.evaluate(modelLogit, labels)
-                setbs_pack.append(modelEntity.setBatchSize(Y_data_eval.shape[0]))
-                train_pack.append(trainOps)
-                eval_pack.append(evalOps)
-        
+        for cidx, civ in enumerate(confs):
+            opt = civ[1]
+            model_layer = civ[2]
+            learning_rate = civ[3]
+            activation = civ[4]
+
+            modelEntity = MLP("mlp_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
+            modelLogit = modelEntity.build(features)
+            trainOps = modelEntity.train(modelLogit, labels)
+            evalOps = modelEntity.evaluate(modelLogit, labels)
+            setbs_pack.append(modelEntity.setBatchSize(Y_data_eval.shape[0]))
+            train_pack.append(trainOps)
+            eval_pack.append(evalOps)
+
         config = tf.ConfigProto()
         config.allow_soft_placement = True   
         with tf.Session(config=config) as sess:
@@ -303,7 +306,6 @@ def run_params_pack_naive(batch_size, confs, iterations, conn):
                     X_mini_batch_feed = X_data[batch_offset:batch_end,:,:,:]
                     Y_mini_batch_feed = Y_data[batch_offset:batch_end,:]
                     sess.run(train_pack, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-            
             
             sess.run(setbs_pack)
 
@@ -359,7 +361,6 @@ def run_params(hyper_params, iterations, conn):
         conn.send(acc_arg)
         conn.close()
         print("Accuracy:", acc_arg)
-
 
 def evaluate_model():
     numChannels = 1

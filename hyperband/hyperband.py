@@ -6,7 +6,6 @@ from hp_func import *
 from knn_engine import knn_conf_bs, knn_conf_euclid, knn_conf_trial
 
 class Hyperband:
-
     def __init__(self, resourceConf, downRate, getHyperPara, runHyperPara):
         # maximun budget for single configuration, i.e., maximum iterations per configuration in example
         self.R = resourceConf
@@ -26,7 +25,7 @@ class Hyperband:
         self.get_hyperparams = getHyperPara
         self.run_hyperParams = runHyperPara
 
-    def run_pack_knn(self, topk, knn_method):        
+    def run_pack_knn(self, topk, knn_method):
         for s in reversed(range(self.s_max + 1)):
             n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
             r = self.R * (self.eta ** (-s))
@@ -130,16 +129,10 @@ class Hyperband:
                 
                 for t in T:
                     if t[0] in params_dict:
-                        params_dict[t[0]].append(t[1])
-                        params_dict[t[0]].append(t[2])
-                        params_dict[t[0]].append(t[3])
-                        params_dict[t[0]].append(t[4])
+                        params_dict[t[0]].append(t)
                     else:
                         params_dict[t[0]] = [] 
-                        params_dict[t[0]].append(t[1])
-                        params_dict[t[0]].append(t[2])
-                        params_dict[t[0]].append(t[3])
-                        params_dict[t[0]].append(t[4])
+                        params_dict[t[0]].append(t)
 
                 for bs, conf in params_dict.items():
                     parent_conn, child_conn = Pipe()
