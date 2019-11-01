@@ -6,6 +6,7 @@ from hp_func import *
 from knn_engine import knn_conf_bs, knn_conf_euclid, knn_conf_trial
 
 class Hyperband:
+
     def __init__(self, resourceConf, downRate, getHyperPara, runHyperPara):
         # maximun budget for single configuration, i.e., maximum iterations per configuration in example
         self.R = resourceConf
@@ -114,7 +115,7 @@ class Hyperband:
 
         return self.results
 
-    def run_pack_naive(self):
+    def run_pack_bs(self):
         for s in reversed(range(self.s_max + 1)):
             n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
             r = self.R * (self.eta ** (-s))
@@ -141,35 +142,17 @@ class Hyperband:
                     acc_pack = parent_conn.recv()
                     parent_conn.close()
                     p.join()
-                    if len(acc_pack) == 1:
+
+                    for aidx, acc in enumerate(acc_pack):
                         result = {'acc':-1}
-                        acc = acc_pack[0]
                         val_acc.append(acc)
                         result['acc'] = acc
-                        result['params'] = []
-                        result['params'].append(bs)
-                        result['params'].append(conf[0])
-                        result['params'].append(conf[1])
-                            
+                        result['params'] = conf[aidx]
+
                         if self.best_acc < acc:
                             self.best_acc = acc
                             print("best accuracy so far: {:.5f} \n".format(self.best_acc))
                         self.results.append(result)
-
-                    else:
-                        for idx, acc in enumerate(acc_pack):
-                            result = {'acc':-1}
-                            val_acc.append(acc)
-                            result['acc'] = acc
-                            result['params'] = []
-                            result['params'].append(bs)
-                            result['params'].append(conf[idx*2])
-                            result['params'].append(conf[idx*2+1])
-                            
-                            if self.best_acc < acc:
-                                self.best_acc = acc
-                                print("best accuracy so far: {:.5f} \n".format(self.best_acc))
-                            self.results.append(result)
 
                 indices = np.argsort(val_acc)
                 T = [T[i] for i in indices]
@@ -264,16 +247,16 @@ if __name__ == "__main__":
     #evaluate_diff_batch()
     
     start_time = timer()
-    resource_conf = 9
-    down_rate = 3
+    resource_conf = 4
+    down_rate = 2
     #hb = Hyperband(resource_conf, down_rate, get_params, run_params)
-    #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_naive)
-    #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_random)
-    hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_knn)
+    #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_bs)
+    hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_random)
+    #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_knn)
     #results = hb.run()
-    #results = hb.run_pack_naive()
-    #results = hb.run_pack_random(9)
-    results = hb.run_pack_knn(3, knn_conf_euclid)
+    #results = hb.run_pack_bs()
+    results = hb.run_pack_random(2)
+    #results = hb.run_pack_knn(3, knn_conf_euclid)
     end_time = timer()
     dur_time = end_time - start_time
     print("{} total, best:\n".format(len(results)))

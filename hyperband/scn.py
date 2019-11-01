@@ -49,14 +49,14 @@ class SCN(object):
             layer_flat = tf.reshape(layer, [-1, num_features])
         return layer_flat
 
-    def fc_layer(self, x, num_units, name, use_relu=True):
+    def fc_layer(self, x, num_units, name, use_activation=True):
         with tf.variable_scope(name):
             in_dim = x.get_shape()[1]
             W = self.weight_variable(shape=[in_dim, num_units])
             b = self.bias_variable(shape=[num_units])
             layer = tf.matmul(x, W)
             layer += b
-            if use_relu:
+            if use_activation:
                 if self.activation == 'sigmoid':
                     layer = tf.nn.sigmoid(layer)
                 elif self.activation == 'leaky_relu':
@@ -80,8 +80,8 @@ class SCN(object):
             conv2 = self.conv_layer(pool1, filter_size=5, num_filters=32, stride=1, name='conv2')
             pool2 = self.max_pool(conv2, ksize=2, stride=2, name='pool2')
             layer_flat = self.flatten_layer(pool2)
-            fc1 = self.fc_layer(layer_flat, num_units=128, name='fc1', use_relu=True)
-            self.model_logit = self.fc_layer(fc1, num_units=self.num_classes, name='logit', use_relu=False)
+            fc1 = self.fc_layer(layer_flat, num_units=128, name='fc1', use_activation=True)
+            self.model_logit = self.fc_layer(fc1, num_units=self.num_classes, name='logit', use_activation=False)
         return self.model_logit
 
     def train(self, logits, labels):
