@@ -273,7 +273,7 @@ if __name__ == "__main__":
     #results = hb.run()
     #results = hb.run_pack_naive()
     #results = hb.run_pack_random(9)
-    results = hb.run_pack_knn(15, knn_conf_euclid)
+    results = hb.run_pack_knn(3, knn_conf_euclid)
     end_time = timer()
     dur_time = end_time - start_time
     print("{} total, best:\n".format(len(results)))
