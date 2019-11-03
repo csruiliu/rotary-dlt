@@ -17,7 +17,7 @@ imgHeight = 28
 numChannels = 1
 numClasses = 10
 
-data_eval_slice = 20 
+rand_seed = 10000
 
 #bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
 #bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
@@ -43,14 +43,15 @@ def get_params(n_conf):
 
     all_conf = [batch_size, opt_conf, model_layer, learning_rate, activation]
     hp_conf = list(itertools.product(*all_conf))
-    np.random.seed(100)
+    np.random.seed(rand_seed)
     idx_list = np.random.choice(np.arange(0, len(hp_conf)), n_conf, replace=False)
+    print(idx_list)
     rand_conf = itemgetter(*idx_list)(hp_conf)
 
     return rand_conf
 
 def run_params_pack_knn(confs, epochs, conn):
-    seed = np.random.randint(10000)
+    seed = np.random.randint(rand_seed)
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
     X_data = load_mnist_image(mnist_train_img_path, seed)
@@ -139,7 +140,7 @@ def run_params_pack_knn(confs, epochs, conn):
     print("Accuracy:", acc_pack)
 
 def run_params_pack_random(confs, epochs, conn):
-    seed = np.random.randint(10000)
+    seed = np.random.randint(rand_seed)
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
     X_data = load_mnist_image(mnist_train_img_path, seed)
@@ -227,7 +228,7 @@ def run_params_pack_random(confs, epochs, conn):
     print("Accuracy:", acc_pack)
         
 def run_params_pack_bs(batch_size, confs, iterations, conn):
-    seed = np.random.randint(10000)
+    seed = np.random.randint(rand_seed)
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
     X_data = load_mnist_image(mnist_train_img_path, seed)
@@ -283,7 +284,7 @@ def run_params_pack_bs(batch_size, confs, iterations, conn):
         print("Accuracy:", acc_pack)
     
 def run_params(hyper_params, iterations, conn):
-    seed = np.random.randint(10000)
+    seed = np.random.randint(rand_seed)
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
     X_data = load_mnist_image(mnist_train_img_path, seed)
@@ -337,6 +338,7 @@ def evaluate_model():
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
 
+    data_eval_slice = 20 
     #X_data = load_bin_raw(bin_dir, numChannels, imgWidth, imgHeight)
     #Y_data = load_labels_onehot(label_path, numClasses)
     #X_data_eval = X_data[0:data_eval_slice,:,:,:]

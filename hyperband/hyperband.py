@@ -26,6 +26,7 @@ class Hyperband:
         self.get_hyperparams = getHyperPara
         self.run_hyperParams = runHyperPara
 
+
     def run_pack_knn(self, topk, knn_method):
         for s in reversed(range(self.s_max + 1)):
             n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
@@ -66,7 +67,8 @@ class Hyperband:
                 T = T[0:floor(n_i / self.eta)]
                 
         return self.results
-        
+
+
     def run_pack_random(self, random_size):
         for s in reversed(range(self.s_max + 1)):
             n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
@@ -115,6 +117,7 @@ class Hyperband:
 
         return self.results
 
+
     def run_pack_bs(self):
         for s in reversed(range(self.s_max + 1)):
             n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
@@ -160,6 +163,7 @@ class Hyperband:
 
         return self.results        
 
+
     def run(self):
         for s in reversed(range(self.s_max + 1)):
             n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
@@ -202,6 +206,7 @@ class Hyperband:
 
         return self.results
 
+
     def run_fake(self):
         for s in reversed(range(self.s_max + 1)):
             n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
@@ -240,6 +245,7 @@ class Hyperband:
                 T = T[0:floor(n_i / self.eta)]
         return self.results
 
+
 if __name__ == "__main__":
     
     #evaluate_model()
@@ -247,15 +253,15 @@ if __name__ == "__main__":
     #evaluate_diff_batch()
     
     start_time = timer()
-    resource_conf = 4
-    down_rate = 2
-    #hb = Hyperband(resource_conf, down_rate, get_params, run_params)
+    resource_conf = 81
+    down_rate = 3
+    hb = Hyperband(resource_conf, down_rate, get_params, run_params)
     #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_bs)
-    hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_random)
+    #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_random)
     #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_knn)
-    #results = hb.run()
+    results = hb.run()
     #results = hb.run_pack_bs()
-    results = hb.run_pack_random(2)
+    #results = hb.run_pack_random(2)
     #results = hb.run_pack_knn(3, knn_conf_euclid)
     end_time = timer()
     dur_time = end_time - start_time
