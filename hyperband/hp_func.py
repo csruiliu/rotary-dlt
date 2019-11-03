@@ -38,10 +38,11 @@ def get_params(n_conf):
     batch_size = np.arange(10,61,5)
     opt_conf = ['Adam','SGD','Adagrad','Momentum']
     model_layer = np.arange(0,6,1)
-    learning_rate = [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1]
-    activation = ['sigmoid','leaky_relu','tanh','relu']
+    #learning_rate = [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1]
+    #activation = ['sigmoid','leaky_relu','tanh','relu']
 
-    all_conf = [batch_size, opt_conf, model_layer, learning_rate, activation]
+    #all_conf = [batch_size, opt_conf, model_layer, learning_rate, activation]
+    all_conf = [batch_size, opt_conf, model_layer]
     hp_conf = list(itertools.product(*all_conf))
     np.random.seed(rand_seed)
     idx_list = np.random.choice(np.arange(0, len(hp_conf)), n_conf, replace=False)
@@ -298,13 +299,15 @@ def run_params(hyper_params, iterations, conn):
     batch_size = hyper_params[0]
     opt = hyper_params[1]
     model_layer = hyper_params[2]
-    learning_rate = hyper_params[3]
-    activation = hyper_params[4]
-    print("\n*** batch size: {} | opt: {} | model layer: {} | learning rate: {} | activation: {} ***".format(batch_size, opt, model_layer, learning_rate, activation))
+    #learning_rate = hyper_params[3]
+    #activation = hyper_params[4]
+    #print("\n*** batch size: {} | opt: {} | model layer: {} | learning rate: {} | activation: {} ***".format(batch_size, opt, model_layer, learning_rate, activation))
+    print("\n*** batch size: {} | opt: {} | model layer: {} ***".format(batch_size, opt, model_layer))
 
     #modelEntity = MobileNet("mobilenet_"+str(net_instnace), 1, imgHeight, imgWidth, batch_size, numClasses, opt)
     #modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
-    modelEntity = SCN("scn_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
+    modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt)
+    #modelEntity = SCN("scn_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
     modelLogit = modelEntity.build(features)
     trainOps = modelEntity.train(modelLogit, labels)
     evalOps = modelEntity.evaluate(modelLogit, labels)
