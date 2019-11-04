@@ -255,14 +255,14 @@ if __name__ == "__main__":
     start_time = timer()
     resource_conf = 81
     down_rate = 3
-    hb = Hyperband(resource_conf, down_rate, get_params, run_params)
+    #hb = Hyperband(resource_conf, down_rate, get_params, run_params)
     #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_bs)
     #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_random)
-    #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_knn)
-    results = hb.run()
+    hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_knn)
+    #results = hb.run()
     #results = hb.run_pack_bs()
     #results = hb.run_pack_random(2)
-    #results = hb.run_pack_knn(3, knn_conf_euclid)
+    results = hb.run_pack_knn(9, knn_conf_euclid)
     end_time = timer()
     dur_time = end_time - start_time
     print("{} total, best:\n".format(len(results)))

@@ -17,7 +17,7 @@ imgHeight = 28
 numChannels = 1
 numClasses = 10
 
-rand_seed = 10000
+rand_seed = 1
 
 #bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
 #bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
@@ -38,15 +38,14 @@ def get_params(n_conf):
     batch_size = np.arange(10,61,5)
     opt_conf = ['Adam','SGD','Adagrad','Momentum']
     model_layer = np.arange(0,6,1)
-    #learning_rate = [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1]
-    #activation = ['sigmoid','leaky_relu','tanh','relu']
+    learning_rate = [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1]
+    activation = ['sigmoid','leaky_relu','tanh','relu']
 
-    #all_conf = [batch_size, opt_conf, model_layer, learning_rate, activation]
-    all_conf = [batch_size, opt_conf, model_layer]
+    all_conf = [batch_size, opt_conf, model_layer, learning_rate, activation]
+    #all_conf = [batch_size, opt_conf, model_layer]
     hp_conf = list(itertools.product(*all_conf))
     np.random.seed(rand_seed)
     idx_list = np.random.choice(np.arange(0, len(hp_conf)), n_conf, replace=False)
-    print(idx_list)
     rand_conf = itemgetter(*idx_list)(hp_conf)
 
     return rand_conf
@@ -83,8 +82,8 @@ def run_params_pack_knn(confs, epochs, conn):
         activation = cf[4]
 
         desire_steps = Y_data.shape[0] // batch_size
-        #modelEntity = MLP("mlp_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
-        modelEntity = SCN("scn_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
+        modelEntity = MLP("mlp_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
+        #modelEntity = SCN("scn_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
         modelEntity.setDesireEpochs(desire_epochs)
         modelEntity.setDesireSteps(desire_steps)
         modelLogit = modelEntity.build(features)
@@ -319,7 +318,7 @@ def run_params(hyper_params, iterations, conn):
         num_batch = Y_data.shape[0] // batch_size
         for e in range(iterations):
             for i in range(num_batch):
-                #print('epoch %d / %d, step %d / %d' %(e+1, iterations, i+1, num_batch))
+                print('epoch %d / %d, step %d / %d' %(e+1, iterations, i+1, num_batch))
                 batch_offset = i * batch_size
                 batch_end = (i+1) * batch_size
                 X_mini_batch_feed = X_data[batch_offset:batch_end,:,:,:]
