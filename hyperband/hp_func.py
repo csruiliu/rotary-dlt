@@ -171,8 +171,8 @@ def run_params_pack_random(confs, epochs, conn):
         activation = cf[4]
         
         desire_steps = Y_data.shape[0] // batch_size
-        #modelEntity = MLP("mlp_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
-        modelEntity = SCN("scn_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
+        modelEntity = MLP("mlp_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
+        #modelEntity = SCN("scn_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
         modelEntity.setDesireEpochs(desire_epochs)
         modelEntity.setDesireSteps(desire_steps)
         modelLogit = modelEntity.build(features)
@@ -250,8 +250,8 @@ def run_params_pack_bs(batch_size, confs, iterations, conn):
         model_layer = civ[2]
         learning_rate = civ[3]
         activation = civ[4]
-        
-        modelEntity = SCN("scn_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
+        modelEntity = MLP("mlp_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
+        #modelEntity = SCN("scn_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
         modelLogit = modelEntity.build(features)
         trainOps = modelEntity.train(modelLogit, labels)
         evalOps = modelEntity.evaluate(modelLogit, labels)
@@ -298,14 +298,15 @@ def run_params(hyper_params, iterations, conn):
     batch_size = hyper_params[0]
     opt = hyper_params[1]
     model_layer = hyper_params[2]
-    #learning_rate = hyper_params[3]
-    #activation = hyper_params[4]
-    #print("\n*** batch size: {} | opt: {} | model layer: {} | learning rate: {} | activation: {} ***".format(batch_size, opt, model_layer, learning_rate, activation))
-    print("\n*** batch size: {} | opt: {} | model layer: {} ***".format(batch_size, opt, model_layer))
+    learning_rate = hyper_params[3]
+    activation = hyper_params[4]
+    
+    print("\n*** batch size: {} | opt: {} | model layer: {} | learning rate: {} | activation: {} ***".format(batch_size, opt, model_layer, learning_rate, activation))
+    #print("\n*** batch size: {} | opt: {} | model layer: {} ***".format(batch_size, opt, model_layer))
 
     #modelEntity = MobileNet("mobilenet_"+str(net_instnace), 1, imgHeight, imgWidth, batch_size, numClasses, opt)
-    #modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
-    modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt)
+    modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
+    #modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt)
     #modelEntity = SCN("scn_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
     modelLogit = modelEntity.build(features)
     trainOps = modelEntity.train(modelLogit, labels)
