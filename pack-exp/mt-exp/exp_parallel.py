@@ -142,16 +142,55 @@ def execTrainPreproc(unit, num_epoch, batch_size, X_train_path, Y_train):
 
     return num_epoch
 
-def time_wrap(f):
-    def wrap(*args, **kvargs):
-        start = timer()
-        result = f(*args, **kvargs)
-        end = timer()
-        print("the run time for function %s with params %s is %s" %(f.__name__, args[1],  end-start))
-        return result
-    return wrap
+def execTrainParallel(model_name, num_epoch, batch_size, X_train_path, Y_train_path):
+    model_layer = 1
+    opt = 'Adam'
+    modelEntity = mobilenet("mlp_"+str(1), model_layer, imgHeight, imgWidth, batch_size, numClasses, opt)
+    features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+    labels = tf.placeholder(tf.int64, [None, numClasses])
+    modelLogit = modelEntity.build(features)
+    trainOps = modelEntity.train(modelLogit, labels)
+    Y_train = load_labels_onehot(Y_train_path, numClasses)
+
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    config.allow_soft_placement = True
+    image_list = sorted(os.listdir(X_train_path))
+    with tf.Session(config=config) as sess:
+        sess.run(tf.global_variables_initializer())
+        num_batch = Y_train.shape[0] // batch_size
+        num_batch_list = np.arange(num_batch)
+        for e in range(num_epoch):
+            for i in range(num_batch):
+                start_time = timer()
+                print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))      
+                batch_offset = i * batch_size
+                batch_end = (i+1) * batch_size
+                batch_list = image_list[batch_offset:batch_end]   
+                X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
+                Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
+                sess.run(trainOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
 if __name__ == '__main__':
+    pool = Pool(processes=2)
+    pls = [['mobilenet',1,32,image_dir,label_path],['mobilenet',1,32,image_dir,label_path]]
+ 
+    for i in pls:
+        result = pool.apply_async(execTrainParallel, (i, ))          
+    
+    pool.close()  
+    pool.join()  
+    
+    '''
+    print(result.ready())
+    result.wait()
+    if result.ready():
+        if result.successful():
+            print(result.get())
+        #jobs.append(res)
+    #pool.close()
+    '''
+    '''
     start_time = timer()
     
     model_layer = 1
@@ -208,6 +247,8 @@ if __name__ == '__main__':
     print(dur_time)
         #print(pool_results)
     #pool.terminate()
+    '''
+    
     '''
     showExpConfig()
     modelCollection = prepareModels()
