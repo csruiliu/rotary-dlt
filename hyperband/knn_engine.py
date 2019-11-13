@@ -356,7 +356,7 @@ def knn_conf_euclid(confs, topk):
     
     trial_pack_collection = []
     
-    while len(confs_list) > 0:
+    while len(confs_list) > 1:
         trial_packed_list = []
         spoint = rd.choice(confs_list)
         trial_packed_list.append(spoint)

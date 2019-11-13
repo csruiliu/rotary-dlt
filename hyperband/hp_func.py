@@ -17,7 +17,7 @@ imgHeight = 28
 numChannels = 1
 numClasses = 10
 
-rand_seed = 1
+rand_seed = 10000
 
 #bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
 #bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
@@ -82,8 +82,8 @@ def run_params_pack_knn(confs, epochs, conn):
         activation = cf[4]
 
         desire_steps = Y_data.shape[0] // batch_size
-        modelEntity = MLP("mlp_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
-        #modelEntity = SCN("scn_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
+        #modelEntity = MLP("mlp_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
+        modelEntity = SCN("scn_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
         modelEntity.setDesireEpochs(desire_epochs)
         modelEntity.setDesireSteps(desire_steps)
         modelLogit = modelEntity.build(features)
@@ -105,6 +105,7 @@ def run_params_pack_knn(confs, epochs, conn):
         while len(train_pack) != 0:
             num_steps = Y_data.shape[0] // max_bs
             for i in range(num_steps):
+                print('step %d / %d' %(i+1, num_steps))
                 batch_offset = i * max_bs
                 batch_end = (i+1) * max_bs
                 X_mini_batch_feed = X_data[batch_offset:batch_end,:,:,:]
@@ -193,6 +194,7 @@ def run_params_pack_random(confs, epochs, conn):
         while len(train_pack) != 0:
             num_steps = Y_data.shape[0] // max_bs
             for i in range(num_steps):
+                print('step %d / %d' %(i+1, num_steps))
                 batch_offset = i * max_bs
                 batch_end = (i+1) * max_bs
                 X_mini_batch_feed = X_data[batch_offset:batch_end,:,:,:]
@@ -267,7 +269,7 @@ def run_params_pack_bs(batch_size, confs, iterations, conn):
         num_batch = Y_data.shape[0] // batch_size
         for e in range(iterations):
             for i in range(num_batch):
-                #print('epoch %d / %d, step %d / %d' %(e+1, iterations, i+1, num_batch))
+                print('epoch %d / %d, step %d / %d' %(e+1, iterations, i+1, num_batch))
                 batch_offset = i * batch_size
                 batch_end = (i+1) * batch_size
                 X_mini_batch_feed = X_data[batch_offset:batch_end,:,:,:]
@@ -305,9 +307,9 @@ def run_params(hyper_params, iterations, conn):
     #print("\n*** batch size: {} | opt: {} | model layer: {} ***".format(batch_size, opt, model_layer))
 
     #modelEntity = MobileNet("mobilenet_"+str(net_instnace), 1, imgHeight, imgWidth, batch_size, numClasses, opt)
-    modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
+    #modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
     #modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt)
-    #modelEntity = SCN("scn_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
+    modelEntity = SCN("scn_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
     modelLogit = modelEntity.build(features)
     trainOps = modelEntity.train(modelLogit, labels)
     evalOps = modelEntity.evaluate(modelLogit, labels)

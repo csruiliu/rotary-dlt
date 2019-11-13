@@ -251,7 +251,7 @@ if __name__ == "__main__":
     #evaluate_model()
     #run_params_pack_mnist()    
     #evaluate_diff_batch()
-    
+     
     start_time = timer()
     resource_conf = 81
     down_rate = 3
@@ -261,7 +261,7 @@ if __name__ == "__main__":
     hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_knn)
     #results = hb.run()
     #results = hb.run_pack_bs()
-    #results = hb.run_pack_random(2)
+    #results = hb.run_pack_random(9)
     results = hb.run_pack_knn(9, knn_conf_euclid)
     end_time = timer()
     dur_time = end_time - start_time
@@ -269,4 +269,10 @@ if __name__ == "__main__":
     best_hp = sorted(results, key = lambda x: x['acc'])[-1]
     print(best_hp)
     print('total exp time:',dur_time)
-    
+    '''
+    with open('knn-res.txt','w+') as fres:
+        fres.write("{} total, best:\n".format(len(results)))
+        fres.write(best_hp)
+        fres.write('\ntotal exp time:{}'.format(dur_time))
+    ''' 
+
