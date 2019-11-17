@@ -66,7 +66,6 @@ def execParallelPreproc(pls):
     dm = DnnModel(model_name, str(model_instance), 1, imgWidth, imgHeight, numClasses, batch_size, opt)
     
     modelEntity = dm.getModelEntity()
-    
     modelLogit = modelEntity.build(features)
     trainOps = modelEntity.train(modelLogit, labels)
     Y_train = load_labels_onehot(Y_train_path, numClasses)
@@ -128,7 +127,6 @@ def execParallel(pls):
     dm = DnnModel(model_name, str(model_instance), 1, imgWidth, imgHeight, numClasses, batch_size, opt)
     
     modelEntity = dm.getModelEntity()
-    
     modelLogit = modelEntity.build(features)
     trainOps = modelEntity.train(modelLogit, labels)
     X_train = load_images_bin(X_train_path, numChannels, imgWidth, imgHeight)
@@ -138,7 +136,6 @@ def execParallel(pls):
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
 
-    image_list = sorted(os.listdir(X_train_path))
     if measureTrainEpoch:
         with tf.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
@@ -198,6 +195,9 @@ if __name__ == '__main__':
     if useCPU:
         os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
     
+    if measureTrainEpoch:
+        start_time = timer()
+
     pool = Pool(processes=numProc)
     proc_list = []
     for pidx in range(numProc):
@@ -221,7 +221,9 @@ if __name__ == '__main__':
         if results.successful():
             print(results.get())
 
-
-
+    if measureTrainEpoch:
+        end_time = timer()
+        dur_time = end_time - start_time
+        print("total running time:", dur_time)
 
 
