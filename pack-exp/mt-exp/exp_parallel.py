@@ -14,6 +14,9 @@ from img_utils import *
 from dnn_model import DnnModel
 
 from mobilenet import mobilenet
+from perceptron import perceptron
+from resnet import resnet
+from densenet import densenet
 
 #########################
 # Command Parameters
@@ -31,16 +34,16 @@ args = parser.parse_args()
 # Global Variables
 #########################
 
-image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
-#image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
+#image_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
+image_dir = '/tank/local/ruiliu/dataset/imagenet10k'
 #image_dir = '/local/ruiliu/dataset/imagenet10k'
 
-bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-#bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
+#bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
+bin_dir = '/tank/local/ruiliu/dataset/imagenet10k.bin'
 #bin_dir = '/local/ruiliu/dataset/imagenet10k.bin'
 
-label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
-#label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
+#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+label_path = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
 #label_path = '/local/ruiliu/dataset/imagenet10k-label.txt'
 
 #profile_dir = '/home/ruiliu/Development/mtml-tf/mt-perf/profile_dir'
@@ -117,9 +120,6 @@ def execTrain(unit, num_epoch, batch_size, X_train, Y_train):
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
                 sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
-def execTrainPreproc1(unit, num_epoch, batch_size, X_train_path, Y_train):
-    print("sss")
-
 def execTrainPreproc(unit, num_epoch, batch_size, X_train_path, Y_train):
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
@@ -142,10 +142,22 @@ def execTrainPreproc(unit, num_epoch, batch_size, X_train_path, Y_train):
 
     return num_epoch
 
-def execTrainParallel(model_name, num_epoch, batch_size, X_train_path, Y_train_path):
+#def execTrainParallel(model_name, num_epoch, batch_size, X_train_path, Y_train_path):
+def execTrainParallel(pls):
+    model_name = pls[0]
+    num_epoch = pls[1]
+    batch_size = pls[2]
+    X_train_path = pls[3]
+    Y_train_path = pls[4]
+
+    step_time = 0
+    step_count = 0
     model_layer = 1
     opt = 'Adam'
-    modelEntity = mobilenet("mlp_"+str(1), model_layer, imgHeight, imgWidth, batch_size, numClasses, opt)
+    #modelEntity = perceptron("mlp_"+model_name, model_layer, imgHeight, imgWidth, batch_size, numClasses, opt)
+    #modelEntity = densenet("mlp_"+model_name, model_layer, imgHeight, imgWidth, batch_size, numClasses, opt) 
+    modelEntity = mobilenet("mlp_"+model_name, model_layer, imgHeight, imgWidth, batch_size, numClasses, opt)
+    #modelEntity = perceptron("mlp_"+model_name, model_layer, imgHeight, imgWidth, batch_size, numClasses, opt)
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
     modelLogit = modelEntity.build(features)
@@ -170,17 +182,42 @@ def execTrainParallel(model_name, num_epoch, batch_size, X_train_path, Y_train_p
                 X_mini_batch_feed = load_image_dir(X_train_path, batch_list, imgHeight, imgWidth)
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end,:]
                 sess.run(trainOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                end_time = timer()
+                dur_time = end_time - start_time
+                step_time += dur_time
+                step_count += 1
+    avg_step_time = step_time / step_count * 1000
+    return avg_step_time
 
 if __name__ == '__main__':
+    start_time = timer()
+    #pool = Pool(processes=6)
+    #pls = [['0',1,32,image_dir,label_path],['1',1,32,image_dir,label_path],['2',1,32,image_dir,label_path],['3',1,32,image_dir,label_path],['0',1,32,image_dir,label_path],['0',1,32,image_dir,label_path]]
     pool = Pool(processes=2)
-    pls = [['mobilenet',1,32,image_dir,label_path],['mobilenet',1,32,image_dir,label_path]]
- 
-    for i in pls:
-        result = pool.apply_async(execTrainParallel, (i, ))          
+    pls = [['0',1,32,image_dir,label_path],['1',1,32,image_dir,label_path]]
+
     
+    '''
+    # parallel exp in apply_async
+    results=[]
+    for pv in pls:
+        result = pool.apply_async(execTrainParallel, (pv[0],pv[1],pv[2],pv[3],pv[4], ))          
+        results.append(result)
     pool.close()  
     pool.join()  
     
+    end_time = timer()
+    print("total:",end_time-start_time)
+    for res in results:
+        print(res.get())
+    '''
+    results = pool.map_async(execTrainParallel, pls)
+    results.wait()
+    if results.ready():
+        if results.successful():
+            print(results.get())
+    end_time = timer()
+    print("total",end_time - start_time)
     '''
     print(result.ready())
     result.wait()

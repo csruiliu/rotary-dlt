@@ -62,7 +62,7 @@ if useCPU:
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 if sameBatchSize:
-    maxBatchSize = 32
+    maxBatchSize = 200
 else:
     maxBatchSize = 50
 
@@ -88,13 +88,13 @@ def prepareModels():
     
     if sameModel:
         model_class_num = [1,1]
-        model_class = ["densenet","densenet"]       
+        model_class = ["perceptron","perceptron"]       
     else:
         model_class_num = [1,1]
         model_class = ["resnet","mobilenet"]
     
     if sameBatchSize:
-        batch_list = [32,32]
+        batch_list = [200,200]
     else:
         batch_list = [32,50]
 
