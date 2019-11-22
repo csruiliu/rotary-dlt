@@ -95,6 +95,7 @@ def run_params_pack_knn(confs, epochs, conn):
 
     config = tf.ConfigProto()
     config.allow_soft_placement = True   
+    config.gpu_options.allow_growth = True
 
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
@@ -185,6 +186,7 @@ def run_params_pack_random(confs, epochs, conn):
 
     config = tf.ConfigProto()
     config.allow_soft_placement = True   
+    config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
         max_bs = max(batch_size_set)
@@ -263,7 +265,7 @@ def run_params_pack_bs(batch_size, confs, iterations, conn):
 
     config = tf.ConfigProto()
     config.allow_soft_placement = True   
-
+    config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
         num_batch = Y_data.shape[0] // batch_size
@@ -315,6 +317,7 @@ def run_params(hyper_params, iterations, conn):
     evalOps = modelEntity.evaluate(modelLogit, labels)
 
     config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
     config.allow_soft_placement = True    
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
@@ -377,6 +380,7 @@ def evaluate_model():
     epoch = 1
 
     config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
 
     with tf.Session(config=config) as sess:
