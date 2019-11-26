@@ -6,43 +6,43 @@ from datetime import datetime
 import sys
 from matplotlib import pyplot as plt
 from multiprocessing import Process, Pipe
+import yaml
 
 from img_utils import * 
-from mobilenet import MobileNet
-from mlp import MLP
-from scn import SCN
+from dnn_model import DnnModel
 
-imgWidth = 28
-imgHeight = 28
-numChannels = 1
-numClasses = 10
+#from mobilenet import MobileNet
+#from mlp import MLP
+#from scn import SCN
 
-rand_seed = 10000
+with open("config.yml", 'r') as ymlfile:
+    cfg = yaml.load(ymlfile)
 
-#bin_dir = '/tank/local/ruiliu/dataset/imagenet1k.bin'
-#bin_dir = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin'
-#label_path = '/tank/local/ruiliu/dataset/imagenet1k-label.txt'
-#label_path = '/home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt'
+hyperparams_cfg = cfg['hypermeter']
 
-#mnist_train_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-images.idx3-ubyte'
-mnist_train_img_path = '/tank/local/ruiliu/dataset/mnist-train-images.idx3-ubyte'
-#mnist_train_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-labels.idx1-ubyte'
-mnist_train_label_path = '/tank/local/ruiliu/dataset/mnist-train-labels.idx1-ubyte'
-#mnist_t10k_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-images.idx3-ubyte'
-mnist_t10k_img_path = '/tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte'
-#mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
-mnist_t10k_label_path = '/tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte'
+imgWidth = hyperparams_cfg['img_width']
+imgHeight = hyperparams_cfg['img_height']
+batch_size = hyperparams_cfg['batch_size']
+opt_conf = hyperparams_cfg['optimizer']
+model_layer = hyperparams_cfg['num_model_layer']
+activation = hyperparams_cfg['activation']
+learning_rate = hyperparams_cfg['learning_rate']
+model_type = hyperparams_cfg['model_type']
+numChannels = hyperparams_cfg['num_channel']
+numClasses = hyperparams_cfg['num_class']
+rand_seed = hyperparams_cfg['random_seed']
 
+data_path_cfg = cfg['local_data_path']
+mnist_train_img_path = data_path_cfg['mnist_train_img_path']
+mnist_train_label_path = data_path_cfg['mnist_train_label_path']
+mnist_t10k_img_path = data_path_cfg['mnist_t10k_img_path']
+mnist_t10k_label_path = data_path_cfg['mnist_t10k_label_path']
 
 def get_params(n_conf):
-    batch_size = np.arange(10,61,5)
-    opt_conf = ['Adam','SGD','Adagrad','Momentum']
-    model_layer = np.arange(0,6,1)
-    learning_rate = [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1]
-    activation = ['sigmoid','leaky_relu','tanh','relu']
-
-    all_conf = [batch_size, opt_conf, model_layer, learning_rate, activation]
-    #all_conf = [batch_size, opt_conf, model_layer]
+    with open("config.yml", 'r') as ymlfile:
+        cfg = yaml.load(ymlfile)
+    
+    all_conf = [model_type, batch_size, opt_conf, model_layer, learning_rate, activation]
     hp_conf = list(itertools.product(*all_conf))
     np.random.seed(rand_seed)
     idx_list = np.random.choice(np.arange(0, len(hp_conf)), n_conf, replace=False)
@@ -82,6 +82,7 @@ def run_params_pack_knn(confs, epochs, conn):
         activation = cf[4]
 
         desire_steps = Y_data.shape[0] // batch_size
+        
         #modelEntity = MLP("mlp_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
         modelEntity = SCN("scn_"+str(net_instnace[cidx]), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
         modelEntity.setDesireEpochs(desire_epochs)
@@ -299,19 +300,18 @@ def run_params(hyper_params, iterations, conn):
     dt = datetime.now()
     np.random.seed(dt.microsecond)
     net_instnace = np.random.randint(sys.maxsize)
-    batch_size = hyper_params[0]
-    opt = hyper_params[1]
-    model_layer = hyper_params[2]
-    learning_rate = hyper_params[3]
-    activation = hyper_params[4]
     
-    print("\n*** batch size: {} | opt: {} | model layer: {} | learning rate: {} | activation: {} ***".format(batch_size, opt, model_layer, learning_rate, activation))
-    #print("\n*** batch size: {} | opt: {} | model layer: {} ***".format(batch_size, opt, model_layer))
+    model_type = hyper_params[0]
+    batch_size = hyper_params[1]
+    opt = hyper_params[2]
+    model_layer = hyper_params[3]
+    learning_rate = hyper_params[4]
+    activation = hyper_params[5]
+    
+    print("\n*** model: {} | batch size: {} | opt: {} | model layer: {} | learning rate: {} | activation: {} ***".format(model_type, batch_size, opt, model_layer, learning_rate, activation))
 
-    #modelEntity = MobileNet("mobilenet_"+str(net_instnace), 1, imgHeight, imgWidth, batch_size, numClasses, opt)
-    #modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
-    #modelEntity = MLP("mlp_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt)
-    modelEntity = SCN("scn_"+str(net_instnace), model_layer, imgHeight, imgWidth, numChannels, batch_size, numClasses, opt, learning_rate, activation)
+    dm = DnnModel(model_type, str(net_instnace), model_layer, imgWidth, imgHeight, numChannels, numClasses, batch_size, opt, learning_rate, activation)
+    modelEntity = dm.getModelEntity()
     modelLogit = modelEntity.build(features)
     trainOps = modelEntity.train(modelLogit, labels)
     evalOps = modelEntity.evaluate(modelLogit, labels)

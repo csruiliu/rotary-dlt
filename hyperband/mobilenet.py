@@ -6,8 +6,8 @@ weight_decay = 1e-4
 exp = 6  
 
 #MobileNetV2
-class MobileNet(object):
-    def __init__(self, net_name, model_layer, input_h, input_w, batch_size, num_classes, opt, is_training=True):
+class mobilenet(object):
+    def __init__(self, net_name, model_layer, input_h, input_w, batch_size, num_classes, opt, learning_rate=0.0001, activation='relu', is_training=True):
         self.net_name = net_name
         self.model_layer_num = model_layer
         self.img_h = input_h
@@ -18,6 +18,8 @@ class MobileNet(object):
         self.optimzier = opt
         self.is_training = is_training
         self.normalizer = tc.layers.batch_norm
+        self.learning_rate = learning_rate
+        self.activation = activation
         self.bn_params = {'is_training': self.is_training}
         self.model_size = 0
         self.cost = 0

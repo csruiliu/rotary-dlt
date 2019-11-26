@@ -7,45 +7,44 @@ import sys
 import random as rd
 from multiprocessing import Process, Pipe
 from timeit import default_timer as timer
+import yaml
 
-from mlp import MLP
+#from mlp import MLP
 from img_utils import * 
 from utils import sort_list
 
-imgWidth = 28
-imgHeight = 28
-numChannels = 1
-numClasses = 10
+with open("config.yml", 'r') as ymlfile:
+    cfg = yaml.load(ymlfile)
 
-#mnist_train_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-images.idx3-ubyte'
-mnist_train_img_path = '/tank/local/ruiliu/dataset/mnist-train-images.idx3-ubyte'
-#mnist_train_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-labels.idx1-ubyte'
-mnist_train_label_path = '/tank/local/ruiliu/dataset/mnist-train-labels.idx1-ubyte'
-#mnist_t10k_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-images.idx3-ubyte'
-mnist_t10k_img_path = '/tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte'
-#mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
-mnist_t10k_label_path = '/tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte'
+hyperparams_cfg = cfg['hypermeter']
 
-batch_size_global = np.arange(10,61,5)
-opt_conf_global = ['Adam','SGD','Adagrad','Momentum']
-model_layer_global = np.arange(0,6,1)
-learning_rate_global = [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1]
-activation_global = ['sigmoid','leaky_relu','tanh','relu']
+imgWidth = hyperparams_cfg['img_width']
+imgHeight = hyperparams_cfg['img_height']
+numChannels = hyperparams_cfg['num_channel']
+numClasses = hyperparams_cfg['num_class']
+rand_seed = hyperparams_cfg['random_seed']
+
+batch_size = hyperparams_cfg['batch_size']
+opt_conf = hyperparams_cfg['optimizer']
+model_layer = hyperparams_cfg['num_model_layer']
+activation = hyperparams_cfg['activation']
+learning_rate = hyperparams_cfg['learning_rate']
+model_type = hyperparams_cfg['model_type']
+
+data_path_cfg = cfg['local_data_path']
+mnist_train_img_path = data_path_cfg['mnist_train_img_path']
+mnist_train_label_path = data_path_cfg['mnist_train_label_path']
+mnist_t10k_img_path = data_path_cfg['mnist_t10k_img_path']
+mnist_t10k_label_path = data_path_cfg['mnist_t10k_label_path']
 
 switcher={0:'batch_size_global',1:'opt_conf_global',2:'model_layer_global',3:'learning_rate_global',4:'activation_global'}
 
 # generate the configurations 
-def gen_confs(n_conf):
-    batch_size = np.arange(10,61,5)
-    opt_conf = ['Adam','SGD','Adagrad','Momentum']
-    model_layer = np.arange(0,6,1)
-    learning_rate = [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1]
-    activation = ['sigmoid','leaky_relu','tanh','relu']
-    
-    all_conf = [batch_size, opt_conf, model_layer, learning_rate, activation]
+def gen_confs(n_conf):    
+    all_conf = [model_type, batch_size, opt_conf, model_layer, learning_rate, activation]
     hp_conf = list(itertools.product(*all_conf))
     
-    np.random.seed(100)
+    np.random.seed(rand_seed)
     idx_list = np.random.choice(np.arange(0, len(hp_conf)), n_conf, replace=False)
     rand_conf_list = list(itemgetter(*idx_list)(hp_conf))
     return rand_conf_list
@@ -409,11 +408,11 @@ def knn_conf(confs, topk, sort_method):
 
 
 if __name__ == "__main__":
-    confs_num = 12
+    confs_num = 100
     confs_list = gen_confs(confs_num)
-    #print(len(confs_list))
+    print(confs_list)
     #knn_conf(confs_list,1, sort_conf_euclid)
-    knn_conf_euclid(confs_list, 3)
+    #knn_conf_euclid(confs_list, 3)
     #trial_dict = prep_trial(confs_list)
     #trial_result_dict = sort_conf_trial(trial_dict)
     #pack_trial_standalone(confs_list, trial_dict, trial_result_dict)

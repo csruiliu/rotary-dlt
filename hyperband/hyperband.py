@@ -1,12 +1,13 @@
-import numpy as np
 from multiprocessing import Process, Pipe
+import numpy as np
+import yaml
+import argparse
 from math import log, ceil, floor
 from timeit import default_timer as timer
 from hp_func import *
 from knn_engine import knn_conf_bs, knn_conf_euclid, knn_conf_trial
 
 class Hyperband:
-
     def __init__(self, resourceConf, downRate, getHyperPara, runHyperPara):
         # maximun budget for single configuration, i.e., maximum iterations per configuration in example
         self.R = resourceConf
@@ -247,32 +248,37 @@ class Hyperband:
 
 
 if __name__ == "__main__":
+    with open("config.yml", 'r') as ymlfile:
+        cfg = yaml.load(ymlfile)
+    hyperband_config = cfg['hyperband']
+    resource_conf = hyperband_config['resource_conf']
+    down_rate = hyperband_config['down_rate']
+    pack_rate_sch = hyperband_config['pack_rate'] 
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', '--schedule', action='store', type=str, default='none', help='indicate schedule mechanism: none, random, bs, knn')
+    args = parser.parse_args()
+    sch = args.schedule
     
-    #evaluate_model()
-    #run_params_pack_mnist()    
-    #evaluate_diff_batch()
-     
     start_time = timer()
-    resource_conf = 81
-    down_rate = 3
-    #hb = Hyperband(resource_conf, down_rate, get_params, run_params)
-    #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_bs)
-    #hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_random)
-    hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_knn)
-    #results = hb.run()
-    #results = hb.run_pack_bs()
-    #results = hb.run_pack_random(9)
-    results = hb.run_pack_knn(9, knn_conf_euclid)
+
+    if sch == 'none':
+        hb = Hyperband(resource_conf, down_rate, get_params, run_params)
+        results = hb.run()
+    elif sch == 'random':
+        hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_random)
+        results = hb.run_pack_random(pack_rate_sch)
+    elif sch == 'bs':
+        hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_bs)    
+        results = hb.run_pack_bs()
+    elif sch == 'knn':
+        hb = Hyperband(resource_conf, down_rate, get_params, run_params_pack_knn)
+        results = hb.run_pack_knn(pack_rate_sch, knn_conf_euclid)
+        
     end_time = timer()
+
     dur_time = end_time - start_time
     print("{} total, best:\n".format(len(results)))
     best_hp = sorted(results, key = lambda x: x['acc'])[-1]
     print(best_hp)
     print('total exp time:',dur_time)
-    '''
-    with open('knn-res.txt','w+') as fres:
-        fres.write("{} total, best:\n".format(len(results)))
-        fres.write(best_hp)
-        fres.write('\ntotal exp time:{}'.format(dur_time))
-    ''' 
-

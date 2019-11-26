@@ -4,11 +4,6 @@ import os
 from PIL import Image
 from matplotlib import pyplot as plt
 
-imgWidth = 224
-imgHeight = 224
-numChannels = 3
-numClasses = 1000
-
 # image format: [batch, height, width, channels]
 
 def convert_image_bin(imgDir, img_h, img_w):
