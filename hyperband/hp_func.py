@@ -6,38 +6,30 @@ from datetime import datetime
 import sys
 from matplotlib import pyplot as plt
 from multiprocessing import Process, Pipe
-import yaml
+import config as cfg_yml
 
 from img_utils import * 
 from dnn_model import DnnModel
 
-with open("config.yml", 'r') as ymlfile:
-    cfg = yaml.load(ymlfile)
+imgWidth = cfg_yml.imgWidth
+imgHeight = cfg_yml.imgHeight
+numChannels = cfg_yml.numChannels
+numClasses = cfg_yml.numClasses
+rand_seed = cfg_yml.rand_seed
 
-hyperparams_cfg = cfg['hypermeter']
+batch_size = cfg_yml.batch_size
+opt_conf = cfg_yml.opt_conf
+model_layer = cfg_yml.model_layer
+activation = cfg_yml.activation
+learning_rate = cfg_yml.learning_rate
+model_type = cfg_yml.model_type
 
-imgWidth = hyperparams_cfg['img_width']
-imgHeight = hyperparams_cfg['img_height']
-batch_size = hyperparams_cfg['batch_size']
-opt_conf = hyperparams_cfg['optimizer']
-model_layer = hyperparams_cfg['num_model_layer']
-activation = hyperparams_cfg['activation']
-learning_rate = hyperparams_cfg['learning_rate']
-model_type = hyperparams_cfg['model_type']
-numChannels = hyperparams_cfg['num_channel']
-numClasses = hyperparams_cfg['num_class']
-rand_seed = hyperparams_cfg['random_seed']
-
-data_path_cfg = cfg['local_data_path']
-mnist_train_img_path = data_path_cfg['mnist_train_img_path']
-mnist_train_label_path = data_path_cfg['mnist_train_label_path']
-mnist_t10k_img_path = data_path_cfg['mnist_t10k_img_path']
-mnist_t10k_label_path = data_path_cfg['mnist_t10k_label_path']
+mnist_train_img_path = cfg_yml.mnist_train_img_path
+mnist_train_label_path = cfg_yml.mnist_train_label_path
+mnist_t10k_img_path = cfg_yml.mnist_t10k_img_path
+mnist_t10k_label_path = cfg_yml.mnist_t10k_label_path
 
 def get_params(n_conf):
-    with open("config.yml", 'r') as ymlfile:
-        cfg = yaml.load(ymlfile)
-    
     all_conf = [model_type, batch_size, opt_conf, model_layer, learning_rate, activation]
     hp_conf = list(itertools.product(*all_conf))
     np.random.seed(rand_seed)
@@ -77,7 +69,7 @@ def run_params_pack_knn(confs, epochs, conn):
         model_layer = cf[3]
         learning_rate = cf[4]
         activation = cf[5]
-        
+
         desire_steps = Y_data.shape[0] // batch_size
         dm = DnnModel(model_type, str(net_instnace[cidx]), model_layer, imgWidth, imgHeight, numChannels, numClasses, batch_size, opt, learning_rate, activation)
         modelEntity = dm.getModelEntity()

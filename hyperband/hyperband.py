@@ -1,6 +1,6 @@
 from multiprocessing import Process, Pipe
 import numpy as np
-import yaml
+import config as cfg_yml
 import argparse
 from math import log, ceil, floor
 from timeit import default_timer as timer
@@ -249,12 +249,9 @@ class Hyperband:
 
 
 if __name__ == "__main__":
-    with open("config.yml", 'r') as ymlfile:
-        cfg = yaml.load(ymlfile)
-    hyperband_config = cfg['hyperband']
-    resource_conf = hyperband_config['resource_conf']
-    down_rate = hyperband_config['down_rate']
-    pack_rate_sch = hyperband_config['pack_rate'] 
+    resource_conf = cfg_yml.resource_conf
+    down_rate = cfg_yml.down_rate
+    pack_rate_sch = cfg_yml.pack_rate_sch 
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--schedule', action='store', type=str, default='none', help='indicate schedule mechanism: none, random, bs, knn')

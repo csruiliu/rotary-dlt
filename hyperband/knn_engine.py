@@ -7,34 +7,26 @@ import sys
 import random as rd
 from multiprocessing import Process, Pipe
 from timeit import default_timer as timer
-import yaml
-
+import config as cfg_yml
 from img_utils import * 
-from utils import sort_list
 
-with open("config.yml", 'r') as ymlfile:
-    cfg = yaml.load(ymlfile)
+imgWidth = cfg_yml.imgWidth
+imgHeight = cfg_yml.imgHeight
+numChannels = cfg_yml.numChannels
+numClasses = cfg_yml.numClasses
+rand_seed = cfg_yml.rand_seed
 
-hyperparams_cfg = cfg['hypermeter']
+batch_size_global = cfg_yml.batch_size
+opt_conf_global = cfg_yml.opt_conf
+model_layer_global = cfg_yml.model_layer
+activation_global = cfg_yml.activation
+learning_rate_global = cfg_yml.learning_rate
+model_type_global = cfg_yml.model_type
 
-imgWidth = hyperparams_cfg['img_width']
-imgHeight = hyperparams_cfg['img_height']
-numChannels = hyperparams_cfg['num_channel']
-numClasses = hyperparams_cfg['num_class']
-rand_seed = hyperparams_cfg['random_seed']
-
-batch_size_global = hyperparams_cfg['batch_size']
-opt_conf_global = hyperparams_cfg['optimizer']
-model_layer_global = hyperparams_cfg['num_model_layer']
-activation_global = hyperparams_cfg['activation']
-learning_rate_global = hyperparams_cfg['learning_rate']
-model_type_global = hyperparams_cfg['model_type']
-
-data_path_cfg = cfg['local_data_path']
-mnist_train_img_path = data_path_cfg['mnist_train_img_path']
-mnist_train_label_path = data_path_cfg['mnist_train_label_path']
-mnist_t10k_img_path = data_path_cfg['mnist_t10k_img_path']
-mnist_t10k_label_path = data_path_cfg['mnist_t10k_label_path']
+mnist_train_img_path = cfg_yml.mnist_train_img_path
+mnist_train_label_path = cfg_yml.mnist_train_label_path
+mnist_t10k_img_path = cfg_yml.mnist_t10k_img_path
+mnist_t10k_label_path = cfg_yml.mnist_t10k_label_path
 
 switcher={0:'model_type_global',1:'batch_size_global',2:'opt_conf_global',3:'model_layer_global',4:'learning_rate_global',5:'activation_global'}
 
@@ -47,6 +39,11 @@ def gen_confs(n_conf):
     idx_list = np.random.choice(np.arange(0, len(hp_conf)), n_conf, replace=False)
     rand_conf_list = list(itemgetter(*idx_list)(hp_conf))
     return rand_conf_list
+
+def sort_list(list1, list2): 
+    zipped_pairs = zip(list2, list1) 
+    z = [x for _, x in sorted(zipped_pairs)] 
+    return z 
 
 def pack_trial_standalone(confs, t_dict, tr_dict):
     #print("confs:",confs)
