@@ -9,7 +9,6 @@ from multiprocessing import Process, Pipe
 from timeit import default_timer as timer
 import yaml
 
-#from mlp import MLP
 from img_utils import * 
 from utils import sort_list
 
@@ -24,12 +23,12 @@ numChannels = hyperparams_cfg['num_channel']
 numClasses = hyperparams_cfg['num_class']
 rand_seed = hyperparams_cfg['random_seed']
 
-batch_size = hyperparams_cfg['batch_size']
-opt_conf = hyperparams_cfg['optimizer']
-model_layer = hyperparams_cfg['num_model_layer']
-activation = hyperparams_cfg['activation']
-learning_rate = hyperparams_cfg['learning_rate']
-model_type = hyperparams_cfg['model_type']
+batch_size_global = hyperparams_cfg['batch_size']
+opt_conf_global = hyperparams_cfg['optimizer']
+model_layer_global = hyperparams_cfg['num_model_layer']
+activation_global = hyperparams_cfg['activation']
+learning_rate_global = hyperparams_cfg['learning_rate']
+model_type_global = hyperparams_cfg['model_type']
 
 data_path_cfg = cfg['local_data_path']
 mnist_train_img_path = data_path_cfg['mnist_train_img_path']
@@ -37,7 +36,7 @@ mnist_train_label_path = data_path_cfg['mnist_train_label_path']
 mnist_t10k_img_path = data_path_cfg['mnist_t10k_img_path']
 mnist_t10k_label_path = data_path_cfg['mnist_t10k_label_path']
 
-switcher={0:'batch_size_global',1:'opt_conf_global',2:'model_layer_global',3:'learning_rate_global',4:'activation_global'}
+switcher={0:'model_type_global',1:'batch_size_global',2:'opt_conf_global',3:'model_layer_global',4:'learning_rate_global',5:'activation_global'}
 
 # generate the configurations 
 def gen_confs(n_conf):    
@@ -355,7 +354,7 @@ def knn_conf_euclid(confs, topk):
     
     trial_pack_collection = []
     
-    while len(confs_list) > 1:
+    while len(confs_list) > 0:
         trial_packed_list = []
         spoint = rd.choice(confs_list)
         trial_packed_list.append(spoint)

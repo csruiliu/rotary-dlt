@@ -133,11 +133,12 @@ class Hyperband:
                 params_dict = dict()
                 
                 for t in T:
-                    if t[0] in params_dict:
-                        params_dict[t[0]].append(t)
+                    if t[1] in params_dict:
+                        params_dict[t[1]].append(t)
                     else:
-                        params_dict[t[0]] = [] 
-                        params_dict[t[0]].append(t)
+                        params_dict[t[1]] = [] 
+                        params_dict[t[1]].append(t)
+                print(params_dict)
 
                 for bs, conf in params_dict.items():
                     parent_conn, child_conn = Pipe()

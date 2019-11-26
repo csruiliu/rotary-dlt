@@ -15,8 +15,8 @@ remote_data_path:
   imagenet_t1k_label_path: /tank/local/ruiliu/dataset/imagenet1k-label.txt
     
 hyperband:
-  resource_conf: 4
-  down_rate: 2
+  resource_conf: 6
+  down_rate: 3
   pack_rate: 9
 
 hypermeter:

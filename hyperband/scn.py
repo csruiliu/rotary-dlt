@@ -2,7 +2,7 @@ import tensorflow as tf
 
 # simple convolutional neural network
 class scn(object):
-    def __init__(self, net_name, model_layer, input_h, input_w, channel_num, batch_size, num_classes, opt, learning_rate=0.0001, activation='relu'):
+    def __init__(self, net_name, model_layer, input_h, input_w, channel_num, num_classes, batch_size, opt, learning_rate=0.0001, activation='relu'):
         self.net_name = net_name
         self.model_layer_num = model_layer
         self.img_h = input_h

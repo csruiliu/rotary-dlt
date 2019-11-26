@@ -1,13 +1,12 @@
 import tensorflow as tf
 import tensorflow.contrib as tc
 
-channel_num = 3
 weight_decay = 1e-4
 exp = 6  
 
 #MobileNetV2
 class mobilenet(object):
-    def __init__(self, net_name, model_layer, input_h, input_w, batch_size, num_classes, opt, learning_rate=0.0001, activation='relu', is_training=True):
+    def __init__(self, net_name, model_layer, input_h, input_w, channel_num, num_classes, batch_size, opt, learning_rate=0.0001, activation='relu', is_training=True):
         self.net_name = net_name
         self.model_layer_num = model_layer
         self.img_h = input_h
@@ -27,7 +26,7 @@ class mobilenet(object):
     def build(self, input):
         instance_name = self.net_name + '_instance'
         with tf.variable_scope(instance_name):
-            #input_padding = input[0:self.batch_size,:,:,:]
+            input_padding = input[0:self.batch_size,:,:,:]
             net = self._conv2d_block(input, 32, 3, 2, self.is_training, 'conv1_1')
             net = self._res_block(net, 1, 16, 1, self.is_training, block_name='res2_1')
             net = self._res_block(net, exp, 24, 2, self.is_training, block_name='res3_1')  # size/4
@@ -134,11 +133,9 @@ class mobilenet(object):
             return net
 
     def train(self, logits, labels):
+        labels_paddings = labels[0:self.batch_size,:]
         with tf.name_scope('loss_'+self.net_name):
-            #cross_entropy = tf.losses.hinge_loss(labels=labels, logits=logits)
-            #cross_entropy = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
-            #labels_padding = labels[0:self.batch_size:,]
-            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
+            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_paddings, logits=logits)
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
         self.cost = cross_entropy_cost
 
@@ -146,13 +143,13 @@ class mobilenet(object):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS,scope=self.net_name+'_instance')
             with tf.control_dependencies(update_ops):
                 if self.optimzier == 'Adam':
-                    train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy_cost)
+                    train_step = tf.train.AdamOptimizer(self.learning_rate).minimize(cross_entropy_cost)
                 elif self.optimzier == 'SGD':
-                    train_step = tf.train.GradientDescentOptimizer(1e-4).minimize(cross_entropy_cost)
+                    train_step = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(cross_entropy_cost)
                 elif self.optimzier == 'Adagrad':
-                    train_step = tf.train.AdagradOptimizer(1e-4).minimize(cross_entropy_cost)
+                    train_step = tf.train.AdagradOptimizer(self.learning_rate).minimize(cross_entropy_cost)
                 elif self.optimzier == 'Momentum':
-                    train_step = tf.train.MomentumOptimizer(1e-4,0.9).minimize(cross_entropy_cost)
+                    train_step = tf.train.MomentumOptimizer(self.learning_rate,0.9).minimize(cross_entropy_cost)
         return train_step
 
     def evaluate(self, logits, labels):
