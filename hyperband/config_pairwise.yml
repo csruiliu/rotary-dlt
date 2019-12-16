@@ -1,0 +1,45 @@
+local_data_path:
+  mnist_train_img_path: /home/ruiliu/Development/mtml-tf/dataset/mnist-train-images.idx3-ubyte
+  mnist_train_label_path: /home/ruiliu/Development/mtml-tf/dataset/mnist-train-labels.idx1-ubyte
+  mnist_t10k_img_path: /home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-images.idx3-ubyte
+  mnist_t10k_label_path: /home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte
+  imagenet_t1k_img_path: /home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin
+  imagenet_t1k_label_path: /home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt
+  cifar_10_path: /home/ruiliu/Development/mtml-tf/dataset/cifar-10
+
+remote_data_path:
+  mnist_train_img_path: /tank/local/ruiliu/dataset/mnist-train-images.idx3-ubyte
+  mnist_train_label_path: /tank/local/ruiliu/dataset/mnist-train-labels.idx1-ubyte
+  mnist_t10k_img_path: /tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte
+  mnist_t10k_label_path: /tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte
+  imagenet_t1k_img_path: /tank/local/ruiliu/dataset/imagenet1k.bin
+  imagenet_t1k_label_path: /tank/local/ruiliu/dataset/imagenet1k-label.txt
+
+hyperband:
+  resource_conf: 6
+  down_rate: 3
+  pack_rate: 9
+
+hypermeter:
+  img_width: 32
+  img_height: 32
+  num_channel: 3
+  num_class: 10
+  random_seed: 10000
+  model_type:
+    - mlp
+    - mobilenet
+  activation:
+    - sigmoid
+    - relu
+  optimizer:
+    - Adam
+    - SGD
+  num_model_layer:
+    - 1
+    - 3
+  batch_size:
+    - 32
+    - 50
+  learning_rate:
+    - 0.0001

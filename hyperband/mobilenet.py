@@ -20,8 +20,13 @@ class mobilenet(object):
         self.learning_rate = learning_rate
         self.activation = activation
         self.bn_params = {'is_training': self.is_training}
-        self.model_size = 0
-        self.cost = 0
+        self.cur_step = 1
+        self.cur_epoch = 1
+        self.desire_steps = -1
+        self.desire_epochs = -1
+        self.train_op = None
+        self.eval_op = None
+        self.model_logit = None
 
     def build(self, input):
         instance_name = self.net_name + '_instance'
@@ -53,9 +58,9 @@ class mobilenet(object):
             net = self._pwise_block(net, 1280, self.is_training, block_name='conv9_1')
             net = self._global_avg(net)
 
-            logits = tc.layers.flatten(self._conv_1x1(net, self.num_classes, name='logits'))
+            self.model_logit = tc.layers.flatten(self._conv_1x1(net, self.num_classes, name='logits'))
 
-            return logits 
+            return self.model_logit
 
     def _res_block(self, input, expansion_ratio, output_dim, stride, is_train, block_name, bias=False, shortcut=True):
         with tf.variable_scope(block_name):
@@ -143,28 +148,72 @@ class mobilenet(object):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS,scope=self.net_name+'_instance')
             with tf.control_dependencies(update_ops):
                 if self.optimzier == 'Adam':
-                    train_step = tf.train.AdamOptimizer(self.learning_rate).minimize(cross_entropy_cost)
+                    self.train_op = tf.train.AdamOptimizer(self.learning_rate).minimize(cross_entropy_cost)
                 elif self.optimzier == 'SGD':
-                    train_step = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(cross_entropy_cost)
+                    self.train_op = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(cross_entropy_cost)
                 elif self.optimzier == 'Adagrad':
-                    train_step = tf.train.AdagradOptimizer(self.learning_rate).minimize(cross_entropy_cost)
+                    self.train_op = tf.train.AdagradOptimizer(self.learning_rate).minimize(cross_entropy_cost)
                 elif self.optimzier == 'Momentum':
-                    train_step = tf.train.MomentumOptimizer(self.learning_rate,0.9).minimize(cross_entropy_cost)
-        return train_step
+                    self.train_op = tf.train.MomentumOptimizer(self.learning_rate,0.9).minimize(cross_entropy_cost)
+        return self.train_op
 
     def evaluate(self, logits, labels):
         with tf.name_scope('accuracy_'+self.net_name):
             pred = tf.nn.softmax(logits)
             correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(labels, 1))
-            accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
-        return accuracy
+            self.eval_op = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+        return self.eval_op
 
+    def isCompleteTrain(self):
+        if (self.cur_epoch == self.desire_epochs) and (self.cur_step == self.desire_steps):
+            return True
+        else:
+            return False
 
-    def getCost(self):
-        return self.cost
+    def getModelInstance(self):
+        return self.net_name
 
-    def getModelInstanceName(self):
-        return (self.net_name + " with layer: " + str(self.model_layer_num))
+    def getModelLogit(self):
+        return self.model_logit
 
-    def getModelMemSize(self):
-        return self.model_size * 4 / (1024**2)
+    def getCurStep(self):
+        return self.cur_step
+
+    def getCurEpoch(self):
+        return self.cur_epoch
+
+    def getDesireSteps(self):
+        return self.desire_steps
+
+    def getDesireEpochs(self):
+        return self.desire_epochs
+
+    def getTrainOp(self):
+        return self.train_op
+
+    def getEvalOp(self):
+        return self.eval_op
+
+    def setCurStep(self, cur_step=1):
+        self.cur_step += cur_step
+        if self.cur_step > self.desire_steps:
+            self.cur_step = 0
+            self.cur_epoch += 1 
+
+    def setCurEpoch(self, cur_epoch=1):
+        self.cur_epoch += cur_epoch    
+
+    def setDesireSteps(self, desire_steps):
+        self.desire_steps = desire_steps
+
+    def setDesireEpochs(self, desire_epochs):
+        self.desire_epochs = desire_epochs
+
+    def setBatchSize(self, batch_size):
+        return self.batch_size.assign(batch_size)
+
+    def resetCurStep(self):
+        self.cur_step = 0
+
+    def resetCurEpoch(self):
+        self.cur_epoch = 0

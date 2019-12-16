@@ -1,6 +1,6 @@
 import yaml
 
-with open("config.yml", 'r') as ymlfile:
+with open("config_pairwise.yml", 'r') as ymlfile:
     cfg = yaml.load(ymlfile)
 
 hyperband_config = cfg['hyperband']
@@ -30,5 +30,9 @@ mnist_train_img_path = data_path_cfg['mnist_train_img_path']
 mnist_train_label_path = data_path_cfg['mnist_train_label_path']
 mnist_t10k_img_path = data_path_cfg['mnist_t10k_img_path']
 mnist_t10k_label_path = data_path_cfg['mnist_t10k_label_path']
+
+cifar_10_path = data_path_cfg['cifar_10_path']
+
+
            
     
