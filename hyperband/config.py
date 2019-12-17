@@ -1,6 +1,6 @@
 import yaml
 
-with open("config_pairwise.yml", 'r') as ymlfile:
+with open("config_cifar10.yml", 'r') as ymlfile:
     cfg = yaml.load(ymlfile)
 
 hyperband_config = cfg['hyperband']

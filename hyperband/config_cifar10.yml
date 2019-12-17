@@ -14,6 +14,7 @@ remote_data_path:
   mnist_t10k_label_path: /tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte
   imagenet_t1k_img_path: /tank/local/ruiliu/dataset/imagenet1k.bin
   imagenet_t1k_label_path: /tank/local/ruiliu/dataset/imagenet1k-label.txt
+  cifar_10_path: /tank/local/ruiliu/dataset/cifar-10
 
 hyperband:
   resource_conf: 6
