@@ -23,8 +23,8 @@ numChannels = hyperparams_cfg['num_channel']
 numClasses = hyperparams_cfg['num_class']
 rand_seed = hyperparams_cfg['random_seed']
 
-data_path_cfg = cfg['local_data_path']
-#data_path_cfg = cfg['remote_data_path']
+#data_path_cfg = cfg['local_data_path']
+data_path_cfg = cfg['remote_data_path']
 
 mnist_train_img_path = data_path_cfg['mnist_train_img_path']
 mnist_train_label_path = data_path_cfg['mnist_train_label_path']
