@@ -32,7 +32,7 @@ class mobilenet(object):
         instance_name = self.net_name + '_instance'
         with tf.variable_scope(instance_name):
             input_padding = input[0:self.batch_size,:,:,:]
-            net = self._conv2d_block(input, 32, 3, 2, self.is_training, 'conv1_1')
+            net = self._conv2d_block(input_padding, 32, 3, 2, self.is_training, 'conv1_1')
             net = self._res_block(net, 1, 16, 1, self.is_training, block_name='res2_1')
             net = self._res_block(net, exp, 24, 2, self.is_training, block_name='res3_1')  # size/4
             net = self._res_block(net, exp, 24, 1, self.is_training, block_name='res3_2')
