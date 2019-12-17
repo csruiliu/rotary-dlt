@@ -6,6 +6,7 @@ import numpy as np
 import sys
 from multiprocessing import Process
 from timeit import default_timer as timer
+import argparse
 
 from img_utils import load_cifar
 from dnn_model import DnnModel
@@ -22,7 +23,6 @@ opt_conf_global = cfg_yml.opt_conf
 model_layer_global = cfg_yml.model_layer
 activation_global = cfg_yml.activation
 model_type_global = cfg_yml.model_type
-
 cifar_10_path = cfg_yml.cifar_10_path
 
 X_data, Y_data = load_cifar(cifar_10_path)
@@ -32,7 +32,7 @@ def gen_confs():
     hp_conf = list(itertools.product(*all_conf))
     return hp_conf
 
-def execTrain(conf_model):
+def single_eval(conf_model):
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
 
@@ -78,16 +78,8 @@ def execTrain(conf_model):
                 step_count += 1
             
     avg_step_time = step_time / step_count * 1000
-    print('avg step time:', avg_step_time)
+    print(avg_step_time)
 
-def seq_eval(conf_a, conf_b):
-    p = Process(target=execTrain, args=(conf_a,))
-    p.start()
-    p.join() 
-
-    p = Process(target=execTrain, args=(conf_b,))
-    p.start()
-    p.join() 
 
 def pack_eval(conf_a, conf_b):
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
@@ -155,18 +147,24 @@ def pack_eval(conf_a, conf_b):
     print(avg_step_time)
 
 if __name__ == "__main__":
-    
     conf_list = gen_confs()
-    print(conf_list)
-    conf_a = conf_list[0]
-    conf_b = conf_list[0]
-    
-    #seq_eval(conf_a, conf_b)
-    #avg_time = pack_eval(conf_a, conf_b)
-    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--packmode", action="store_true", default=False, help="use pack or single")
+    parser.add_argument('--pack', help='indicate pack model id')
+    parser.add_argument('--single', help='indicate pack model id')
+    args = parser.parse_args()
 
-    seq_eval(conf_a, conf_b)
+    packmode = args.packmode
+    if packmode == True:
+        pack_list = args.pack
+        conf_a_idx = pack_list.split(',')[0]
+        conf_b_idx = pack_list.split(',')[1]
+        conf_a = conf_list[int(conf_a_idx)]
+        conf_b = conf_list[int(conf_b_idx)]
+        pack_eval(conf_a, conf_b)
 
-
-    #cifar_data, cifar_label = load_cifar('/home/ruiliu/Development/mtml-tf/dataset/cifar-10')
+    else:
+        single_model_idx = args.single
+        conf_model = conf_list[int(single_model_idx)]
+        single_eval(conf_model)
     
