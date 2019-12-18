@@ -298,7 +298,8 @@ def execTrainPreproc(unit, num_epoch, X_train_path, Y_train):
 
         print(step_time)
         print(step_count)
-        print("average step time:", step_time / step_count * 1000)      
+        print("average step time:", step_time / step_count * 1000)
+        print('\n')      
 
 def execTrainAllStep(unit, num_epoch, X_train_path, Y_train):
     config = tf.ConfigProto()
