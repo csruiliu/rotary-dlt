@@ -1,49 +1,42 @@
 #!/bin/bash
 echo 'start pairwising'
 START=0
-END=31
+END=1
+EP=1
 
-for i in $(seq $START $END); 
+AVG_LIST=()
+for i in $(seq $START $END);
 do 
-    touch 'exp_'$i.txt 
-    python3 clean_gpu_cache.py
-    rm -rf __pycache__
-    SNG_A1=`python3 pairwise_engine.py --single $i`
-
-    python3 clean_gpu_cache.py
-    rm -rf __pycache__
-    SNG_A2=`python3 pairwise_engine.py --single $i`
-
-    python3 clean_gpu_cache.py
-    rm -rf __pycache__
-    SNG_A3=`python3 pairwise_engine.py --single $i`  
-    
-    for j in $(seq $i $END);
-    do
+    TOTAL=0
+    COUNT=0
+    for j in $(seq 1 $EP);
+    do 
         python3 clean_gpu_cache.py
         rm -rf __pycache__
-        SNG_B1=`python3 pairwise_engine.py --single $j`
-
-        python3 clean_gpu_cache.py
-        rm -rf __pycache__
-        SNG_B2=`python3 pairwise_engine.py --single $j`
-
-        python3 clean_gpu_cache.py
-        rm -rf __pycache__
-        SNG_B3=`python3 pairwise_engine.py --single $j`
-
-        python3 clean_gpu_cache.py
-        rm -rf __pycache__
-        PACK_AB1=`python3 pairwise_engine.py --packmode --pack $i,$j`
-
-        python3 clean_gpu_cache.py
-        rm -rf __pycache__
-        PACK_AB2=`python3 pairwise_engine.py --packmode --pack $i,$j`
-
-        python3 clean_gpu_cache.py
-        rm -rf __pycache__
-        PACK_AB3=`python3 pairwise_engine.py --packmode --pack $i,$j` 
-        echo "scale=4; (($SNG_A1+$SNG_A2+$SNG_A3)/3.0 + ($SNG_B1+$SNG_B2+$SNG_B3)/3.0 - ($PACK_AB1+$PACK_AB2+$PACK_AB3)/3.0)/(($SNG_A1+$SNG_A2+$SNG_A3)/3.0 + ($SNG_B1+$SNG_B2+$SNG_B3)/3.0)" | bc >> 'exp_'$i.txt
-    done
+        SNG=`python3 pairwise_engine.py --single $i`         
+        TOTAL=$(echo $TOTAL+$SNG | bc )
+        ((COUNT++))
+    done 
+    AVG=$(echo "scale=4; $TOTAL / $COUNT" | bc)
+    AVG_LIST+=($AVG)    
 done
 
+for i in $(seq $START $END);
+do
+    for j in $(seq i $END);
+    do  
+        TOTAL_PACK=0
+        COUNT_PACK=0
+        for k in $(seq 1 $EP);
+            python3 clean_gpu_cache.py
+            rm -rf __pycache__
+            PACK_AB=`python3 pairwise_engine.py --packmode --pack $i,$j`
+            TOTAL_PACK=$(echo $TOTAL_PACK+$PACK_AB | bc )
+            ((COUNT_PACK++))
+        do
+        done
+        AVG_PACK=$(echo "scale=4; $TOTAL_PACK / $COUNT_PACK" | bc)
+        touch 'exp_'$i.txt
+        echo "scale=4; (${AVG_LIST[i]} + ${AVG_LIST[j]} - $AVG_PACK)/(${AVG_LIST[i]}+${AVG_LIST[j]})" | bc >> 'exp_'$i.txt
+    done
+done
