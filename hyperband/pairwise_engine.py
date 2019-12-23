@@ -167,4 +167,3 @@ if __name__ == "__main__":
         single_model_idx = args.single
         conf_model = conf_list[int(single_model_idx)]
         single_eval(conf_model)
-    

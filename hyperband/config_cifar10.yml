@@ -30,17 +30,17 @@ hypermeter:
   model_type:
     - mlp
     - mobilenet
+    - resnet
+    - densenet
   activation:
-    - sigmoid
     - relu
   optimizer:
     - Adam
     - SGD
   num_model_layer:
     - 1
-    - 3
   batch_size:
     - 32
-    - 50
+    - 128
   learning_rate:
     - 0.0001
