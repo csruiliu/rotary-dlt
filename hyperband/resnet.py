@@ -1,7 +1,5 @@
 import tensorflow as tf
 
-channel_num = 3
-
 class resnet(object):
     def __init__(self, net_name, model_layer, input_h, input_w, channel_num, num_classes, batch_size, opt, learning_rate=0.0001, activation='relu'):
         self.net_name = net_name
@@ -133,7 +131,8 @@ class resnet(object):
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_padding, logits=logits)
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
         self.cost = cross_entropy_cost
-        with tf.name_scope('optimizer_'+self.net_name):
+
+        with tf.name_scope(self.optimzier+'_'+self.net_name):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope=self.net_name+'_instance')
             with tf.control_dependencies(update_ops):
                 if self.optimzier == 'Adam':
