@@ -70,6 +70,31 @@ def load_cifar(path):
 
     return cifar_train, cifar_label_array
 
+########################################################
+# read imagenet images
+########################################################
+def load_imagenet_images(image_dir, batch_list, img_h, img_w):
+    img_list = []
+    for img in batch_list:
+        #print(image_dir+"/"+img)
+        im = cv2.imread(image_dir+"/"+img, cv2.IMREAD_COLOR)
+        res = cv2.resize(im, dsize=(img_w, img_h))
+        res_exp = np.expand_dims(res, axis=0)
+        img_list.append(res_exp)
+    img_data = np.concatenate(img_list, axis=0)
+    return img_data
+
+########################################################
+# read imagenet label
+########################################################
+def load_imagenet_labels_onehot(path, num_classes):
+    lines = open(path).readlines()
+    labels_array = np.zeros((len(lines), num_classes))
+    for idx, val in enumerate(lines):
+        hot = int(val.rstrip('\n'))
+        labels_array[idx, hot-1] = 1
+    return labels_array
+
 
 # image format: [batch, height, width, channels]
 def convert_image_bin(imgDir, img_h, img_w):
@@ -143,7 +168,6 @@ if __name__ == "__main__":
     #mnist_t10k_img_path = '/tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte'
     mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
     #mnist_t10k_label_path = '/tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte'
-
     
     #images = load_mnist_image(mnist_t10k_img_path)
     #rd.shuffle(images)

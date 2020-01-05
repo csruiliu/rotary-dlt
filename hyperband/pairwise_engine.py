@@ -25,7 +25,12 @@ activation_global = cfg_yml.activation
 model_type_global = cfg_yml.model_type
 cifar_10_path = cfg_yml.cifar_10_path
 
-X_data, Y_data = load_cifar(cifar_10_path)
+imagenet_t1k_img_path = cfg_yml.imagenet_t1k_img_path
+imagenet_t1k_label_path = cfg_yml.imagenet_t1k_label_path
+
+imagenet_image_list = sorted(os.listdir(imagenet_t1k_img_path))
+Y_data = load_imagenet_labels_onehot(imagenet_t1k_label_path, numClasses)
+
 
 def gen_confs():
     all_conf = [model_type_global, batch_size_global, opt_conf_global, model_layer_global, activation_global]
@@ -67,7 +72,9 @@ def single_eval(conf_model):
             start_time = timer() 
             batch_offset = i * batch_size
             batch_end = (i+1) * batch_size
-            X_mini_batch_feed = X_data[batch_offset:batch_end,:,:,:]
+            batch_list = imagenet_image_list[batch_offset:batch_end]
+            #X_mini_batch_feed = X_data[batch_offset:batch_end,:,:,:]
+            X_mini_batch_feed = load_imagenet_images(imagenet_t1k_img_path, batch_list, imgHeight, imgWidth)
             Y_mini_batch_feed = Y_data[batch_offset:batch_end,:]
             sess.run(trainOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
             end_time = timer()
@@ -134,7 +141,9 @@ def pack_eval(conf_a, conf_b):
             start_time = timer()
             batch_offset = i * maxBatchSize
             batch_end = (i+1) * maxBatchSize
-            X_mini_batch_feed = X_data[batch_offset:batch_end,:,:,:]
+            batch_list = imagenet_image_list[batch_offset:batch_end]
+            #X_mini_batch_feed = X_data[batch_offset:batch_end,:,:,:]
+            X_mini_batch_feed = load_imagenet_images(imagenet_t1k_img_path, batch_list, imgHeight, imgWidth)
             Y_mini_batch_feed = Y_data[batch_offset:batch_end,:]
             sess.run([trainOps_a, trainOps_b], feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
             end_time = timer()

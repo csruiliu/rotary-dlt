@@ -26,13 +26,13 @@ rand_seed = hyperparams_cfg['random_seed']
 #data_path_cfg = cfg['local_data_path']
 data_path_cfg = cfg['remote_data_path']
 
-mnist_train_img_path = data_path_cfg['mnist_train_img_path']
-mnist_train_label_path = data_path_cfg['mnist_train_label_path']
-mnist_t10k_img_path = data_path_cfg['mnist_t10k_img_path']
-mnist_t10k_label_path = data_path_cfg['mnist_t10k_label_path']
-
-cifar_10_path = data_path_cfg['cifar_10_path']
-
+#mnist_train_img_path = data_path_cfg['mnist_train_img_path']
+#mnist_train_label_path = data_path_cfg['mnist_train_label_path']
+#mnist_t10k_img_path = data_path_cfg['mnist_t10k_img_path']
+#mnist_t10k_label_path = data_path_cfg['mnist_t10k_label_path']
+#cifar_10_path = data_path_cfg['cifar_10_path']
+imagenet_t1k_img_path = data_path_cfg['imagenet_t1k_img_path']
+imagenet_t1k_label_path = data_path_cfg['imagenet_t1k_label_path']
 
            
     
