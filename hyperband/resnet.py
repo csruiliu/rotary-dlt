@@ -126,7 +126,7 @@ class resnet(object):
         return self.model_logit
     
     def train(self, logits, labels):
-        labels_padding = labels[0:self.batch_size:,]
+        labels_padding = labels[0:self.batch_size,:]
         with tf.name_scope('loss_'+self.net_name):
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_padding, logits=logits)
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
