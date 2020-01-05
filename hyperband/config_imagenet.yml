@@ -1,0 +1,31 @@
+local_data_path:
+  imagenet_t1k_img_path: /home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin
+  imagenet_t1k_label_path: /home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt
+
+remote_data_path:
+  imagenet_t1k_img_path: /tank/local/ruiliu/dataset/imagenet1k.bin
+  imagenet_t1k_label_path: /tank/local/ruiliu/dataset/imagenet1k-label.txt
+
+hyperband:
+  resource_conf: 6
+  down_rate: 3
+  pack_rate: 9
+
+hypermeter:
+  img_width: 224
+  img_height: 224
+  num_channel: 3
+  num_class: 1000
+  random_seed: 10000
+  model_type:
+    - resnet
+  activation:
+    - relu
+  optimizer:
+    - Adam
+  num_model_layer:
+    - 1
+  batch_size:
+    - 32
+  learning_rate:
+    - 0.0001
