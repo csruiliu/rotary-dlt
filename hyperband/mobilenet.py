@@ -142,7 +142,6 @@ class mobilenet(object):
         with tf.name_scope('loss_'+self.net_name):
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_paddings, logits=logits)
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
-        self.cost = cross_entropy_cost
 
         with tf.name_scope(self.optimzier+'_'+self.net_name):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS,scope=self.net_name+'_instance')
