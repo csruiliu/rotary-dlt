@@ -1,7 +1,7 @@
 #!/bin/bash
 echo 'start pairwising'
 START=0
-END=15
+END=11
 EP=10
 
 AVG_LIST=()

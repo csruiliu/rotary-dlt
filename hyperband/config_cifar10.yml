@@ -16,19 +16,19 @@ hypermeter:
   num_class: 10
   random_seed: 10000
   model_type:
-    - mlp
-    - mobilenet
     - resnet
-    - densenet
   activation:
     - relu
   optimizer:
     - Adam
     - SGD
+    - Adagrad
+    - Momentum
   num_model_layer:
     - 1
   batch_size:
     - 32
+    - 64
     - 128
   learning_rate:
     - 0.0001

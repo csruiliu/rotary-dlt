@@ -3,6 +3,7 @@ import pickle
 import os
 from PIL import Image
 from matplotlib import pyplot as plt
+import cv2
 
 #####################################
 # read mnist training data
