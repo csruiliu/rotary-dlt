@@ -1,8 +1,8 @@
 #!/bin/bash
 echo 'start pairwising'
 START=0
-END=11
-EP=10
+END=47
+EP=6
 
 AVG_LIST=()
 for i in $(seq $START $END);

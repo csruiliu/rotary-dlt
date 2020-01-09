@@ -16,7 +16,10 @@ hypermeter:
   num_class: 10
   random_seed: 10000
   model_type:
+    - mlp
+    - mobilenet
     - resnet
+    - densenet
   activation:
     - relu
   optimizer:

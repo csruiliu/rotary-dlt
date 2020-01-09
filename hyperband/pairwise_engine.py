@@ -158,6 +158,8 @@ def pack_eval(conf_a, conf_b):
 
 if __name__ == "__main__":
     conf_list = gen_confs()
+    #print(conf_list)
+    #print(len(conf_list))
     parser = argparse.ArgumentParser()
     parser.add_argument("--packmode", action="store_true", default=False, help="use pack or single")
     parser.add_argument('--pack', help='indicate pack model id')
