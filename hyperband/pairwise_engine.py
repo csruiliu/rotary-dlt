@@ -31,7 +31,7 @@ cifar_10_path = cfg_yml.cifar_10_path
 
 #imagenet_image_list = sorted(os.listdir(imagenet_t1k_img_path))
 #Y_data = load_imagenet_labels_onehot(imagenet_t1k_label_path, numClasses)
-X_data, Y_data = load_cifar(cifar_10_path)
+X_data, Y_data = load_cifar_train(cifar_10_path)
 
 def gen_confs():
     all_conf = [model_type_global, batch_size_global, opt_conf_global, model_layer_global, activation_global]

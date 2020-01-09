@@ -283,10 +283,11 @@ def run_params(hyper_params, epochs, conn):
     seed = np.random.randint(rand_seed)
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
-    X_data = load_mnist_image(mnist_train_img_path, seed)
-    Y_data = load_mnist_label_onehot(mnist_train_label_path, seed)
-    X_data_eval = load_mnist_image(mnist_t10k_img_path, seed)
-    Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path, seed)
+    
+    #X_data = load_mnist_image(mnist_train_img_path, seed)
+    #Y_data = load_mnist_label_onehot(mnist_train_label_path, seed)
+    #X_data_eval = load_mnist_image(mnist_t10k_img_path, seed)
+    #Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path, seed)
 
     dt = datetime.now()
     np.random.seed(dt.microsecond)

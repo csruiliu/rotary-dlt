@@ -41,35 +41,51 @@ def load_mnist_label_onehot(path, rd_seed):
     return labels_array
 
 ########################################################
-# read cifar-10 data, batch 1-5 and test data
+# read cifar-10 data, batch 1-5 training data
 ########################################################
-def load_cifar(path):
-    cifar_data = []
-    cifar_label = []
+def load_cifar_train(path):
+    cifar_data_train = []
+    cifar_label_train = []
+    cifar_label_train_onehot = np.zeros((50000, 10))
+    
     for i in range(1,6):
         with open(path+'/data_batch_'+str(i), 'rb') as fo:
-            batch = pickle.load(fo, encoding='bytes')
-            train_data = batch[b'data']
-            label_data = batch[b'labels']
-        if cifar_data == []:
-            cifar_data = train_data
-        else:
-            cifar_data = np.concatenate((cifar_data, train_data))
+            data_batch = pickle.load(fo, encoding='bytes')
+            train_data = data_batch[b'data']
+            label_data = data_batch[b'labels']
 
-        if cifar_label == []:
-            cifar_label = label_data
+        if cifar_data_train == []:
+            cifar_data_train = train_data
         else:
-            cifar_label = np.concatenate((cifar_label, label_data))
-    
-    cifar_train = cifar_data.reshape(50000, 3, 32, 32).transpose(0,2,3,1).astype('uint8')
-    cifar_label = cifar_label.reshape(50000, 1)
-    
-    cifar_label_array = np.zeros((50000, 10))
+            cifar_data_train = np.concatenate((cifar_data_train, train_data))
+        
+        cifar_label_train = cifar_label_train + label_data
+
+    cifar_train = cifar_data_train.reshape(50000, 3, 32, 32).transpose(0,2,3,1).astype('uint8')
     
     for cl in range(50000):
-        cifar_label_array[cl, cifar_label[cl,0]-1] = 1 
+        cifar_label_train_onehot[cl, cifar_label_train[cl]] = 1 
 
-    return cifar_train, cifar_label_array
+    return cifar_train, cifar_label_train_onehot
+
+########################################################
+# read cifar-10 data, testing data
+########################################################
+def load_cifar_test(path):
+    cifar_data_test = []
+    cifar_label_test = []
+    with open(path+'/test_batch', 'rb') as fo:
+        test_batch = pickle.load(fo, encoding='bytes')
+        test_data = test_batch[b'data']
+        label_data = test_batch[b'labels']   
+    
+    cifar_data_test = test_data.reshape(10000, 3, 32, 32).transpose(0,2,3,1).astype('uint8')
+    cifar_label_test_onehot = np.zeros((10000, 10))
+
+    for cl in range(10000):
+        cifar_label_test_onehot[cl, label_data[cl]] = 1 
+
+    return cifar_data_test, cifar_label_test_onehot
 
 ########################################################
 # read imagenet images
@@ -153,6 +169,9 @@ def load_labels_onehot(path, num_classes):
 
 
 if __name__ == "__main__":
+    cifar10_path = '/home/ruiliu/Development/mtml-tf/dataset/cifar-10'
+    s,t = load_cifar_train(cifar10_path)
+    #s, t = load_cifar_test(cifar10_path)
 
     #imgPath = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
     #imgPath = '/tank/local/ruiliu/dataset/imagenet10k'
@@ -161,13 +180,13 @@ if __name__ == "__main__":
     #labelPath = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k-label.txt'
     #labelPath = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
 
-    mnist_train_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-images.idx3-ubyte'
+    #mnist_train_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-images.idx3-ubyte'
     #mnist_train_label_path = '/tank/local/ruiliu/dataset/mnist-train-images.idx3-ubyte'
-    mnist_train_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-labels.idx1-ubyte'
+    #mnist_train_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-labels.idx1-ubyte'
     #mnist_train_label_path = '/tank/local/ruiliu/dataset/mnist-train-labels.idx1-ubyte'
-    mnist_t10k_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-images.idx3-ubyte'
+    #mnist_t10k_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-images.idx3-ubyte'
     #mnist_t10k_img_path = '/tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte'
-    mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
+    #mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
     #mnist_t10k_label_path = '/tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte'
     
     #images = load_mnist_image(mnist_t10k_img_path)
@@ -185,4 +204,4 @@ if __name__ == "__main__":
     #plt.imshow(images[103,:,:,0], cmap='gray')
     #plt.show()
 
-    print(np.random.randint(10000))
+    #print(np.random.randint(10000))
