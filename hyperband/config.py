@@ -3,6 +3,9 @@ import yaml
 with open("config_cifar10.yml", 'r') as ymlfile:
     cfg = yaml.load(ymlfile)
 
+#with open("config_cifar10.yml", 'r') as ymlfile:
+#    cfg = yaml.load(ymlfile)
+
 hyperband_config = cfg['hyperband']
 
 resource_conf = hyperband_config['resource_conf']

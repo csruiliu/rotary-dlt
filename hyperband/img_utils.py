@@ -43,7 +43,7 @@ def load_mnist_label_onehot(path, rd_seed):
 ########################################################
 # read cifar-10 data, batch 1-5 training data
 ########################################################
-def load_cifar_train(path):
+def load_cifar_train(path, rd_seed):
     cifar_data_train = []
     cifar_label_train = []
     cifar_label_train_onehot = np.zeros((50000, 10))
@@ -66,14 +66,16 @@ def load_cifar_train(path):
     for cl in range(50000):
         cifar_label_train_onehot[cl, cifar_label_train[cl]] = 1 
 
+    np.random.seed(rd_seed)
+    np.random.shuffle(cifar_train)
+    np.random.shuffle(cifar_label_train_onehot)
+
     return cifar_train, cifar_label_train_onehot
 
 ########################################################
 # read cifar-10 data, testing data
 ########################################################
-def load_cifar_test(path):
-    cifar_data_test = []
-    cifar_label_test = []
+def load_cifar_test(path, rd_seed):
     with open(path+'/test_batch', 'rb') as fo:
         test_batch = pickle.load(fo, encoding='bytes')
         test_data = test_batch[b'data']
@@ -84,6 +86,10 @@ def load_cifar_test(path):
 
     for cl in range(10000):
         cifar_label_test_onehot[cl, label_data[cl]] = 1 
+
+    np.random.seed(rd_seed)
+    np.random.shuffle(cifar_data_test)
+    np.random.shuffle(cifar_label_test_onehot)
 
     return cifar_data_test, cifar_label_test_onehot
 

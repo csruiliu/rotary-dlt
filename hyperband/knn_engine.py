@@ -140,7 +140,9 @@ def eval_conf_pair(conf_a, conf_b, conn):
         a_end_time = timer()
         a_dur_time = a_end_time - a_start_time
         
-        batch_size_b = conf_b[0]model_type_global
+        batch_size_b = conf_b[0]
+        X_mini_batch_feed_b = X_data[0:batch_size_b,:,:,:]
+        Y_mini_batch_feed_b = Y_data[0:batch_size_b,:]
         b_start_time = timer()
         sess.run(trainOps_b, feed_dict={features: X_mini_batch_feed_b, labels: Y_mini_batch_feed_b})
         b_end_time = timer()
