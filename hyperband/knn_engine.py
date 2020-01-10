@@ -23,10 +23,12 @@ activation_global = cfg_yml.activation
 learning_rate_global = cfg_yml.learning_rate
 model_type_global = cfg_yml.model_type
 
-mnist_train_img_path = cfg_yml.mnist_train_img_path
-mnist_train_label_path = cfg_yml.mnist_train_label_path
-mnist_t10k_img_path = cfg_yml.mnist_t10k_img_path
-mnist_t10k_label_path = cfg_yml.mnist_t10k_label_path
+#mnist_train_img_path = cfg_yml.mnist_train_img_path
+#mnist_train_label_path = cfg_yml.mnist_train_label_path
+#mnist_t10k_img_path = cfg_yml.mnist_t10k_img_path
+#mnist_t10k_label_path = cfg_yml.mnist_t10k_label_path
+
+cifar_10_path = cfg_yml.cifar_10_path
 
 switcher={0:'model_type_global',1:'batch_size_global',2:'opt_conf_global',3:'model_layer_global',4:'learning_rate_global',5:'activation_global'}
 

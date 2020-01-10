@@ -119,6 +119,7 @@ def load_imagenet_labels_onehot(path, num_classes):
     return labels_array
 
 
+
 # image format: [batch, height, width, channels]
 def convert_image_bin(imgDir, img_h, img_w):
     all_arr = []

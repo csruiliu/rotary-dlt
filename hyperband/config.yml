@@ -1,32 +1,42 @@
 local_data_path:
+  cifar_10_path: /home/ruiliu/Development/mtml-tf/dataset/cifar-10
+  imagenet_t1k_img_path: /home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin
+  imagenet_t1k_img_path: /home/ruiliu/Development/mtml-tf/dataset/imagenet1k
+  imagenet_t1k_label_path: /home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt
   mnist_train_img_path: /home/ruiliu/Development/mtml-tf/dataset/mnist-train-images.idx3-ubyte
   mnist_train_label_path: /home/ruiliu/Development/mtml-tf/dataset/mnist-train-labels.idx1-ubyte
   mnist_t10k_img_path: /home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-images.idx3-ubyte
   mnist_t10k_label_path: /home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte
 
 remote_data_path:
+  cifar_10_path: /tank/local/ruiliu/dataset/cifar-10
+  imagenet_t1k_bin_path: /tank/local/ruiliu/dataset/imagenet1k.bin
+  imagenet_t1k_img_path: /tank/local/ruiliu/dataset/imagenet1k
+  imagenet_t1k_label_path: /tank/local/ruiliu/dataset/imagenet1k-label.txt
   mnist_train_img_path: /tank/local/ruiliu/dataset/mnist-train-images.idx3-ubyte
   mnist_train_label_path: /tank/local/ruiliu/dataset/mnist-train-labels.idx1-ubyte
   mnist_t10k_img_path: /tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte
   mnist_t10k_label_path: /tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte
-    
+
 hyperband:
   resource_conf: 6
   down_rate: 3
   pack_rate: 9
 
 hypermeter:
-  img_width: 28
-  img_height: 28
-  num_channel: 1
+  #img_width and img_height differs for dataset
+  img_width: 32
+  img_height: 32
+  num_channel: 3
+  #num_class differs for dataset
   num_class: 10
   random_seed: 10000
   model_type:
     - mlp
+    - mobilenet
+    - resnet
+    - densenet
   activation:
-    - sigmoid
-    - leaky_relu
-    - tanh
     - relu
   optimizer:
     - Adam
@@ -34,31 +44,10 @@ hypermeter:
     - Adagrad
     - Momentum
   num_model_layer:
-    - 0
     - 1
-    - 2
-    - 3
-    - 4
-    - 5
   batch_size:
-    - 5
-    - 10
-    - 15
-    - 20
-    - 25
-    - 30
-    - 35
-    - 40
-    - 45
-    - 50
-    - 55
-    - 60
+    - 32
+    - 64
+    - 128
   learning_rate:
-    - 0.000001
-    - 0.00001
     - 0.0001
-    - 0.001
-    - 0.01
-    - 0.1
-  
-  
