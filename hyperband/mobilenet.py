@@ -67,11 +67,25 @@ class mobilenet(object):
             bottleneck_dim = round(expansion_ratio * input.get_shape().as_list()[-1])
             net = self._conv_1x1(input, bottleneck_dim, name='pw', bias=bias)
             net = self._batch_norm(net, train=is_train, name='pw_bn')
-            net = tf.nn.relu6(net, 'relu6')
-
+            if self.activation == 'sigmoid':
+                net = tf.nn.sigmoid(net)
+            elif self.activation == 'leaky_relu':
+                net = tf.nn.leaky_relu(net)
+            elif self.activation == 'tanh':
+                net = tf.nn.tanh(net)
+            elif self.activation == 'relu':
+                net = tf.nn.relu6(net, 'relu6')
+            
             net = self._dwise_conv(net, strides=[1, stride, stride, 1], name='dw', bias=bias)
             net = self._batch_norm(net, train=is_train, name='dw_bn')
-            net = tf.nn.relu6(net, 'relu6')
+            if self.activation == 'sigmoid':
+                net = tf.nn.sigmoid(net)
+            elif self.activation == 'leaky_relu':
+                net = tf.nn.leaky_relu(net)
+            elif self.activation == 'tanh':
+                net = tf.nn.tanh(net)
+            elif self.activation == 'relu':
+                net = tf.nn.relu6(net, 'relu6')
 
             net = self._conv_1x1(net, output_dim, name='pw_linear', bias=bias)
             net = self._batch_norm(net, train=is_train, name='pw_linear_bn')
@@ -91,14 +105,28 @@ class mobilenet(object):
         with tf.variable_scope(block_name):
             block = self._conv2d(input, out_dim, kernel_size, kernel_size, strides_size, strides_size)
             block = self._batch_norm(block, train=is_train, name='bn')
-            block = tf.nn.relu6(block, 'relu6')
+            if self.activation == 'sigmoid':
+                block = tf.nn.sigmoid(block)
+            elif self.activation == 'leaky_relu':
+                block = tf.nn.leaky_relu(block)
+            elif self.activation == 'tanh':
+                block = tf.nn.tanh(block)
+            elif self.activation == 'relu':
+                block = tf.nn.relu6(block, 'relu6')
             return block
 
     def _pwise_block(self, input, output_dim, is_train, block_name, bias=False):
         with tf.variable_scope(block_name):
             out = self._conv_1x1(input, output_dim, bias=bias, name='pwb')
             out = self._batch_norm(out, train=is_train, name='bn')
-            block = tf.nn.relu6(out, 'relu6')
+            if self.activation == 'sigmoid':
+                block = tf.nn.sigmoid(block)
+            elif self.activation == 'leaky_relu':
+                block = tf.nn.leaky_relu(block)
+            elif self.activation == 'tanh':
+                block = tf.nn.tanh(block)
+            elif self.activation == 'relu':
+                block = tf.nn.relu6(block, 'relu6')
             return block
 
 

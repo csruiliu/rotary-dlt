@@ -26,11 +26,26 @@ class densenet(object):
     def bottleneck_block(self, input, block_name):
         with tf.variable_scope(block_name):
             block = tf.layers.batch_normalization(input, training=True, trainable=True, name=block_name+'_bn_0')
-            block = tf.nn.relu(block, name=block_name+'_relu_0')
+            if self.activation == 'sigmoid':
+                block = tf.nn.sigmoid(block, name=block_name+'_sigmoid_0')
+            elif self.activation == 'leaky_relu':
+                block = tf.nn.leaky_relu(block, name=block_name+'_leakyrelu_0')
+            elif self.activation == 'tanh':
+                block = tf.nn.tanh(block, name=block_name+'_tanh_0')
+            elif self.activation == 'relu':
+                block = tf.nn.relu(block, name=block_name+'_relu_0')
+            
             block = tf.layers.conv2d(block, filters=2*self.growth_k, kernel_size=(1,1), strides=1, padding='same', name=block_name+'_conv_0')
 
             block = tf.layers.batch_normalization(block, training=True, trainable=True, name=block_name+'_bn_1')
-            block = tf.nn.relu(block, name=block_name+'_relu_1')
+            if self.activation == 'sigmoid':
+                block = tf.nn.sigmoid(block, name=block_name+'_sigmoid_1')
+            elif self.activation == 'leaky_relu':
+                block = tf.nn.leaky_relu(block, name=block_name+'_leakyrelu_1')
+            elif self.activation == 'tanh':
+                block = tf.nn.tanh(block, name=block_name+'_tanh_1')
+            elif self.activation == 'relu':
+                block = tf.nn.relu(block, name=block_name+'_relu_1')
             block = tf.layers.conv2d(block, filters=2*self.growth_k, kernel_size=(3,3), strides=1, padding='same', name=block_name+'_conv_1')
 
             return block

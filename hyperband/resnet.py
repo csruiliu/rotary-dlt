@@ -27,12 +27,27 @@ class resnet(object):
             W_conv1 = self.weight_variable([1, 1, in_filter, f1])
             X = tf.nn.conv2d(X_input, W_conv1, strides=[1, stride, stride, 1], padding='VALID')
             X = tf.layers.batch_normalization(X, axis=3, training=training)
-            X = tf.nn.relu(X)
+            if self.activation == 'sigmoid':
+                X = tf.nn.sigmoid(X)
+            elif self.activation == 'leaky_relu':
+                X = tf.nn.leaky_relu(X)
+            elif self.activation == 'tanh':
+                X = tf.nn.tanh(X)
+            elif self.activation == 'relu':
+                X = tf.nn.relu(X)
+            
 
             W_conv2 = self.weight_variable([kernel_size, kernel_size, f1, f2])
             X = tf.nn.conv2d(X, W_conv2, strides=[1,1,1,1], padding='SAME')
             X = tf.layers.batch_normalization(X, axis=3, training=training)
-            X = tf.nn.relu(X)
+            if self.activation == 'sigmoid':
+                X = tf.nn.sigmoid(X)
+            elif self.activation == 'leaky_relu':
+                X = tf.nn.leaky_relu(X)
+            elif self.activation == 'tanh':
+                X = tf.nn.tanh(X)
+            elif self.activation == 'relu':
+                X = tf.nn.relu(X)
 
             W_conv3 = self.weight_variable([1,1,f2,f3])
             X = tf.nn.conv2d(X, W_conv3, strides=[1, 1, 1, 1], padding='VALID')
@@ -42,8 +57,15 @@ class resnet(object):
             x_shortcut = tf.nn.conv2d(x_shortcut, W_shortcut, strides=[1, stride, stride, 1], padding='VALID')
 
             add = tf.add(x_shortcut, X)
-            add_result = tf.nn.relu(add)
-
+            if self.activation == 'sigmoid':
+                add_result = tf.nn.sigmoid(add)
+            elif self.activation == 'leaky_relu':
+                add_result = tf.nn.leaky_relu(add)
+            elif self.activation == 'tanh':
+                add_result = tf.nn.tanh(add)
+            elif self.activation == 'relu':
+                add_result = tf.nn.relu(add)
+            
         return add_result
 
     def identity_block(self, X_input, kernel_size, in_filter, out_filters, stage, block, training):
@@ -55,19 +77,40 @@ class resnet(object):
             W_conv1 = self.weight_variable([1, 1, in_filter, f1])
             X = tf.nn.conv2d(X_input, W_conv1, strides=[1, 1, 1, 1], padding='SAME')
             X = tf.layers.batch_normalization(X, axis=3, training=training)
-            X = tf.nn.relu(X)
+            if self.activation == 'sigmoid':
+                X = tf.nn.sigmoid(X)
+            elif self.activation == 'leaky_relu':
+                X = tf.nn.leaky_relu(X)
+            elif self.activation == 'tanh':
+                X = tf.nn.tanh(X)
+            elif self.activation == 'relu':
+                X = tf.nn.relu(X)
 
             W_conv2 = self.weight_variable([kernel_size, kernel_size, f1, f2])
             X = tf.nn.conv2d(X, W_conv2, strides=[1, 1, 1, 1], padding='SAME')
             X = tf.layers.batch_normalization(X, axis=3, training=training)
-            X = tf.nn.relu(X)
+            if self.activation == 'sigmoid':
+                X = tf.nn.sigmoid(X)
+            elif self.activation == 'leaky_relu':
+                X = tf.nn.leaky_relu(X)
+            elif self.activation == 'tanh':
+                X = tf.nn.tanh(X)
+            elif self.activation == 'relu':
+                X = tf.nn.relu(X)
 
             W_conv3 = self.weight_variable([1, 1, f2, f3])
             X = tf.nn.conv2d(X, W_conv3, strides=[1, 1, 1, 1], padding='VALID')
             X = tf.layers.batch_normalization(X, axis=3, training=training)
 
             add = tf.add(X, X_shortcut)
-            add_result = tf.nn.relu(add)
+            if self.activation == 'sigmoid':
+                add_result = tf.nn.sigmoid(add)
+            elif self.activation == 'leaky_relu':
+                add_result = tf.nn.leaky_relu(add)
+            elif self.activation == 'tanh':
+                add_result = tf.nn.tanh(add)
+            elif self.activation == 'relu':
+                add_result = tf.nn.relu(add)
 
         return add_result
 
@@ -83,7 +126,15 @@ class resnet(object):
             w_conv1 = self.weight_variable([7, 7, 3, 64])
             x = tf.nn.conv2d(x, w_conv1, strides=[1, 2, 2, 1], padding='VALID')
             x = tf.layers.batch_normalization(x, axis=3, training=training)
-            x = tf.nn.relu(x)
+            if self.activation == 'sigmoid':
+                x = tf.nn.sigmoid(x)
+            elif self.activation == 'leaky_relu':
+                x = tf.nn.leaky_relu(x)
+            elif self.activation == 'tanh':
+                x = tf.nn.tanh(x)
+            elif self.activation == 'relu':
+                x = tf.nn.relu(x)
+            
             x = tf.nn.max_pool(x, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID')
 
             #stage 64
