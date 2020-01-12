@@ -9,6 +9,7 @@ from multiprocessing import Process, Pipe
 from timeit import default_timer as timer
 import config as cfg_yml
 from img_utils import * 
+from dnn_model import DnnModel
 
 imgWidth = cfg_yml.imgWidth
 imgHeight = cfg_yml.imgHeight
@@ -23,10 +24,10 @@ activation_global = cfg_yml.activation
 learning_rate_global = cfg_yml.learning_rate
 model_type_global = cfg_yml.model_type
 
-#mnist_train_img_path = cfg_yml.mnist_train_img_path
-#mnist_train_label_path = cfg_yml.mnist_train_label_path
-#mnist_t10k_img_path = cfg_yml.mnist_t10k_img_path
-#mnist_t10k_label_path = cfg_yml.mnist_t10k_label_path
+mnist_train_img_path = cfg_yml.mnist_train_img_path
+mnist_train_label_path = cfg_yml.mnist_train_label_path
+mnist_t10k_img_path = cfg_yml.mnist_t10k_img_path
+mnist_t10k_label_path = cfg_yml.mnist_t10k_label_path
 
 cifar_10_path = cfg_yml.cifar_10_path
 
@@ -109,13 +110,18 @@ def eval_conf_pair(conf_a, conf_b, conn):
 
     seed = np.random.randint(100000, size=1)
 
-    X_data = load_mnist_image(mnist_train_img_path, seed)
-    Y_data = load_mnist_label_onehot(mnist_train_label_path, seed)
+    #X_data = load_mnist_image(mnist_train_img_path, seed)
+    #Y_data = load_mnist_label_onehot(mnist_train_label_path, seed)
+    cifar_train_data, cifar_train_label = load_cifar_train(cifar_10_path, seed)
+    cifar_test_data, cifar_test_label = load_cifar_test(cifar_10_path, seed)
 
     dt = datetime.now()
     np.random.seed(dt.microsecond)    
     net_instnace = np.random.randint(sys.maxsize, size=2)
 
+    print(conf_a[0])
+    print(conf_b)
+    '''
     modelEntity_a = MLP("mlp_"+str(net_instnace[0]), conf_a[2], imgHeight, imgWidth, numChannels, conf_a[0], numClasses, conf_a[1])
     modelLogit_a = modelEntity_a.build(features)
     trainOps_a = modelEntity_a.train(modelLogit_a, labels)
@@ -161,7 +167,8 @@ def eval_conf_pair(conf_a, conf_b, conn):
         pack_dur_time = pack_end_time - pack_start_time
         
     result = seq_dur_time - pack_dur_time
-
+    '''
+    result = np.random.randint()
     conn.send(result)
     conn.close()
 
@@ -348,6 +355,7 @@ def knn_conf_bs(confs, topk):
 # schedule confs using euclid-based knn
 def knn_conf_euclid(confs, topk):
     confs_list = list(confs)
+    print(confs_list)
     trial_dict = prep_trial(confs_list)
     trial_result_dict = sort_conf_euclid(trial_dict)
     

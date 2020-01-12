@@ -7,7 +7,7 @@ class resnet(object):
         self.img_h = input_h
         self.img_w = input_w
         self.num_classes = num_classes
-        self.batch_size = batch_size
+        self.batch_size = tf.Variable(batch_size)
         self.optimzier = opt
         self.learning_rate = learning_rate
         self.activation = activation

@@ -19,9 +19,11 @@ remote_data_path:
   mnist_t10k_label_path: /tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte
 
 hyperband:
-  resource_conf: 6
-  down_rate: 3
+  resource_conf: 4
+  down_rate: 2
   pack_rate: 9
+  # policy: none, random, bs, knn
+  schedule_policy: knn
 
 hypermeter:
   #img_width and img_height differs for dataset
@@ -32,10 +34,7 @@ hypermeter:
   num_class: 10
   random_seed: 10000
   model_type:
-    - mlp
     - mobilenet
-    - resnet
-    - densenet
   activation:
     - relu
   optimizer:
@@ -46,8 +45,11 @@ hypermeter:
   num_model_layer:
     - 1
   batch_size:
-    - 32
-    - 64
-    - 128
+    - 20
+    - 40
+    - 60
+    - 80
+    - 100
   learning_rate:
     - 0.0001
+    - 0.001

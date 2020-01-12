@@ -11,7 +11,7 @@ class mobilenet(object):
         self.model_layer_num = model_layer
         self.img_h = input_h
         self.img_w = input_w
-        self.batch_size = batch_size
+        self.batch_size = tf.Variable(batch_size)
         self.input_size = input_h * input_w * channel_num
         self.num_classes = num_classes
         self.optimzier = opt

@@ -69,6 +69,52 @@ class Hyperband:
                 
         return self.results
 
+    def run_pack_bs(self):
+        for s in reversed(range(self.s_max + 1)):
+            n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
+            r = self.R * (self.eta ** (-s))
+            T = self.get_hyperparams(n)
+
+            for i in range(s + 1):
+                n_i = floor(n * self.eta ** (-i))
+                r_i = int(r * self.eta ** (i))
+                print("\n*** {} bracket | {} configurations x {} iterations each ***".format(s, n_i, r_i))
+                val_acc = []
+                params_dict = dict()
+                
+                for t in T:
+                    if t[1] in params_dict:
+                        params_dict[t[1]].append(t)
+                    else:
+                        params_dict[t[1]] = [] 
+                        params_dict[t[1]].append(t)
+                print(params_dict)
+
+                for bs, conf in params_dict.items():
+                    parent_conn, child_conn = Pipe()
+                    p = Process(target=self.run_hyperParams, args=(bs, conf, r_i, child_conn))
+                    p.start()
+                    acc_pack = parent_conn.recv()
+                    parent_conn.close()
+                    p.join()
+
+                    for aidx, acc in enumerate(acc_pack):
+                        result = {'acc':-1}
+                        val_acc.append(acc)
+                        result['acc'] = acc
+                        result['params'] = conf[aidx]
+
+                        if self.best_acc < acc:
+                            self.best_acc = acc
+                            print("best accuracy so far: {:.5f} \n".format(self.best_acc))
+                        self.results.append(result)
+
+                indices = np.argsort(val_acc)
+                T = [T[i] for i in indices]
+                T = T[0:floor(n_i / self.eta)]
+
+        return self.results    
+
 
     def run_pack_random(self, random_size):
         for s in reversed(range(self.s_max + 1)):
@@ -117,53 +163,6 @@ class Hyperband:
                 T = T[0:floor(n_i / self.eta)]
 
         return self.results
-
-
-    def run_pack_bs(self):
-        for s in reversed(range(self.s_max + 1)):
-            n = ceil(self.B / self.R / (s + 1) * (self.eta ** s))
-            r = self.R * (self.eta ** (-s))
-            T = self.get_hyperparams(n)
-
-            for i in range(s + 1):
-                n_i = floor(n * self.eta ** (-i))
-                r_i = int(r * self.eta ** (i))
-                print("\n*** {} bracket | {} configurations x {} iterations each ***".format(s, n_i, r_i))
-                val_acc = []
-                params_dict = dict()
-                
-                for t in T:
-                    if t[1] in params_dict:
-                        params_dict[t[1]].append(t)
-                    else:
-                        params_dict[t[1]] = [] 
-                        params_dict[t[1]].append(t)
-                print(params_dict)
-
-                for bs, conf in params_dict.items():
-                    parent_conn, child_conn = Pipe()
-                    p = Process(target=self.run_hyperParams, args=(bs, conf, r_i, child_conn))
-                    p.start()
-                    acc_pack = parent_conn.recv()
-                    parent_conn.close()
-                    p.join()
-
-                    for aidx, acc in enumerate(acc_pack):
-                        result = {'acc':-1}
-                        val_acc.append(acc)
-                        result['acc'] = acc
-                        result['params'] = conf[aidx]
-
-                        if self.best_acc < acc:
-                            self.best_acc = acc
-                            print("best accuracy so far: {:.5f} \n".format(self.best_acc))
-                        self.results.append(result)
-
-                indices = np.argsort(val_acc)
-                T = [T[i] for i in indices]
-                T = T[0:floor(n_i / self.eta)]
-
-        return self.results        
 
 
     def run(self):
@@ -252,12 +251,8 @@ if __name__ == "__main__":
     resource_conf = cfg_yml.resource_conf
     down_rate = cfg_yml.down_rate
     pack_rate_sch = cfg_yml.pack_rate_sch 
+    sch = cfg_yml.sch_policy
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-s', '--schedule', action='store', type=str, default='none', help='indicate schedule mechanism: none, random, bs, knn')
-    args = parser.parse_args()
-    sch = args.schedule
-    
     start_time = timer()
 
     if sch == 'none':

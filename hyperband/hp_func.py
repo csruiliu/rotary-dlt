@@ -31,7 +31,6 @@ model_type = cfg_yml.model_type
 
 cifar_10_path = cfg_yml.cifar_10_path
 
-
 def get_params(n_conf):
     all_conf = [model_type, batch_size, opt_conf, model_layer, learning_rate, activation]
     hp_conf = list(itertools.product(*all_conf))
@@ -46,13 +45,13 @@ def run_params_pack_knn(confs, epochs, conn):
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
 
-    cifar_train_data, cifar_train_label = load_cifar_train(cifar_10_path, seed)
-    cifar_test_data, cifar_test_label = load_cifar_test(cifar_10_path, seed)
     #X_data = load_mnist_image(mnist_train_img_path, seed)
     #Y_data = load_mnist_label_onehot(mnist_train_label_path, seed)
     #X_data_eval = load_mnist_image(mnist_t10k_img_path, seed)
     #Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path, seed)
-    
+    X_data, Y_data = load_cifar_train(cifar_10_path, seed)
+    X_data_eval, Y_data_eval = load_cifar_test(cifar_10_path, seed)
+
     dt = datetime.now()
     np.random.seed(dt.microsecond)    
     net_instnace = np.random.randint(sys.maxsize, size=len(confs))
@@ -76,7 +75,7 @@ def run_params_pack_knn(confs, epochs, conn):
         learning_rate = cf[4]
         activation = cf[5]
 
-        desire_steps = train_label.shape[0] // batch_size
+        desire_steps = Y_data.shape[0] // batch_size
         dm = DnnModel(model_type, str(net_instnace[cidx]), model_layer, imgWidth, imgHeight, numChannels, numClasses, batch_size, opt, learning_rate, activation)
         modelEntity = dm.getModelEntity()
         modelEntity.setDesireEpochs(desire_epochs)
@@ -99,13 +98,13 @@ def run_params_pack_knn(confs, epochs, conn):
         complete_flag = False
 
         while len(train_pack) != 0:
-            num_steps = train_label.shape[0] // max_bs
+            num_steps = Y_data.shape[0] // max_bs
             for i in range(num_steps):
                 print('step %d / %d' %(i+1, num_steps))
                 batch_offset = i * max_bs
                 batch_end = (i+1) * max_bs
-                X_mini_batch_feed = train_data[batch_offset:batch_end,:,:,:]
-                Y_mini_batch_feed = train_label[batch_offset:batch_end,:]
+                X_mini_batch_feed = X_data[batch_offset:batch_end,:,:,:]
+                Y_mini_batch_feed = Y_data[batch_offset:batch_end,:]
                 sess.run(train_pack, feed_dict = {features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                 for me in entity_pack:
                     me.setCurStep()
@@ -140,10 +139,13 @@ def run_params_pack_random(confs, epochs, conn):
     seed = np.random.randint(rand_seed)
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
-    X_data = load_mnist_image(mnist_train_img_path, seed)
-    Y_data = load_mnist_label_onehot(mnist_train_label_path, seed)
-    X_data_eval = load_mnist_image(mnist_t10k_img_path, seed)
-    Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path, seed)
+    
+    #X_data = load_mnist_image(mnist_train_img_path, seed)
+    #Y_data = load_mnist_label_onehot(mnist_train_label_path, seed)
+    #X_data_eval = load_mnist_image(mnist_t10k_img_path, seed)
+    #Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path, seed)
+    X_data, Y_data = load_cifar_train(cifar_10_path, seed)
+    X_data_eval, Y_data_eval = load_cifar_test(cifar_10_path, seed)
 
     dt = datetime.now()
     np.random.seed(dt.microsecond)    
@@ -231,10 +233,13 @@ def run_params_pack_bs(batch_size, confs, epochs, conn):
     seed = np.random.randint(rand_seed)
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
-    X_data = load_mnist_image(mnist_train_img_path, seed)
-    Y_data = load_mnist_label_onehot(mnist_train_label_path, seed)
-    X_data_eval = load_mnist_image(mnist_t10k_img_path, seed)
-    Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path, seed)
+
+    #X_data = load_mnist_image(mnist_train_img_path, seed)
+    #Y_data = load_mnist_label_onehot(mnist_train_label_path, seed)
+    #X_data_eval = load_mnist_image(mnist_t10k_img_path, seed)
+    #Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path, seed)
+    X_data, Y_data = load_cifar_train(cifar_10_path, seed)
+    X_data_eval, Y_data_eval = load_cifar_test(cifar_10_path, seed)
 
     dt = datetime.now()
     np.random.seed(dt.microsecond)
@@ -294,6 +299,8 @@ def run_params(hyper_params, epochs, conn):
     #Y_data = load_mnist_label_onehot(mnist_train_label_path, seed)
     #X_data_eval = load_mnist_image(mnist_t10k_img_path, seed)
     #Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path, seed)
+    X_data, Y_data = load_cifar_train(cifar_10_path, seed)
+    X_data_eval, Y_data_eval = load_cifar_test(cifar_10_path, seed)
 
     dt = datetime.now()
     np.random.seed(dt.microsecond)
