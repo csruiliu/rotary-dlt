@@ -31,10 +31,10 @@ mnist_t10k_label_path = cfg_yml.mnist_t10k_label_path
 
 cifar_10_path = cfg_yml.cifar_10_path
 
-imagenet_t10k_bin_path: cfg_yml.imagenet_t10k_bin_path
-imagenet_t10k_label_path: cfg_yml.imagenet_t10k_label_path
-imagenet_t1k_bin_path: cfg_yml.imagenet_t1k_bin_path
-imagenet_t1k_label_path: cfg_yml.imagenet_t1k_label_path
+imagenet_t10k_bin_path = cfg_yml.imagenet_t10k_bin_path
+imagenet_t10k_label_path = cfg_yml.imagenet_t10k_label_path
+imagenet_t1k_bin_path = cfg_yml.imagenet_t1k_bin_path
+imagenet_t1k_label_path = cfg_yml.imagenet_t1k_label_path
 
 def get_params(n_conf):
     all_conf = [model_type, batch_size, opt_conf, model_layer, learning_rate, activation]
@@ -307,9 +307,9 @@ def run_params(hyper_params, epochs, conn):
     #X_data, Y_data = load_cifar_train(cifar_10_path, seed)
     #X_data_eval, Y_data_eval = load_cifar_test(cifar_10_path, seed)
     X_data = load_imagenet_bin_pickle(imagenet_t10k_bin_path, numChannels, imgWidth, imgHeight)
-    Y_data = load_imagenet_labels_onehot(imagenet_t10k_label_path, numClasses):
+    Y_data = load_imagenet_labels_onehot(imagenet_t10k_label_path, numClasses)
     X_data_eval = load_imagenet_bin_pickle(imagenet_t1k_bin_path, numChannels, imgWidth, imgHeight)
-    Y_data_eval = load_imagenet_labels_onehot(imagenet_t1k_label_path, numClasses):
+    Y_data_eval = load_imagenet_labels_onehot(imagenet_t1k_label_path, numClasses)
 
     dt = datetime.now()
     np.random.seed(dt.microsecond)
@@ -338,7 +338,7 @@ def run_params(hyper_params, epochs, conn):
         num_batch = Y_data.shape[0] // batch_size
         for e in range(epochs):
             for i in range(num_batch):
-                print('epoch %d / %d, step %d / %d' %(e+1, epochs, i+1, num_batch))
+                #print('epoch %d / %d, step %d / %d' %(e+1, epochs, i+1, num_batch))
                 batch_offset = i * batch_size
                 batch_end = (i+1) * batch_size
                 X_mini_batch_feed = X_data[batch_offset:batch_end,:,:,:]

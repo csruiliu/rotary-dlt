@@ -122,13 +122,10 @@ def load_imagenet_labels_onehot(path, num_classes):
 # read imagenet bin
 ########################################################
 def load_imagenet_bin_pickle(path, num_channels, img_w, img_h):
-    with open(path, mode='rb') as file:
-        data = pickle.load(file, encoding='bytes')
-    raw_images = data['image']
-    raw_float = np.array(raw_images, dtype=float) / 255.0
-    #raw_float = raw_float.transpose([0, 3, 1, 2])
-    return raw_float
-
+    image_arr = np.fromfile(path, dtype=np.uint8)
+    img_num = int(image_arr.size / img_w / img_h / num_channels)
+    images = image_arr.reshape((img_num, img_w, img_h, num_channels))
+    return images
 
 # image format: [batch, height, width, channels]
 def convert_image_bin(imgDir, img_h, img_w):
