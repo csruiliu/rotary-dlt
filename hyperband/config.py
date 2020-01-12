@@ -37,6 +37,9 @@ mnist_t10k_label_path = data_path_cfg['mnist_t10k_label_path']
 cifar_10_path = data_path_cfg['cifar_10_path']
 imagenet_t1k_img_path = data_path_cfg['imagenet_t1k_img_path']
 imagenet_t1k_label_path = data_path_cfg['imagenet_t1k_label_path']
-
+imagenet_t1k_bin_path = data_path_cfg['imagenet_t1k_bin_path']
+imagenet_t10k_img_path = data_path_cfg['imagenet_t10k_img_path']
+imagenet_t10k_label_path = data_path_cfg['imagenet_t10k_label_path']
+imagenet_t10k_bin_path = data_path_cfg['imagenet_t10k_bin_path']
            
     

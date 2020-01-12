@@ -24,12 +24,17 @@ activation = cfg_yml.activation
 learning_rate = cfg_yml.learning_rate
 model_type = cfg_yml.model_type
 
-#mnist_train_img_path = cfg_yml.mnist_train_img_path
-#mnist_train_label_path = cfg_yml.mnist_train_label_path
-#mnist_t10k_img_path = cfg_yml.mnist_t10k_img_path
-#mnist_t10k_label_path = cfg_yml.mnist_t10k_label_path
+mnist_train_img_path = cfg_yml.mnist_train_img_path
+mnist_train_label_path = cfg_yml.mnist_train_label_path
+mnist_t10k_img_path = cfg_yml.mnist_t10k_img_path
+mnist_t10k_label_path = cfg_yml.mnist_t10k_label_path
 
 cifar_10_path = cfg_yml.cifar_10_path
+
+imagenet_t10k_bin_path: cfg_yml.imagenet_t10k_bin_path
+imagenet_t10k_label_path: cfg_yml.imagenet_t10k_label_path
+imagenet_t1k_bin_path: cfg_yml.imagenet_t1k_bin_path
+imagenet_t1k_label_path: cfg_yml.imagenet_t1k_label_path
 
 def get_params(n_conf):
     all_conf = [model_type, batch_size, opt_conf, model_layer, learning_rate, activation]
@@ -49,8 +54,8 @@ def run_params_pack_knn(confs, epochs, conn):
     #Y_data = load_mnist_label_onehot(mnist_train_label_path, seed)
     #X_data_eval = load_mnist_image(mnist_t10k_img_path, seed)
     #Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path, seed)
-    X_data, Y_data = load_cifar_train(cifar_10_path, seed)
-    X_data_eval, Y_data_eval = load_cifar_test(cifar_10_path, seed)
+    #X_data, Y_data = load_cifar_train(cifar_10_path, seed)
+    #X_data_eval, Y_data_eval = load_cifar_test(cifar_10_path, seed)
 
     dt = datetime.now()
     np.random.seed(dt.microsecond)    
@@ -299,8 +304,12 @@ def run_params(hyper_params, epochs, conn):
     #Y_data = load_mnist_label_onehot(mnist_train_label_path, seed)
     #X_data_eval = load_mnist_image(mnist_t10k_img_path, seed)
     #Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path, seed)
-    X_data, Y_data = load_cifar_train(cifar_10_path, seed)
-    X_data_eval, Y_data_eval = load_cifar_test(cifar_10_path, seed)
+    #X_data, Y_data = load_cifar_train(cifar_10_path, seed)
+    #X_data_eval, Y_data_eval = load_cifar_test(cifar_10_path, seed)
+    X_data = load_imagenet_bin_pickle(imagenet_t10k_bin_path, numChannels, imgWidth, imgHeight)
+    Y_data = load_imagenet_labels_onehot(imagenet_t10k_label_path, numClasses):
+    X_data_eval = load_imagenet_bin_pickle(imagenet_t1k_bin_path, numChannels, imgWidth, imgHeight)
+    Y_data_eval = load_imagenet_labels_onehot(imagenet_t1k_label_path, numClasses):
 
     dt = datetime.now()
     np.random.seed(dt.microsecond)

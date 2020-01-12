@@ -94,9 +94,9 @@ def load_cifar_test(path, rd_seed):
     return cifar_data_test, cifar_label_test_onehot
 
 ########################################################
-# read imagenet images
+# read imagenet raw images
 ########################################################
-def load_imagenet_images(image_dir, batch_list, img_h, img_w):
+def load_imagenet_raw(image_dir, batch_list, img_h, img_w):
     img_list = []
     for img in batch_list:
         #print(image_dir+"/"+img)
@@ -118,6 +118,16 @@ def load_imagenet_labels_onehot(path, num_classes):
         labels_array[idx, hot-1] = 1
     return labels_array
 
+########################################################
+# read imagenet bin
+########################################################
+def load_imagenet_bin_pickle(path, num_channels, img_w, img_h):
+    with open(path, mode='rb') as file:
+        data = pickle.load(file, encoding='bytes')
+    raw_images = data['image']
+    raw_float = np.array(raw_images, dtype=float) / 255.0
+    #raw_float = raw_float.transpose([0, 3, 1, 2])
+    return raw_float
 
 
 # image format: [batch, height, width, channels]
@@ -150,13 +160,6 @@ def save_bin_pickle(arr, output_file):
     pickle.dump(img_data, f, pickle.HIGHEST_PROTOCOL)
     f.close()
 
-def load_bin_pickle(path, num_channels, img_w, img_h):
-    with open(path, mode='rb') as file:
-        data = pickle.load(file, encoding='bytes')
-    raw_images = data['image']
-    raw_float = np.array(raw_images, dtype=float) / 255.0
-    #raw_float = raw_float.transpose([0, 3, 1, 2])
-    return raw_float
 
 # read single image
 def read_single_image(img_name, img_h, img_w):

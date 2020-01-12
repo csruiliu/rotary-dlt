@@ -1,5 +1,8 @@
 local_data_path:
   cifar_10_path: /home/ruiliu/Development/mtml-tf/dataset/cifar-10
+  imagenet_t10k_img_path: /home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin
+  imagenet_t10k_img_path: /home/ruiliu/Development/mtml-tf/dataset/imagenet10k
+  imagenet_t10k_label_path: /home/ruiliu/Development/mtml-tf/dataset/imagenet10k-label.txt
   imagenet_t1k_img_path: /home/ruiliu/Development/mtml-tf/dataset/imagenet1k.bin
   imagenet_t1k_img_path: /home/ruiliu/Development/mtml-tf/dataset/imagenet1k
   imagenet_t1k_label_path: /home/ruiliu/Development/mtml-tf/dataset/imagenet1k-label.txt
@@ -10,6 +13,9 @@ local_data_path:
 
 remote_data_path:
   cifar_10_path: /tank/local/ruiliu/dataset/cifar-10
+  imagenet_t10k_bin_path: /tank/local/ruiliu/dataset/imagenet10k.bin
+  imagenet_t10k_img_path: /tank/local/ruiliu/dataset/imagenet10k
+  imagenet_t10k_label_path: /tank/local/ruiliu/dataset/imagenet10k-label.txt
   imagenet_t1k_bin_path: /tank/local/ruiliu/dataset/imagenet1k.bin
   imagenet_t1k_img_path: /tank/local/ruiliu/dataset/imagenet1k
   imagenet_t1k_label_path: /tank/local/ruiliu/dataset/imagenet1k-label.txt
