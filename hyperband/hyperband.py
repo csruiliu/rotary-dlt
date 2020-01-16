@@ -88,7 +88,6 @@ class Hyperband:
                     else:
                         params_dict[t[1]] = [] 
                         params_dict[t[1]].append(t)
-                print(params_dict)
 
                 for bs, conf in params_dict.items():
                     parent_conn, child_conn = Pipe()

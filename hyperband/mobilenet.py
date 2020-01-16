@@ -120,13 +120,13 @@ class mobilenet(object):
             out = self._conv_1x1(input, output_dim, bias=bias, name='pwb')
             out = self._batch_norm(out, train=is_train, name='bn')
             if self.activation == 'sigmoid':
-                block = tf.nn.sigmoid(block)
+                block = tf.nn.sigmoid(out)
             elif self.activation == 'leaky_relu':
-                block = tf.nn.leaky_relu(block)
+                block = tf.nn.leaky_relu(out)
             elif self.activation == 'tanh':
-                block = tf.nn.tanh(block)
+                block = tf.nn.tanh(out)
             elif self.activation == 'relu':
-                block = tf.nn.relu6(block, 'relu6')
+                block = tf.nn.relu6(out, 'relu6')
             return block
 
 

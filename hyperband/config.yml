@@ -29,7 +29,7 @@ hyperband:
   down_rate: 3
   pack_rate: 9
   # policy: none, random, bs, knn
-  schedule_policy: bs
+  schedule_policy: none 
 
 hypermeter:
   #img_width and img_height differs for dataset
@@ -40,7 +40,7 @@ hypermeter:
   num_class: 10
   random_seed: 10000
   model_type:
-    - mlp
+    - densenet
   activation:
     - sigmoid
     - leaky_relu
