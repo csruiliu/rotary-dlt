@@ -20,8 +20,8 @@ improve_densenet = [0, 17.9, 21]
 plt.figure(figsize=(6, 4))
 
 plt.plot(model_no, improve_mlp, color='royalblue', marker='^', linestyle='-', linewidth=2, markersize=8, label='MLP-3')
-plt.plot(model_no, improve_resnet, color='seagreen', marker='o', linestyle=':', linewidth=2, markersize=7, label='ResNet-50')
-plt.plot(model_no, improve_mobilenet, color='orangered', marker='D', linestyle='-.', linewidth=2, markersize=6, label='MobileNet')
+plt.plot(model_no, improve_mobilenet, color='seagreen', marker='o', linestyle=':', linewidth=2, markersize=6, label='MobileNet')
+plt.plot(model_no, improve_resnet, color='orangered', marker='D', linestyle='-.', linewidth=2, markersize=7, label='ResNet-50')
 plt.plot(model_no_densenet, improve_densenet, color='goldenrod', marker='*', linestyle='--', linewidth=2, markersize=9, label='DenseNet-121')
 plt.yticks(np.arange(0,103,20), ('0%', '20%', '40%', '60%', '80%', '100%'))
 plt.xticks(np.arange(1,5,1))
