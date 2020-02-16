@@ -49,6 +49,6 @@ if __name__ == '__main__':
     dm2_logit = dm2_entity.build(features)
     dm2_train = dm2_entity.train(dm2_logit, labels)
 
-    train_data = load_images_bin(bin_path, numChannels, imgWidth, imgHeight)
+    train_data = load_imagenet_bin_pickle(bin_path, numChannels, imgWidth, imgHeight)
     labels_data = load_labels_onehot(label_path, numClasses)
     execTrain([dm1_train, dm2_train], 1, train_data, labels_data)

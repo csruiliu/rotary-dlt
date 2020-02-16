@@ -1,112 +1,102 @@
-import tensorflow as tf
-import cv2
-import os
-import pickle
 import numpy as np
+import pickle
+import os
+from PIL import Image
+from matplotlib import pyplot as plt
+import cv2
 
-def unpickle(path, file_name):
-    unpick_data = os.path.join(path, file_name)
-    with open(unpick_data, mode='rb') as file:
-        data = pickle.load(file, encoding='bytes')
-    return data
-
-def convert_image(raw_images, img_w, img_h, num_channels):
-    raw_float = np.array(raw_images, dtype=float) / 255.0
-    return raw_float
-
-def load_data(path, file_name, img_w, img_h, num_channels):
-    data = unpickle(path, file_name)
-    raw_images = data[b'data']
-    labels = np.array(data[b'labels'])
-    images = convert_image(raw_images, img_w, img_h, num_channels)
-    return images, labels
-
-def one_hot_encoded(class_numbers, num_classes=None):
-    if num_classes is None:
-        num_classes = np.max(class_numbers) + 1
-    return np.eye(num_classes, dtype=float)[class_numbers]
-
-def load_cifar_training(path, num_train_batch, img_w, img_h, num_channels, num_classes):
-    images = np.zeros(shape=[num_train_batch, img_w, img_h, num_channels], dtype=float)
-    labels = np.zeros(shape=[num_train_batch], dtype=int)
-    begin = 0
-    for i in range(num_train_batch):
-        images_batch, cls_batch = load_data(path, "data_batch_" + str(i + 1), img_w, img_h, num_channels)
-        num_images = len(images_batch)
-        end = begin + num_images
-        images[begin:end, :] = images_batch
-        labels[begin:end] = cls_batch
-        begin = end
-    return images, labels, one_hot_encoded(class_numbers=labels, num_classes=num_classes)
-
-def load_cifar_evaluation(path, img_w, img_h, num_channels, num_classes):
-    images, labels = load_data(path, "test_batch", img_w, img_h, num_channels)
-    print(images.shape)
-    return images, labels, one_hot_encoded(class_numbers=labels, num_classes=num_classes)
-
-
-def load_images(path, img_w, img_h):
-    images = tf.gfile.ListDirectory(path)
-    imgs_num = len(images)
-    img_list = []
-    for idx, img in enumerate(images):
-        im = cv2.imread(path+"/"+img, cv2.IMREAD_COLOR)
-        res = cv2.resize(im, dsize=(img_w, img_h))
-        res_exp = np.expand_dims(res, axis=0)
-        img_list.append(res_exp)
-    img_data = np.concatenate(img_list, axis=0)
-    return img_data
-
-
-def load_images_tf(path, num_channels, img_w, img_h):
-    images = tf.gfile.ListDirectory(path)
-    imgs_num = len(images)
-    img_data_list = []
-    for idx, img in enumerate(images):
-        image_raw_data = tf.gfile.GFile(path+"/"+img,'rb').read()
-        img_data = tf.image.decode_jpeg(image_raw_data, channels = num_channels)
-        img_data_float = tf.image.convert_image_dtype(img_data, dtype = tf.float32)
-        img_data_resize = tf.image.resize_images(img_data_float, (img_w, img_h))
-        img_data_exp = tf.expand_dims(img_data_resize, 0)
-        img_data_list.append(img_data_exp)
-    img_data_batch = tf.concat(img_data_list, 0)
-    print(img_data_batch.shape)
-    return img_data_batch
-
-def load_images_bin(path, num_channels, img_w, img_h):
-    with open(path, mode='rb') as file:
-        data = pickle.load(file, encoding='bytes')
-    raw_images = data['image']
-    raw_float = np.array(raw_images, dtype=float) / 255.0
-    #raw_float = raw_float.transpose([0, 3, 1, 2])
-    return raw_float
-
-def load_labels_onehot(path, num_classes):
-    lines = open(path).readlines()
-    labels_array = np.zeros((len(lines), num_classes))
-    for idx, val in enumerate(lines):
-        hot = int(val.rstrip('\n'))
-        labels_array[idx, hot-1] = 1
+#####################################
+# read mnist training data
+#####################################
+def load_mnist_image(path, rd_seed):
+    mnist_numChannels = 1
+    with open(path, 'rb') as bytestream:
+        _ = int.from_bytes(bytestream.read(4), byteorder='big')
+        num_images = int.from_bytes(bytestream.read(4), byteorder='big')
+        mnist_imgWidth = int.from_bytes(bytestream.read(4), byteorder='big')
+        mnist_imgHeight = int.from_bytes(bytestream.read(4), byteorder='big')
+        buf = bytestream.read(mnist_imgWidth * mnist_imgHeight * num_images)
+        img_raw = np.frombuffer(buf, dtype=np.uint8).astype(np.float32) / 255.0
+        img = img_raw.reshape(num_images, mnist_imgHeight, mnist_imgWidth, mnist_numChannels)
+        np.random.seed(rd_seed)
+        np.random.shuffle(img)
+    return img
+ 
+#####################################
+# read mnist test data
+#####################################
+def load_mnist_label_onehot(path, rd_seed):
+    num_classes = 10
+    with open(path, 'rb') as bytestream:
+        _ = int.from_bytes(bytestream.read(4), byteorder='big')
+        num_images = int.from_bytes(bytestream.read(4), byteorder='big')
+        buf = bytestream.read(num_images)
+        labels = np.frombuffer(buf, dtype=np.uint8).astype(np.int64)
+        
+        labels_array = np.zeros((num_images, num_classes))
+        for lidx, lval in enumerate(labels):
+            labels_array[lidx, lval] = 1 
+    np.random.seed(rd_seed)
+    np.random.shuffle(labels_array)
     return labels_array
 
-def parse_image(filename, label):
-    image_string = tf.read_file(filename)
-    image_decoded = tf.image.decode_image(image_string, channels=3)
-    image_converted = tf.cast(image_decoded, tf.float32)
-    image_scaled = tf.image.resize_image_with_crop_or_pad(image_converted, 224, 224)
-    return image_scaled, label
+########################################################
+# read cifar-10 data, batch 1-5 training data
+########################################################
+def load_cifar_train(path, rd_seed):
+    cifar_data_train = []
+    cifar_label_train = []
+    cifar_label_train_onehot = np.zeros((50000, 10))
+    
+    for i in range(1,6):
+        with open(path+'/data_batch_'+str(i), 'rb') as fo:
+            data_batch = pickle.load(fo, encoding='bytes')
+            train_data = data_batch[b'data']
+            label_data = data_batch[b'labels']
 
-def generate_image_dataset(image_dir, label_path):
-    images_list = sorted(tf.gfile.ListDirectory(image_dir))
-    images = [image_dir + '/' +s for s in images_list]
-    labels = [int(line.rstrip('\n')) for line in open(label_path)]
-    dataset = tf.data.Dataset.from_tensor_slices((images, labels))
-    dataset = dataset.map(parse_image)
-    dataset = dataset.batch(batch_size=32)
-    dataset_it = dataset.make_one_shot_iterator()
-    return dataset_it
+        if cifar_data_train == []:
+            cifar_data_train = train_data
+        else:
+            cifar_data_train = np.concatenate((cifar_data_train, train_data))
+        
+        cifar_label_train = cifar_label_train + label_data
 
-def load_image_dir(image_dir, batch_list, img_h, img_w):
+    cifar_train = cifar_data_train.reshape(50000, 3, 32, 32).transpose(0,2,3,1).astype('uint8')
+    
+    for cl in range(50000):
+        cifar_label_train_onehot[cl, cifar_label_train[cl]] = 1 
+
+    np.random.seed(rd_seed)
+    np.random.shuffle(cifar_train)
+    np.random.shuffle(cifar_label_train_onehot)
+
+    return cifar_train, cifar_label_train_onehot
+
+########################################################
+# read cifar-10 data, testing data
+########################################################
+def load_cifar_test(path, rd_seed):
+    with open(path+'/test_batch', 'rb') as fo:
+        test_batch = pickle.load(fo, encoding='bytes')
+        test_data = test_batch[b'data']
+        label_data = test_batch[b'labels']   
+    
+    cifar_data_test = test_data.reshape(10000, 3, 32, 32).transpose(0,2,3,1).astype('uint8')
+    cifar_label_test_onehot = np.zeros((10000, 10))
+
+    for cl in range(10000):
+        cifar_label_test_onehot[cl, label_data[cl]] = 1 
+
+    np.random.seed(rd_seed)
+    np.random.shuffle(cifar_data_test)
+    np.random.shuffle(cifar_label_test_onehot)
+
+    return cifar_data_test, cifar_label_test_onehot
+
+########################################################
+# read imagenet raw images
+########################################################
+def load_imagenet_raw(image_dir, batch_list, img_h, img_w):
     img_list = []
     for img in batch_list:
         #print(image_dir+"/"+img)
@@ -116,3 +106,109 @@ def load_image_dir(image_dir, batch_list, img_h, img_w):
         img_list.append(res_exp)
     img_data = np.concatenate(img_list, axis=0)
     return img_data
+
+########################################################
+# read imagenet label
+########################################################
+def load_imagenet_labels_onehot(path, num_classes):
+    lines = open(path).readlines()
+    labels_array = np.zeros((len(lines), num_classes))
+    for idx, val in enumerate(lines):
+        hot = int(val.rstrip('\n'))
+        labels_array[idx, hot-1] = 1
+    return labels_array
+
+########################################################
+# read imagenet bin
+########################################################
+def load_imagenet_bin_pickle(path, num_channels, img_w, img_h):
+    image_arr = np.fromfile(path, dtype=np.uint8)
+    img_num = int(image_arr.size / img_w / img_h / num_channels)
+    images = image_arr.reshape((img_num, img_w, img_h, num_channels))
+    return images
+
+# image format: [batch, height, width, channels]
+def convert_image_bin(imgDir, img_h, img_w):
+    all_arr = []
+    for filename in sorted(os.listdir(imgDir)):
+        print(filename)
+        arr_single = read_single_image(imgDir + '/' + filename, img_h, img_w)
+        if all_arr == []:
+            all_arr = arr_single
+        else:
+            all_arr = np.concatenate((all_arr, arr_single))    
+    return all_arr
+
+# use pure write to store
+def save_bin_raw(arr, output_file):
+    with open(output_file, 'wb+') as of:
+        of.write(arr)
+
+def load_bin_raw(img_bin, num_channels, img_w, img_h):
+    image_arr = np.fromfile(img_bin, dtype=np.uint8)
+    img_num = int(image_arr.size / img_w / img_h / num_channels)
+    images = image_arr.reshape((img_num, img_w, img_h, num_channels))
+    return images
+
+# use pickle package to store, but it is slow
+def save_bin_pickle(arr, output_file):
+    img_data = {'image': arr}
+    f = open(output_file, 'wb+')
+    pickle.dump(img_data, f, pickle.HIGHEST_PROTOCOL)
+    f.close()
+
+
+# read single image
+def read_single_image(img_name, img_h, img_w):
+    img = Image.open(img_name).convert("RGB")
+    img_resize = img.resize((img_h, img_w), Image.NEAREST)
+    np_im = np.array(img_resize, dtype=np.uint8)
+    img_ext = np.expand_dims(np_im, axis=0)
+    return img_ext
+
+def load_labels_onehot(path, num_classes):
+    lines = open(path).readlines()
+    labels_array = np.zeros((len(lines), num_classes))
+    for idx, val in enumerate(lines):
+        hot = int(val.rstrip('\n'))
+        labels_array[idx, hot-1] = 1
+    return labels_array
+
+
+if __name__ == "__main__":
+    cifar10_path = '/home/ruiliu/Development/mtml-tf/dataset/cifar-10'
+    s,t = load_cifar_train(cifar10_path)
+    #s, t = load_cifar_test(cifar10_path)
+
+    #imgPath = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k'
+    #imgPath = '/tank/local/ruiliu/dataset/imagenet10k'
+    #binPath = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k.bin'
+    #binPath = '/tank/local/ruiliu/dataset/imagenet10k.bin'
+    #labelPath = '/home/ruiliu/Development/mtml-tf/dataset/imagenet10k-label.txt'
+    #labelPath = '/tank/local/ruiliu/dataset/imagenet10k-label.txt'
+
+    #mnist_train_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-images.idx3-ubyte'
+    #mnist_train_label_path = '/tank/local/ruiliu/dataset/mnist-train-images.idx3-ubyte'
+    #mnist_train_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-train-labels.idx1-ubyte'
+    #mnist_train_label_path = '/tank/local/ruiliu/dataset/mnist-train-labels.idx1-ubyte'
+    #mnist_t10k_img_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-images.idx3-ubyte'
+    #mnist_t10k_img_path = '/tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte'
+    #mnist_t10k_label_path = '/home/ruiliu/Development/mtml-tf/dataset/mnist-t10k-labels.idx1-ubyte'
+    #mnist_t10k_label_path = '/tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte'
+    
+    #images = load_mnist_image(mnist_t10k_img_path)
+    #rd.shuffle(images)
+    #print(images[100,:,:,:])
+    
+    #labels = load_mnist_label_onehot(mnist_t10k_label_path)
+    
+    #arr_image = convert_image_bin(imgDir, imgWidth, imgHeight)
+    #save_bin_raw(arr_image, outDir)
+    #images = load_bin_raw(binPath, numChannels, imgHeight, imgWidth)
+    
+    #print(images.shape)
+    #print(labels[103,2])
+    #plt.imshow(images[103,:,:,0], cmap='gray')
+    #plt.show()
+
+    #print(np.random.randint(10000))
