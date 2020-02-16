@@ -10,18 +10,21 @@ def execTrain(unit, num_epoch, X_train, Y_train):
     config.allow_soft_placement = True
 
     with tf.Session(config=config) as sess:
+        train_writer = tf.summary.FileWriter(profile_dir, sess.graph)
         sess.run(tf.global_variables_initializer())
         num_batch = Y_train.shape[0] // batchSize
         num_batch_list = np.arange(num_batch)
         for e in range(num_epoch):
             for i in range(num_batch):
                 print('epoch %d / %d, step %d / %d' % (e + 1, num_epoch, i + 1, num_batch))
+                merge = tf.summary.merge_all()
+                unit.append(merge)
                 batch_offset = i * batchSize
                 batch_end = (i + 1) * batchSize
                 X_mini_batch_feed = X_train[batch_offset:batch_end, :, :, :]
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end, :]
-                sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-
+                _, _, summary = sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                train_writer.add_summary(summary, i+1)
 
 if __name__ == '__main__':
     image_path = '/home/user/Development/dataset/imagenet1k'
