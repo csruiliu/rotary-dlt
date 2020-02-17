@@ -10,27 +10,33 @@ def execTrain(unit, num_epoch, X_train, Y_train):
     config.allow_soft_placement = True
 
     with tf.Session(config=config) as sess:
-        train_writer = tf.summary.FileWriter(profile_dir, sess.graph)
+        run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+        run_metadata = tf.RunMetadata()
         sess.run(tf.global_variables_initializer())
         num_batch = Y_train.shape[0] // batchSize
         num_batch_list = np.arange(num_batch)
         for e in range(num_epoch):
             for i in range(num_batch):
                 print('epoch %d / %d, step %d / %d' % (e + 1, num_epoch, i + 1, num_batch))
-                merge = tf.summary.merge_all()
-                unit.append(merge)
                 batch_offset = i * batchSize
                 batch_end = (i + 1) * batchSize
                 X_mini_batch_feed = X_train[batch_offset:batch_end, :, :, :]
                 Y_mini_batch_feed = Y_train[batch_offset:batch_end, :]
-                _, _, summary = sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-                train_writer.add_summary(summary, i+1)
+                sess.run(unit, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed},options=run_options, run_metadata=run_metadata)
+                trace = timeline.Timeline(step_stats=run_metadata.step_stats)
+                trace_file = open(profile_dir + '/scn/' + str(i) + '.json', 'w')
+                trace_file.write(trace.generate_chrome_trace_format())
 
 if __name__ == '__main__':
-    image_path = '/home/user/Development/dataset/imagenet1k'
-    bin_path = '/home/user/Development/dataset/imagenet1k.bin'
-    label_path = '/home/user/Development/dataset/imagenet1k-label.txt'
-    profile_dir = '/home/user/Development/mtml-tf/deep-dive/profile_dir'
+    #image_path = '/home/user/Development/dataset/imagenet1k'
+    #bin_path = '/home/user/Development/dataset/imagenet1k.bin'
+    #label_path = '/home/user/Development/dataset/imagenet1k-label.txt'
+    #profile_dir = '/home/user/Development/mtml-tf/pack-exp/deep-dive/profile_dir'
+
+    image_path = '/home/ruiliu/Development/dataset/imagenet1k'
+    bin_path = '/home/ruiliu/Development/dataset/imagenet1k.bin'
+    label_path = '/home/ruiliu/Development/dataset/imagenet1k-label.txt'
+    profile_dir = '/home/ruiliu/Development/mtml-tf/pack-exp/deep-dive/profile_dir'
 
     imgHeight = 224
     imgWidth = 224

@@ -55,9 +55,9 @@ class scn(object):
             return layer
 
     def build(self, input):
-        input_padding = input[0:self.batch_size, :, :, :]
+        #input = input[0:self.batch_size, :, :, :]
         with tf.variable_scope(self.net_name + '_instance'):
-            conv = self.conv_layer(input_padding, filter_size=5, num_filters=16, stride=1, name='conv0')
+            conv = self.conv_layer(input, filter_size=5, num_filters=16, stride=1, name='conv0')
             pool = self.max_pool(conv, ksize=2, stride=2, name='pool0')
             if self.num_conv_layer >= 1:
                 for midx in range(self.num_conv_layer - 1):
@@ -70,9 +70,9 @@ class scn(object):
         return self.model_logit
 
     def train(self, logits, labels):
-        labels_paddings = labels[0:self.batch_size, :]
+        #labels_paddings = labels[0:self.batch_size, :]
         with tf.name_scope('loss_' + self.net_name):
-            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels_paddings, logits=logits)
+            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
 
         with tf.name_scope(self.opt + '_' + self.net_name):
