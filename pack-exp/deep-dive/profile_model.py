@@ -43,7 +43,7 @@ if __name__ == '__main__':
     imgWidth = 224
     numChannels = 3
     numClasses = 1000
-    batchSize = 64
+    batchSize = 32
     opt = 'SGD'
 
     features = tf.placeholder(tf.float32, [None, imgHeight, imgWidth, numChannels])
@@ -59,6 +59,11 @@ if __name__ == '__main__':
     dm2_logit = dm2_entity.build(features)
     dm2_train = dm2_entity.train(dm2_logit, labels)
 
+    dm3 = DnnModel('scn', str(3), 1, imgHeight, imgWidth, numChannels, numClasses, batchSize, opt, 0.0001, 'relu')
+    dm3_entity = dm3.getModelEntity()
+    dm3_logit = dm3_entity.build(features)
+    dm3_train = dm3_entity.train(dm3_logit, labels)
+
     train_data = load_imagenet_bin_pickle(bin_path, numChannels, imgWidth, imgHeight)
     labels_data = load_labels_onehot(label_path, numClasses)
-    execTrain([dm1_train, dm2_train], 1, train_data, labels_data)
+    execTrain([dm1_train, dm2_train, dm3_train], 1, train_data, labels_data)

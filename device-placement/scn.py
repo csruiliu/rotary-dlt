@@ -54,24 +54,24 @@ class scn(object):
                     layer = tf.nn.relu(layer)
             return layer
 
-    def build_conv(self, input):
+    def build_conv(self, input, conv_name):
         with tf.variable_scope(self.net_name + '_instance'):
-            conv = self.conv_layer(input, filter_size=5, num_filters=16, stride=1, name='conv0')
+            conv = self.conv_layer(input, filter_size=5, num_filters=16, stride=1, name=conv_name)
         return conv
 
-    def build_pool(self, input):
+    def build_pool(self, input, pool_name):
         with tf.variable_scope(self.net_name + '_instance'):
-            pool = self.max_pool(input, ksize=2, stride=2, name='pool0')
+            pool = self.max_pool(input, ksize=2, stride=2, name=pool_name)
         return pool
 
-    def build_flatten(self, input):
+    def build_flatten(self, input, flat_name):
         with tf.variable_scope(self.net_name + '_instance'):
-            layer_flat = tf.layers.flatten(input, name='flat')
+            layer_flat = tf.layers.flatten(input, name=flat_name)
         return layer_flat
 
-    def build_fc(self, input):
+    def build_fc(self, input, fc_name):
         with tf.variable_scope(self.net_name + '_instance'):
-            layer_fc = self.fc_layer(input, num_units=128, name='fc', use_activation=True)
+            layer_fc = self.fc_layer(input, num_units=128, name=fc_name, use_activation=True)
         return layer_fc
 
     def build_logit(self, input):
@@ -93,6 +93,24 @@ class scn(object):
             layer_fc = self.fc_layer(layer_flat, num_units=128, name='fc', use_activation=True)
             self.model_logit = self.fc_layer(layer_fc, num_units=self.num_classes, name='logit', use_activation=False)
         return self.model_logit
+    
+    def build_device(self, input):
+        with tf.variable_scope(self.net_name + '_instance'):
+            with tf.device('GPU:0'):
+                conv = self.conv_layer(input, filter_size=5, num_filters=16, stride=1, name='conv0')
+            with tf.device('GPU:1'):
+                pool = self.max_pool(conv, ksize=2, stride=2, name='pool0')
+            with tf.device('/device:CPU:0'):
+                if self.num_conv_layer >= 1:
+                    for midx in range(self.num_conv_layer - 1):
+                        conv = self.conv_layer(pool, filter_size=5, num_filters=16, stride=1, name='conv'+str(midx+1))
+                        pool = self.max_pool(conv, ksize=2, stride=2, name='pool'+str(midx+1))
+            with tf.device('GPU:0'):
+                layer_flat = tf.layers.flatten(pool, name='flat')
+                layer_fc = self.fc_layer(layer_flat, num_units=128, name='fc', use_activation=True)
+            self.model_logit = self.fc_layer(layer_fc, num_units=self.num_classes, name='logit', use_activation=False)
+        return self.model_logit
+
 
     def train(self, logits, labels):
         #labels_paddings = labels[0:self.batch_size, :]
