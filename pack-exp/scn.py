@@ -74,7 +74,7 @@ class scn(object):
 
     def train(self, logits, labels):
         if self.batch_padding == True:
-            labels = labels[0:self.batch_size, :, :, :]
+            labels = labels[0:self.batch_size, :]
 
         with tf.name_scope('loss_' + self.net_name):
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
