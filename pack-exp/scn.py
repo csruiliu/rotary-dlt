@@ -2,7 +2,7 @@ import tensorflow as tf
 
 class scn(object):
     def __init__(self, net_name, num_conv_layer, input_h, input_w, num_channel, num_classes, batch_size, opt,
-                 learning_rate=0.0001, activation='relu'):
+                 learning_rate=0.0001, activation='relu', batch_padding=False):
         self.net_name = net_name
         self.num_conv_layer = num_conv_layer
         self.img_h = input_h
@@ -13,6 +13,7 @@ class scn(object):
         self.opt = opt
         self.learning_rate = learning_rate
         self.activation = activation
+        self.batch_padding = batch_padding
         self.model_logit = None
         self.train_op = None
         self.eval_op = None
@@ -55,7 +56,9 @@ class scn(object):
             return layer
 
     def build(self, input):
-        #input = input[0:self.batch_size, :, :, :]
+        if self.batch_padding == True:
+            input = input[0:self.batch_size, :, :, :]
+
         with tf.variable_scope(self.net_name + '_instance'):
             conv = self.conv_layer(input, filter_size=5, num_filters=16, stride=1, name='conv0')
             pool = self.max_pool(conv, ksize=2, stride=2, name='pool0')
@@ -70,7 +73,9 @@ class scn(object):
         return self.model_logit
 
     def train(self, logits, labels):
-        #labels_paddings = labels[0:self.batch_size, :]
+        if self.batch_padding == True:
+            labels = labels[0:self.batch_size, :, :, :]
+
         with tf.name_scope('loss_' + self.net_name):
             cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
