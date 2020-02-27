@@ -103,4 +103,4 @@ class densenet(object):
             correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(labels, 1))
             self.eval_op = tf.reduce_mean(tf.cast(correct_prediction, "float"))
 
-
+        return self.eval_op

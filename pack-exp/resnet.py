@@ -80,7 +80,7 @@ class resnet(object):
     def build(self, input):
         training = True
         keep_prob = 0.5
-        if self.batch_padding == True:
+        if self.batch_padding:
             input = input[0:self.batch_size, :, :, :]
 
         with tf.variable_scope(self.net_name + '_instance'):
@@ -117,7 +117,7 @@ class resnet(object):
 
             avg_pool_size = int(self.img_h // 32)
 
-            x = tf.nn.avg_pool(x, [1, avg_pool_size, avg_pool_size, 1], strides=[1,1,1,1], padding='VALID')
+            x = tf.nn.avg_pool(x, [1, avg_pool_size, avg_pool_size, 1], strides=[1, 1, 1, 1], padding='VALID')
 
             flatten = tf.layers.flatten(x)
             x = tf.layers.dense(flatten, units=50, activation=tf.nn.relu)
@@ -157,3 +157,4 @@ class resnet(object):
             correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(labels, 1))
             self.eval_op = tf.reduce_mean(tf.cast(correct_prediction, "float"))
 
+        return self.eval_op
