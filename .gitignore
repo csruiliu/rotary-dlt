@@ -13,5 +13,5 @@ dataset/
 **/logs/
 **/exp-result/
 **/exp-figure/
-**/profile_dir/
+**/profile-result/
 **/.idea/

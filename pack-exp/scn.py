@@ -1,10 +1,10 @@
 import tensorflow as tf
 
 class scn(object):
-    def __init__(self, net_name, num_conv_layer, input_h, input_w, num_channel, num_classes, batch_size, opt,
+    def __init__(self, net_name, num_layer, input_h, input_w, num_channel, num_classes, batch_size, opt,
                  learning_rate=0.0001, activation='relu', batch_padding=False):
         self.net_name = net_name
-        self.num_conv_layer = num_conv_layer
+        self.num_conv_layer = num_layer
         self.img_h = input_h
         self.img_w = input_w
         self.channel_num = num_channel
