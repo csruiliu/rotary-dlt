@@ -1,9 +1,6 @@
 import tensorflow as tf
 import tensorflow.contrib as tc
 
-weight_decay = 1e-4
-exp = 6  
-
 #MobileNetV2
 class mobilenet(object):
     def __init__(self, net_name, num_layer, input_h, input_w, num_channel, num_classes, batch_size, opt,
@@ -66,6 +63,7 @@ class mobilenet(object):
 
 
     def _conv2d(self, input, output_dim, kernel_height, kernel_width, strides_h, strides_w, stddev=0.02, bias=False, name='conv2d'):
+        weight_decay = 1e-4
         with tf.variable_scope(name):
             w = tf.get_variable('w', [kernel_height, kernel_width, input.get_shape()[-1], output_dim],
                 regularizer = tc.layers.l2_regularizer(weight_decay),
@@ -77,6 +75,7 @@ class mobilenet(object):
         return conv
 
     def _dwise_conv(self, input, kernel_height=3, kernel_width=3, channel_multiplier=1, strides=[1, 1, 1, 1], padding='SAME', stddev=0.02, name='dwise_conv', bias=False):
+        weight_decay = 1e-4
         with tf.variable_scope(name):
             in_channel = input.get_shape().as_list()[-1]
             w = tf.get_variable('w', [kernel_height, kernel_width, in_channel, channel_multiplier],
@@ -102,6 +101,7 @@ class mobilenet(object):
         return net
 
     def build(self, input):
+        exp = 6
         if self.batch_padding:
             input = input[0:self.batch_size, :, :, :]
 
@@ -145,7 +145,7 @@ class mobilenet(object):
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
 
         with tf.name_scope('optimizer_'+self.net_name):
-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS,scope=self.net_name+'_instance')
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope=self.net_name+'_instance')
             with tf.control_dependencies(update_ops):
                 if self.opt == 'Adam':
                     self.train_op = tf.train.AdamOptimizer(self.learning_rate).minimize(cross_entropy_cost)
@@ -157,3 +157,10 @@ class mobilenet(object):
                     self.train_op = tf.train.MomentumOptimizer(self.learning_rate, 0.9).minimize(cross_entropy_cost)
         return self.train_op
 
+    def evaluate(self, logits, labels):
+        with tf.name_scope('eval_' + self.net_name):
+            pred = tf.nn.softmax(logits)
+            correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(labels, 1))
+            self.eval_op = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+
+        return self.eval_op

@@ -2,8 +2,6 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-import csv
-import re
 
 outpath = '/home/ruiliu/Development/mtml-tf/figure/gpu-mem.pdf'
 
@@ -32,8 +30,6 @@ plt.xticks(ind + 1.5*width, ('MLP-3', 'MobileNet', 'ResNet-50', 'DenseNet-121', 
 plt.legend(loc='best',fontsize=24)
 plt.tight_layout()
 plt.savefig(outpath, format='pdf', bbox_inches='tight', pad_inches=0.05)
-
-
 
 #plt.xticks(np.arange(0,outputSize+1,outputSize/4))
 #plt.yticks(np.arange(0,outputSize+1,outputSize/4))
