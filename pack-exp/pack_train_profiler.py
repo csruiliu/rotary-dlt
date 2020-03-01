@@ -399,27 +399,28 @@ if __name__ == '__main__':
     trainOpPack, features, labels = buildModels(trainModel, trainNumLayer, imgHeight, imgWidth, numChannels, numClasses, trainBatchSize,
                               trainOptimizer, trainLearnRate, trainActivation, batchPadding, randSeed)
 
+    image_path_raw = cfg_yml.imagenet_t1k_img_path
+    image_path_bin = cfg_yml.imagenet_t1k_bin_path
+    label_path = cfg_yml.imagenet_t1k_label_path
+
+
     if useRawImage:
-        image_path = cfg_yml.imagenet_t1k_img_path
-        label_path = cfg_yml.imagenet_t1k_label_path
         Y_data = load_imagenet_labels_onehot(label_path, numClasses)
 
         if measureStep:
             if sameInput:
-                profileStepRawImageSameInput(trainOpPack, numEpochs, image_path, Y_data, maxBatchSize, recordMarker,
+                profileStepRawImageSameInput(trainOpPack, numEpochs, image_path_raw, Y_data, maxBatchSize, recordMarker,
                                              useTimeline)
             else:
-                profileStepRawImageDiffInput(trainOpPack, numEpochs, image_path, Y_data, maxBatchSize, recordMarker,
+                profileStepRawImageDiffInput(trainOpPack, numEpochs, image_path_raw, Y_data, maxBatchSize, recordMarker,
                                              useTimeline)
         else:
             if sameInput:
-                profileEpochRawImageSameInput(trainOpPack, numEpochs, image_path, Y_data, maxBatchSize)
+                profileEpochRawImageSameInput(trainOpPack, numEpochs, image_path_raw, Y_data, maxBatchSize)
             else:
-                profileEpochRawImageDiffInput(trainOpPack, numEpochs, image_path, Y_data, maxBatchSize)
+                profileEpochRawImageDiffInput(trainOpPack, numEpochs, image_path_raw, Y_data, maxBatchSize)
     else:
-        image_path = cfg_yml.imagenet_t1k_bin_path
-        label_path = cfg_yml.imagenet_t1k_label_path
-        X_data = load_imagenet_bin(image_path, numChannels, imgWidth, imgHeight)
+        X_data = load_imagenet_bin(image_path_bin, numChannels, imgWidth, imgHeight)
         Y_data = load_imagenet_labels_onehot(label_path, numClasses)
 
         if measureStep:

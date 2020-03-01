@@ -204,19 +204,19 @@ if __name__ == '__main__':
     trainOp = buildModel(trainModel, trainNumLayer, imgHeight, imgWidth, numChannels, numClasses, trainBatchSize,
                            trainOptimizer, trainLearnRate, trainActivation, False, randSeed, features, labels)
 
+    image_path_raw = cfg_yml.imagenet_t1k_img_path
+    image_path_bin = cfg_yml.imagenet_t1k_bin_path
+    label_path = cfg_yml.imagenet_t1k_label_path
+
     if useRawImage:
-        image_path = cfg_yml.imagenet_t1k_img_path
-        label_path = cfg_yml.imagenet_t1k_label_path
         Y_data = load_imagenet_labels_onehot(label_path, numClasses)
 
         if measureStep:
-            profileStepRawImage(trainOp, numEpochs, image_path, Y_data, recordMarker, useTimeline)
+            profileStepRawImage(trainOp, numEpochs, image_path_raw, Y_data, recordMarker, useTimeline)
         else:
-            profileEpochRawImage(trainOp, numEpochs, image_path, Y_data)
+            profileEpochRawImage(trainOp, numEpochs, image_path_raw, Y_data)
     else:
-        image_path = cfg_yml.imagenet_t1k_bin_path
-        label_path = cfg_yml.imagenet_t1k_label_path
-        X_data = load_imagenet_bin(image_path, numChannels, imgWidth, imgHeight)
+        X_data = load_imagenet_bin(image_path_bin, numChannels, imgWidth, imgHeight)
         Y_data = load_imagenet_labels_onehot(label_path, numClasses)
 
         if measureStep:
