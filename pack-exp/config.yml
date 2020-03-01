@@ -71,40 +71,30 @@ hyperparams_pack_train:
   num_epoch: 1
   random_seed: 10000
   packed_model_type:
-    - densenet
+    - mobilenet
+    - mobilenet
+  # activation: sigmoid, leaky_relu, tanh, relu
   activation:
-    - sigmoid
-    - leaky_relu
-    - tanh
     - relu
+    - relu
+  # optimizers: Adam, SGD, Adagrad, Momentum
   optimizer:
-    - Adam
     - SGD
-    - Adagrad
-    - Momentum
+    - SGD
   num_model_layer:
     - 1
+    - 1
+  # if batch size are not all same, make batch_padding True
   batch_size:
-    - 20
-    - 25
-    - 30
-    - 35
-    - 40
-    - 45
-    - 50
-    - 55
-    - 60
-    - 65
-    - 70
+    - 32
+    - 32
   learning_rate:
-    - 0.000001
     - 0.00001
-    - 0.0001
-    - 0.001
-    - 0.01
-    - 0.1
+    - 0.00001
+  record_marker: 3
+  batch_padding: False
   use_cpu: False
   use_raw_image: False
-  same_input: True
+  same_input: False
   measure_step: True
   use_tb_timeline: False

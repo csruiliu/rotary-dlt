@@ -3,9 +3,9 @@ import tensorflow as tf
 from tensorflow.python.client import timeline
 import os
 import numpy as np
-import config as cfg_yml
 from timeit import default_timer as timer
 
+import config as cfg_yml
 from dnn_model import DnnModel
 from img_utils import *
 
@@ -113,7 +113,18 @@ def profileStepRawImage(trainStep, num_epoch, X_train_path, Y_train, record_mark
                     batch_list = image_list[batch_offset:batch_end]
                     X_mini_batch_feed = load_imagenet_raw(X_train_path, batch_list, imgHeight, imgWidth)
                     Y_mini_batch_feed = Y_train[batch_offset:batch_end, :]
-                    sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+
+                    if use_timeline:
+                        profile_path = cfg_yml.profile_path
+                        run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+                        run_metadata = tf.RunMetadata()
+                        sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata)
+                        trace = timeline.Timeline(step_stats=run_metadata.step_stats)
+                        trace_file = open(profile_path + '/' + str(trainModel) + '-' + str(trainBatchSize) + '-' + str(i) + '.json', 'w')
+                        trace_file.write(trace.generate_chrome_trace_format(show_dataflow=True, show_memory=True))
+                    else:
+                        sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+
                     end_time = timer()
                     dur_time = end_time - start_time
                     print("step time:", dur_time)
