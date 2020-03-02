@@ -49,17 +49,17 @@ hyperparams_single_train:
   num_class: 1000
   num_epoch: 1
   random_seed: 10000
-  model_type: mobilenet
-  activation: sigmoid
-  optimizer: SGD
+  model_type: densenet
+  activation: relu
+  optimizer: Adam
   batch_size: 32
   num_model_layer: 1
   learning_rate: 0.00001
   record_marker: 3
   use_cpu: False
   use_raw_image: True
-  measure_step: False
-  use_tb_timeline: True
+  measure_step: True
+  use_tb_timeline: False
 
 hyperparams_pack_train:
   #img_width and img_height differs for dataset
@@ -71,15 +71,15 @@ hyperparams_pack_train:
   num_epoch: 1
   random_seed: 10000
   packed_model_type:
-    - mobilenet
-    - mobilenet
+    - densenet
+    - resnet
   # activation: sigmoid, leaky_relu, tanh, relu
   activation:
     - relu
     - relu
   # optimizers: Adam, SGD, Adagrad, Momentum
   optimizer:
-    - SGD
+    - Adam
     - SGD
   num_model_layer:
     - 1
@@ -87,14 +87,14 @@ hyperparams_pack_train:
   # if batch size are not all same, make batch_padding True
   batch_size:
     - 32
-    - 32
+    - 50
   learning_rate:
     - 0.00001
     - 0.00001
   record_marker: 3
-  batch_padding: False
+  batch_padding: True
   use_cpu: False
-  use_raw_image: False
+  use_raw_image: True
   same_input: False
   measure_step: True
   use_tb_timeline: False

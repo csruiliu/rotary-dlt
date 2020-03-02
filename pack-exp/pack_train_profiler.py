@@ -35,7 +35,7 @@ def buildModels(trainModel, num_layer, input_w, input_h, num_channels, num_class
         featuresCollection = []
         labelsCollection = []
         names = locals()
-        for idx, mt in range(trainModel):
+        for idx, mt in enumerate(trainModel):
             names['features' + str(idx)] = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
             names['labels' + str(idx)] = tf.placeholder(tf.int64, [None, numClasses])
 
@@ -100,6 +100,8 @@ def profileStepRawImageSameInput(trainOpPack, num_epoch, X_train_path, Y_train, 
                     Y_mini_batch_feed = Y_train[batch_offset:batch_end, :]
                     sess.run(trainOpPack, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
+    print("average step time (ms):", step_time / step_count * 1000)
+
 
 def profileStepRawImageDiffInput(trainOpPack, num_epoch, X_train_path, Y_train, maxBatchSize, record_marker, use_timeline):
     step_time = 0
@@ -111,7 +113,7 @@ def profileStepRawImageDiffInput(trainOpPack, num_epoch, X_train_path, Y_train, 
     image_list = sorted(os.listdir(X_train_path))
     input_model_num = len(trainOpPack)
     names = locals()
-    input_dict = []
+    input_dict = dict()
 
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
@@ -120,7 +122,7 @@ def profileStepRawImageDiffInput(trainOpPack, num_epoch, X_train_path, Y_train, 
 
         for e in range(num_epoch):
             for i in range(num_batch):
-
+                print('epoch %d / %d, step %d / %d' % (e + 1, num_epoch, i + 1, num_batch))
                 if (i + 1) % record_marker == 0:
                     start_time = timer()
                     for ridx in range(input_model_num):
@@ -130,8 +132,8 @@ def profileStepRawImageDiffInput(trainOpPack, num_epoch, X_train_path, Y_train, 
                         batch_list = image_list[batch_offset:batch_end]
                         names['X_mini_batch_feed' + str(ridx)] = load_imagenet_raw(X_train_path, batch_list, imgHeight, imgWidth)
                         names['Y_mini_batch_feed' + str(ridx)] = Y_train[batch_offset:batch_end, :]
-                        input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
-                        input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
+                        input_dict[features[ridx]] = names['X_mini_batch_feed' + str(ridx)]
+                        input_dict[labels[ridx]] = names['Y_mini_batch_feed' + str(ridx)]
                     sess.run(trainOpPack, feed_dict=input_dict)
                     end_time = timer()
                     dur_time = end_time - start_time
@@ -146,9 +148,12 @@ def profileStepRawImageDiffInput(trainOpPack, num_epoch, X_train_path, Y_train, 
                         batch_list = image_list[batch_offset:batch_end]
                         names['X_mini_batch_feed' + str(ridx)] = load_imagenet_raw(X_train_path, batch_list, imgHeight, imgWidth)
                         names['Y_mini_batch_feed' + str(ridx)] = Y_train[batch_offset:batch_end, :]
-                        input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
-                        input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
+                        input_dict[features[ridx]] = names['X_mini_batch_feed' + str(ridx)]
+                        input_dict[labels[ridx]] = names['Y_mini_batch_feed' + str(ridx)]
                     sess.run(trainOpPack, feed_dict=input_dict)
+
+    print("average step time (ms):", step_time / step_count * 1000)
+
 
 
 def profileEpochRawImageSameInput(trainOpPack, num_epoch, X_train_path, Y_train, maxBatchSize):
@@ -205,8 +210,10 @@ def profileEpochRawImageDiffInput(trainOpPack, num_epoch, X_train_path, Y_train,
                     batch_list = image_list[batch_offset:batch_end]
                     names['X_mini_batch_feed' + str(ridx)] = load_imagenet_raw(X_train_path, batch_list, imgHeight, imgWidth)
                     names['Y_mini_batch_feed' + str(ridx)] = Y_train[batch_offset:batch_end, :]
-                    input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
-                    input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
+                    input_dict[features[ridx]] = names['X_mini_batch_feed' + str(ridx)]
+                    input_dict[labels[ridx]] = names['Y_mini_batch_feed' + str(ridx)]
+                    #input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
+                    #input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
                 sess.run(trainOpPack, feed_dict=input_dict)
 
         end_time = timer()
@@ -258,7 +265,8 @@ def profileStepSameInput(trainOpPack, num_epoch, X_train, Y_train, record_marker
                     X_mini_batch_feed = X_train[batch_offset:batch_end, :, :, :]
                     Y_mini_batch_feed = Y_train[batch_offset:batch_end, :]
                     sess.run(trainOpPack, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-
+    print("average step time (ms):", step_time / step_count * 1000)
+    
 
 def profileStepDiffInput(trainOpPack, num_epoch, X_train, Y_train, record_marker, use_timeline):
     step_time = 0
@@ -286,8 +294,10 @@ def profileStepDiffInput(trainOpPack, num_epoch, X_train, Y_train, record_marker
                         batch_end = (rand_idx + 1) * maxBatchSize
                         names['X_mini_batch_feed' + str(ridx)] = X_train[batch_offset:batch_end, :, :, :]
                         names['Y_mini_batch_feed' + str(ridx)] = Y_train[batch_offset:batch_end, :]
-                        input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
-                        input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
+                        #input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
+                        #input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
+                        input_dict[features[ridx]] = names['X_mini_batch_feed' + str(ridx)]
+                        input_dict[labels[ridx]] = names['Y_mini_batch_feed' + str(ridx)]
 
                     sess.run(trainOpPack, feed_dict=input_dict)
                     end_time = timer()
@@ -303,9 +313,14 @@ def profileStepDiffInput(trainOpPack, num_epoch, X_train, Y_train, record_marker
                         batch_end = (rand_idx + 1) * maxBatchSize
                         names['X_mini_batch_feed' + str(ridx)] = X_train[batch_offset:batch_end, :, :, :]
                         names['Y_mini_batch_feed' + str(ridx)] = Y_train[batch_offset:batch_end, :]
-                        input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
-                        input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
+                        #input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
+                        #input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
+                        input_dict[features[ridx]] = names['X_mini_batch_feed' + str(ridx)]
+                        input_dict[labels[ridx]] = names['Y_mini_batch_feed' + str(ridx)]
+
                     sess.run(trainOpPack, feed_dict=input_dict)
+    
+    print("average step time (ms):", step_time / step_count * 1000)
 
 def profileEpochSameInput(trainOp, num_epoch, X_train, Y_train):
     config = tf.ConfigProto()
@@ -355,9 +370,17 @@ def profileEpochDiffInput(trainOp, num_epoch, X_train, Y_train):
                     batch_end = (rand_idx + 1) * maxBatchSize
                     names['X_mini_batch_feed' + str(ridx)] = X_train[batch_offset:batch_end, :, :, :]
                     names['Y_mini_batch_feed' + str(ridx)] = Y_train[batch_offset:batch_end, :]
-                    input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
-                    input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
+                    #input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
+                    #input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
+                    input_dict[features[ridx]] = names['X_mini_batch_feed' + str(ridx)]
+                    input_dict[labels[ridx]] = names['Y_mini_batch_feed' + str(ridx)]
+
                 sess.run(trainOpPack, feed_dict=input_dict)
+        end_time = timer()
+        dur_time = end_time - start_time
+        print("training time ({} epoch): {} seconds".format(num_epoch, dur_time))
+
+
 
 if __name__ == '__main__':
 

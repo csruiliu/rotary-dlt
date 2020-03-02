@@ -138,8 +138,6 @@ def profileStepRawImage(trainStep, num_epoch, X_train_path, Y_train, record_mark
                     Y_mini_batch_feed = Y_train[batch_offset:batch_end, :]
                     sess.run(trainStep, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
-        print(step_time)
-        print(step_count)
         print("average step time:", step_time / step_count * 1000)
 
 def profileEpochRawImage(trainStep, num_epoch, X_train_path, Y_train):
