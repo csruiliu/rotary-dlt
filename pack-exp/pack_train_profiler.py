@@ -299,13 +299,13 @@ def profileEpochSameInput():
 
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
-        num_batch = Y_data.shape[0] // trainBatchSize
+        num_batch = Y_data.shape[0] // maxBatchSize
         start_time = timer()
         for e in range(numEpochs):
             for i in range(num_batch):
                 print('epoch %d / %d, step %d / %d' % (e + 1, numEpochs, i + 1, num_batch))
-                batch_offset = i * trainBatchSize
-                batch_end = (i + 1) * trainBatchSize
+                batch_offset = i * maxBatchSize
+                batch_end = (i + 1) * maxBatchSize
                 X_mini_batch_feed = X_data[batch_offset:batch_end, :, :, :]
                 Y_mini_batch_feed = Y_data[batch_offset:batch_end, :]
                 sess.run(trainOpPack, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
@@ -325,7 +325,7 @@ def profileEpochDiffInput():
 
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
-        num_batch = Y_data.shape[0] // trainBatchSize
+        num_batch = Y_data.shape[0] // maxBatchSize
         num_batch_list = np.arange(num_batch)
 
         start_time = timer()
