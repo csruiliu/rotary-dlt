@@ -71,8 +71,8 @@ hyperparams_pack_train:
   num_epoch: 1
   random_seed: 10000
   packed_model_type:
-    - densenet
-    - resnet
+    - mobilenet
+    - mobilenet
   # activation: sigmoid, leaky_relu, tanh, relu
   activation:
     - relu
@@ -87,14 +87,14 @@ hyperparams_pack_train:
   # if batch size are not all same, make batch_padding True
   batch_size:
     - 32
-    - 50
+    - 32
   learning_rate:
     - 0.00001
     - 0.00001
   record_marker: 3
-  batch_padding: True
+  batch_padding: False
   use_cpu: False
   use_raw_image: True
-  same_input: False
+  same_input: True
   measure_step: True
   use_tb_timeline: False
