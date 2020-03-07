@@ -12,7 +12,7 @@ from img_utils import *
 
 def buildModels():
     model_name_abbr = np.random.choice(randSeed, len(trainModel), replace=False).tolist()
-    trainOpCollection = []
+    trainOpCollection = list()
 
     for idx, mt in enumerate(trainModel):
         dm = DnnModel(mt, str(model_name_abbr.pop()), trainNumLayer[idx], imgHeight, imgWidth, numChannels, numClasses,
@@ -169,7 +169,7 @@ def profileEpochRawImageDiffInput():
 
     image_list = sorted(os.listdir(image_path_raw))
     input_model_num = len(trainOpPack)
-    input_dict = []
+    input_dict = dict()
 
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
@@ -179,6 +179,7 @@ def profileEpochRawImageDiffInput():
         start_time = timer()
         for e in range(numEpochs):
             for i in range(num_batch):
+                print('epoch %d / %d, step %d / %d' % (e + 1, numEpochs, i + 1, num_batch))
                 for ridx in range(input_model_num):
                     rand_idx = int(np.random.choice(num_batch_list, 1))
                     batch_offset = rand_idx * maxBatchSize
@@ -250,7 +251,7 @@ def profileStepDiffInput():
     config.allow_soft_placement = True
 
     input_model_num = len(trainOpPack)
-    input_dict = []
+    input_dict = dict()
 
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
@@ -320,7 +321,7 @@ def profileEpochDiffInput():
     config.allow_soft_placement = True
 
     input_model_num = len(trainOpPack)
-    input_dict = []
+    input_dict = dict()
 
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
