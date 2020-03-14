@@ -1,11 +1,12 @@
 import tensorflow as tf
-from dnn_model import DnnModel
-from img_utils import *
 import numpy as np
 from datetime import datetime
 from multiprocessing import Process
 from timeit import default_timer as timer
 import os
+
+from dnn_model import DnnModel
+from img_utils import *
 
 img_w = 224
 img_h = 224
