@@ -7,27 +7,37 @@ with open("config.yml", 'r') as ymlfile:
 # Hyperparameters for pack training
 ##########################################
 
-hyperparams_pack_cfg = cfg['auto_device_placement']
+hyperparams_base_cfg = cfg['base_parameter']
 
-pack_img_width = hyperparams_pack_cfg['img_width']
-pack_img_height = hyperparams_pack_cfg['img_height']
-pack_num_channels = hyperparams_pack_cfg['num_channel']
-pack_num_classes = hyperparams_pack_cfg['num_class']
-pack_num_epoch = hyperparams_pack_cfg['num_epoch']
-pack_rand_seed = hyperparams_pack_cfg['random_seed']
-pack_model_type = hyperparams_pack_cfg['workload_model_type']
-pack_activation = hyperparams_pack_cfg['activation']
-pack_opt = hyperparams_pack_cfg['optimizer']
-pack_batch_size = hyperparams_pack_cfg['batch_size']
-pack_num_layer = hyperparams_pack_cfg['num_model_layer']
-pack_learning_rate = hyperparams_pack_cfg['learning_rate']
-pack_record_marker = hyperparams_pack_cfg['record_marker']
-pack_batch_padding = hyperparams_pack_cfg['batch_padding']
-pack_use_cpu = hyperparams_pack_cfg['use_cpu']
-pack_use_raw_image = hyperparams_pack_cfg['use_raw_image']
-pack_measure_step = hyperparams_pack_cfg['measure_step']
-pack_same_input = hyperparams_pack_cfg['same_input']
-pack_use_tb_timeline = hyperparams_pack_cfg['use_tb_timeline']
+img_width = hyperparams_base_cfg['img_width']
+img_height = hyperparams_base_cfg['img_height']
+num_channels = hyperparams_base_cfg['num_channel']
+num_classes = hyperparams_base_cfg['num_class']
+rand_seed = hyperparams_base_cfg['random_seed']
+
+
+##########################################
+# Parameters for Workload
+##########################################
+
+hyperparams_workload_cfg = cfg['device_placement_workload']
+
+workload_num = hyperparams_workload_cfg['workload_num']
+workload_model_type = hyperparams_workload_cfg['workload_model_type']
+workload_activation = hyperparams_workload_cfg['activation']
+workload_opt = hyperparams_workload_cfg['optimizer']
+workload_batch_size = hyperparams_workload_cfg['batch_size']
+workload_num_layer = hyperparams_workload_cfg['num_model_layer']
+workload_learning_rate = hyperparams_workload_cfg['learning_rate']
+use_raw_image = hyperparams_workload_cfg['use_raw_image']
+measure_step = hyperparams_workload_cfg['measure_step']
+
+#same_input = hyperparams_workload_cfg['same_input']
+#record_marker = hyperparams_workload_cfg['record_marker']
+#batch_padding = hyperparams_workload_cfg['batch_padding']
+#use_cpu = hyperparams_workload_cfg['use_cpu']
+
+#use_tb_timeline = hyperparams_pack_cfg['use_tb_timeline']
 
 ##########################################
 # Path

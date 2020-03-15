@@ -40,16 +40,18 @@ hp_path:
   mnist_t10k_label_path: /home/user/Development/dataset/mnist-t10k-labels.idx1-ubyte
   profile_path: /home/user/Development/mtml-tf/profile-result
 
-
-auto_device_placement:
+base_parameter:
   #img_width and img_height differs for dataset
   img_width: 224
   img_height: 224
   num_channel: 3
   #num_class differs for dataset
   num_class: 1000
-  num_epoch: 1
   random_seed: 10000
+
+device_placement_workload:
+  workload_num: 7
+  # model: mobilenet, densenet, mlp, resnet, scn
   workload_model_type:
     - mobilenet
     - densenet
