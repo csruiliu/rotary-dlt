@@ -8,23 +8,26 @@ from img_utils import *
 import config as cfg_yml
 
 def generateWorkload():
-    trainOpCollection = list()
+    workload_dict = dict()
 
     np.random.seed(randSeed)
 
+    for idx, mt in enumerate(workloadModelType):
+        workload_batchsize_index_list = np.random.choice(len(workloadBatchSize), workloadModelNum[idx], replace=False).tolist()
+        workload_batchsize_list = list(itemgetter(*workload_batchsize_index_list)(workloadBatchSize))
+        workload_dict[mt] = workload_batchsize_list
+
+    #workload_activation_index_list = np.random.choice(len(workloadActivation), workloadNum, replace=True).tolist()
+    #workload_activation_list = list(itemgetter(*workload_activation_index_list)(workloadActivation))
+    #workload_opt_index_list = np.random.choice(len(workloadOptimizer), workloadNum, replace=True).tolist()
+    #workload_opt_list = list(itemgetter(*workload_opt_index_list)(workloadOptimizer))
+
+    return workload_dict
+
+'''
+def buildWorkload():
     model_name_abbr = np.random.choice(randSeed, workloadNum, replace=False).tolist()
 
-    workload_model_index_list = np.random.choice(len(workloadModel), workloadNum, replace=True).tolist()
-    workload_model_list = list(itemgetter(*workload_model_index_list)(workloadModel))
-
-    workload_batchsize_index_list = np.random.choice(len(workloadBatchSize), workloadNum, replace=True).tolist()
-    workload_batchsize_list = list(itemgetter(*workload_batchsize_index_list)(workloadBatchSize))
-
-    workload_activation_index_list = np.random.choice(len(workloadActivation), workloadNum, replace=True).tolist()
-    workload_activation_list = list(itemgetter(*workload_activation_index_list)(workloadActivation))
-
-    workload_opt_index_list = np.random.choice(len(workloadOptimizer), workloadNum, replace=True).tolist()
-    workload_opt_list = list(itemgetter(*workload_opt_index_list)(workloadOptimizer))
 
     for idx, mt in enumerate(workload_model_list):
         dm = DnnModel(mt, str(model_name_abbr.pop()), workloadNumLayer[0], imgHeight, imgWidth, numChannels, numClasses,
@@ -35,6 +38,19 @@ def generateWorkload():
         trainOpCollection.append(trainStep)
 
     return trainOpCollection
+'''
+
+def even_assignment():
+    epoch_per_job = totalEpoch // workloadNum
+
+
+
+def simple_device_placement():
+    pass
+
+def sch_pack_knn():
+    pass
+
 
 if __name__ == "__main__":
 
@@ -48,30 +64,38 @@ if __name__ == "__main__":
     numClasses = cfg_yml.num_classes
     randSeed = cfg_yml.rand_seed
 
-    workloadNum = cfg_yml.workload_num
-    workloadModel = cfg_yml.workload_model_type
+    workloadModelType = cfg_yml.workload_model_type
+    workloadModelNum = cfg_yml.workload_model_num
     workloadBatchSize = cfg_yml.workload_batch_size
     workloadActivation = cfg_yml.workload_activation
     workloadOptimizer = cfg_yml.workload_opt
     workloadLearnRate = cfg_yml.workload_learning_rate
     workloadNumLayer = cfg_yml.workload_num_layer
 
+    deviceNum = cfg_yml.device_num
+    totalEpoch = cfg_yml.total_epochs
+
     #########################
-    # Build workload
+    # Build Workload
     #########################
 
-    features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
-    labels = tf.placeholder(tf.int64, [None, numClasses])
+    workloadNum = sum(workloadModelNum)
+    workload_placement = generateWorkload()
 
-    workload = generateWorkload()
-    
     #########################
-    # Handle workload
+    # Simple Placement
     #########################
+
+    initResource = cfg_yml.simple_placement_init_res
+    upRate = cfg_yml.simple_placement_up_rate
+    discardRate = cfg_yml.simple_placement_discard_rate
 
     image_path_raw = cfg_yml.imagenet_t1k_img_path
     image_path_bin = cfg_yml.imagenet_t1k_bin_path
     label_path = cfg_yml.imagenet_t1k_label_path
 
+    features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+    labels = tf.placeholder(tf.int64, [None, numClasses])
 
-
+    #simple_device_placement(workload_placement)
+    even_assignment()

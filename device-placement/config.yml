@@ -48,9 +48,10 @@ base_parameter:
   #num_class differs for dataset
   num_class: 1000
   random_seed: 10000
+  device_num: 2
+  total_epochs: 100
 
 device_placement_workload:
-  workload_num: 7
   # model: mobilenet, densenet, mlp, resnet, scn
   workload_model_type:
     - mobilenet
@@ -58,6 +59,12 @@ device_placement_workload:
     - mlp
     - resnet
     - scn
+  workload_model_num:
+    - 3
+    - 3
+    - 2
+    - 3
+    - 2
   # activation: sigmoid, leaky_relu, tanh, relu
   activation:
     - relu
@@ -92,3 +99,10 @@ device_placement_workload:
   same_input: True
   measure_step: True
   use_tb_timeline: False
+
+simple_device_placement:
+  init_resource_conf: 1
+  up_rate: 2
+  discard_rate: 0.5
+
+

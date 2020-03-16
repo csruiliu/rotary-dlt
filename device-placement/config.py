@@ -4,7 +4,7 @@ with open("config.yml", 'r') as ymlfile:
     cfg = yaml.load(ymlfile)
 
 ##########################################
-# Hyperparameters for pack training
+# General Hyperparameters
 ##########################################
 
 hyperparams_base_cfg = cfg['base_parameter']
@@ -14,7 +14,8 @@ img_height = hyperparams_base_cfg['img_height']
 num_channels = hyperparams_base_cfg['num_channel']
 num_classes = hyperparams_base_cfg['num_class']
 rand_seed = hyperparams_base_cfg['random_seed']
-
+device_num = hyperparams_base_cfg['device_num']
+total_epochs = hyperparams_base_cfg['total_epochs']
 
 ##########################################
 # Parameters for Workload
@@ -22,8 +23,8 @@ rand_seed = hyperparams_base_cfg['random_seed']
 
 hyperparams_workload_cfg = cfg['device_placement_workload']
 
-workload_num = hyperparams_workload_cfg['workload_num']
 workload_model_type = hyperparams_workload_cfg['workload_model_type']
+workload_model_num = hyperparams_workload_cfg['workload_model_num']
 workload_activation = hyperparams_workload_cfg['activation']
 workload_opt = hyperparams_workload_cfg['optimizer']
 workload_batch_size = hyperparams_workload_cfg['batch_size']
@@ -36,8 +37,18 @@ measure_step = hyperparams_workload_cfg['measure_step']
 #record_marker = hyperparams_workload_cfg['record_marker']
 #batch_padding = hyperparams_workload_cfg['batch_padding']
 #use_cpu = hyperparams_workload_cfg['use_cpu']
-
 #use_tb_timeline = hyperparams_pack_cfg['use_tb_timeline']
+
+
+##########################################
+# Simple device placement
+##########################################
+
+simple_placement_cfg = cfg['simple_device_placement']
+simple_placement_init_res = simple_placement_cfg['init_resource_conf']
+simple_placement_up_rate = simple_placement_cfg['up_rate']
+simple_placement_discard_rate = simple_placement_cfg['discard_rate']
+
 
 ##########################################
 # Path
