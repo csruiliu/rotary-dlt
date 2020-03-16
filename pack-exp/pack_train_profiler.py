@@ -60,7 +60,7 @@ def profileStepRawImageSameInput():
                         sess.run(trainOpPack, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed},
                                  options=run_options, run_metadata=run_metadata)
                         trace = timeline.Timeline(step_stats=run_metadata.step_stats)
-                        trace_file = open(profile_path + '/' + '-'.join(map(str, trainModel)) + '-' + str(len(trainModel)) + '-' + '-'.join(map(str, trainBatchSize)) + '-' + str(i) + '.json', 'w')
+                        trace_file = open(profile_path + '/' + '-'.join(map(str, set(trainModel))) + '-' + str(len(trainModel)) + '-' + '-'.join(map(str, set(trainBatchSize))) + '-' + str(i) + '.json', 'w')
                         trace_file.write(trace.generate_chrome_trace_format(show_dataflow=True, show_memory=True))
                     else:
                         sess.run(trainOpPack, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
@@ -119,7 +119,7 @@ def profileStepRawImageDiffInput():
                         run_metadata = tf.RunMetadata()
                         sess.run(trainOpPack, feed_dict=input_dict, options=run_options, run_metadata=run_metadata)
                         trace = timeline.Timeline(step_stats=run_metadata.step_stats)
-                        trace_file = open(profile_path + '/' + '-'.join(map(str, trainModel)) + '-' + str(len(trainModel)) + '-' + '-'.join(map(str, trainBatchSize)) + '-' + str(i) + '.json', 'w')
+                        trace_file = open(profile_path + '/' + '-'.join(map(str, set(trainModel))) + '-' + str(len(trainModel)) + '-' + '-'.join(map(str, set(trainBatchSize))) + '-' + str(i) + '.json', 'w')
                         trace_file.write(trace.generate_chrome_trace_format(show_dataflow=True, show_memory=True))
                     else:
                         sess.run(trainOpPack, feed_dict=input_dict)
@@ -233,7 +233,7 @@ def profileStepSameInput():
                         run_metadata = tf.RunMetadata()
                         sess.run(trainOpPack, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata)
                         trace = timeline.Timeline(step_stats=run_metadata.step_stats)
-                        trace_file = open(profile_path + '/' + '-'.join(map(str, trainModel)) + '-' + str(len(trainModel)) + '-' + '-'.join(map(str, trainBatchSize)) + '-' + str(i) + '.json', 'w')
+                        trace_file = open(profile_path + '/' + '-'.join(map(str, set(trainModel))) + '-' + str(len(trainModel)) + '-' + '-'.join(map(str, set(trainBatchSize))) + '-' + str(i) + '.json', 'w')
                         trace_file.write(trace.generate_chrome_trace_format(show_dataflow=True, show_memory=True))
                     else:
                         sess.run(trainOpPack, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
@@ -288,7 +288,7 @@ def profileStepDiffInput():
                         run_metadata = tf.RunMetadata()
                         sess.run(trainOpPack, feed_dict=input_dict, options=run_options, run_metadata=run_metadata)
                         trace = timeline.Timeline(step_stats=run_metadata.step_stats)
-                        trace_file = open(profile_path + '/' + '-'.join(map(str, trainModel)) + '-' + str(len(trainModel)) + '-' + '-'.join(map(str, trainBatchSize)) + '-' + str(i) + '.json', 'w')
+                        trace_file = open(profile_path + '/' + '-'.join(map(str, set(trainModel))) + '-' + str(len(trainModel)) + '-' + '-'.join(map(str, set(trainBatchSize))) + '-' + str(i) + '.json', 'w')
                         trace_file.write(trace.generate_chrome_trace_format(show_dataflow=True, show_memory=True))
                     else:
                         sess.run(trainOpPack, feed_dict=input_dict)
