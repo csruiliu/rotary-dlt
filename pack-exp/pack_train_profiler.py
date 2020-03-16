@@ -60,7 +60,7 @@ def profileStepRawImageSameInput():
                         sess.run(trainOpPack, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed},
                                  options=run_options, run_metadata=run_metadata)
                         trace = timeline.Timeline(step_stats=run_metadata.step_stats)
-                        trace_file = open(profile_path + '/' + str(trainModel) + '-' + str(trainBatchSize) + '-' + str(i) + '.json','w')
+                        trace_file = open(profile_path + '/' + '-'.join(map(str, trainModel)) + '-' + str(len(trainModel)) + '-' + '-'.join(map(str, trainBatchSize)) + '-' + str(i) + '.json', 'w')
                         trace_file.write(trace.generate_chrome_trace_format(show_dataflow=True, show_memory=True))
                     else:
                         sess.run(trainOpPack, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
@@ -112,7 +112,18 @@ def profileStepRawImageDiffInput():
                         names['Y_mini_batch_feed' + str(ridx)] = Y_data[batch_offset:batch_end, :]
                         input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
                         input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
-                    sess.run(trainOpPack, feed_dict=input_dict)
+
+                    if useTimeline:
+                        profile_path = cfg_yml.profile_path
+                        run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+                        run_metadata = tf.RunMetadata()
+                        sess.run(trainOpPack, feed_dict=input_dict, options=run_options, run_metadata=run_metadata)
+                        trace = timeline.Timeline(step_stats=run_metadata.step_stats)
+                        trace_file = open(profile_path + '/' + '-'.join(map(str, trainModel)) + '-' + str(len(trainModel)) + '-' + '-'.join(map(str, trainBatchSize)) + '-' + str(i) + '.json', 'w')
+                        trace_file.write(trace.generate_chrome_trace_format(show_dataflow=True, show_memory=True))
+                    else:
+                        sess.run(trainOpPack, feed_dict=input_dict)
+
                     end_time = timer()
                     dur_time = end_time - start_time
                     print("step time:", dur_time)
@@ -222,7 +233,7 @@ def profileStepSameInput():
                         run_metadata = tf.RunMetadata()
                         sess.run(trainOpPack, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed}, options=run_options, run_metadata=run_metadata)
                         trace = timeline.Timeline(step_stats=run_metadata.step_stats)
-                        trace_file = open(profile_path + '/' + str(trainModel) + '-' + str(trainBatchSize) + '-' + str(i) + '.json', 'w')
+                        trace_file = open(profile_path + '/' + '-'.join(map(str, trainModel)) + '-' + str(len(trainModel)) + '-' + '-'.join(map(str, trainBatchSize)) + '-' + str(i) + '.json', 'w')
                         trace_file.write(trace.generate_chrome_trace_format(show_dataflow=True, show_memory=True))
                     else:
                         sess.run(trainOpPack, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
@@ -271,7 +282,17 @@ def profileStepDiffInput():
                         input_dict[names['features' + str(ridx)]] = names['X_mini_batch_feed' + str(ridx)]
                         input_dict[names['labels' + str(ridx)]] = names['Y_mini_batch_feed' + str(ridx)]
 
-                    sess.run(trainOpPack, feed_dict=input_dict)
+                    if useTimeline:
+                        profile_path = cfg_yml.profile_path
+                        run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+                        run_metadata = tf.RunMetadata()
+                        sess.run(trainOpPack, feed_dict=input_dict, options=run_options, run_metadata=run_metadata)
+                        trace = timeline.Timeline(step_stats=run_metadata.step_stats)
+                        trace_file = open(profile_path + '/' + '-'.join(map(str, trainModel)) + '-' + str(len(trainModel)) + '-' + '-'.join(map(str, trainBatchSize)) + '-' + str(i) + '.json', 'w')
+                        trace_file.write(trace.generate_chrome_trace_format(show_dataflow=True, show_memory=True))
+                    else:
+                        sess.run(trainOpPack, feed_dict=input_dict)
+
                     end_time = timer()
                     dur_time = end_time - start_time
                     print("step time:", dur_time)
