@@ -105,4 +105,53 @@ simple_device_placement:
   up_rate: 2
   discard_rate: 0.5
 
+#the approximated memory usage peak in model training
+model_memory_usage_imagenet (100MB):
+  mobilenet_5: 5
+  mobilenet_10: 8
+  mobilenet_20: 13
+  mobilenet_32: 20
+  mobilenet_50: 30
+  mobilenet_64: 38
+  mobilenet_80: 47
+  mobilenet_100: 58
+  mobilenet_128: 74
+  densenet_5: 20
+  densenet_10: 30
+  densenet_20: 40
+  densenet_32: 60
+  densenet_50: 80
+  densenet_64: 100
+  densenet_80: 120
+  densenet_100: 140
+  densenet_128: 180
+  mlp_5: 26
+  mlp_10: 26
+  mlp_20: 20
+  mlp_32: 20
+  mlp_50: 26
+  mlp_64: 26
+  mlp_80: 26
+  mlp_100: 26
+  mlp_128: 21
+  resnet_5: 11
+  resnet_10: 15
+  resnet_20: 26
+  resnet_32: 38
+  resnet_50: 56
+  resnet_64: 71
+  resnet_80: 87
+  resnet_100: 108
+  resnet_128: 136
+  scn_5: 6
+  scn_10: 6
+  scn_20: 6
+  scn_32: 7
+  scn_50: 8
+  scn_64: 9
+  scn_80: 9
+  scn_100: 10
+  scn_128: 12
+
+
 
