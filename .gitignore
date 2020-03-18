@@ -15,3 +15,4 @@ dataset/
 **/exp-figure/
 **/profile-result/
 **/.idea/
+**/model_ckpt/
