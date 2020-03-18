@@ -73,7 +73,8 @@ def run_single_job(model_type, batch_size, model_instance):
 
     Y_data = load_imagenet_labels_onehot(label_path, numClasses)
 
-    model_ckpt_path = ckpt_path + '/' + model_type + '_' + str(batch_size)
+    if not os.path.exists(ckpt_path):
+        os.mkdir(ckpt_path)
 
     saver = tf.train.Saver()
 
@@ -81,11 +82,13 @@ def run_single_job(model_type, batch_size, model_instance):
     config.gpu_options.allow_growth = True
     config.allow_soft_placement = True
     image_list = sorted(os.listdir(image_path_raw))
+    model_ckpt_path = ckpt_path + '/' + model_type + '_' + str(batch_size)
 
     with tf.Session(config=config) as sess:
         if os.path.exists(model_ckpt_path):
             saver.restore(sess, model_ckpt_path + '/' + model_type + '_' + str(batch_size))
         else:
+            os.mkdir(model_ckpt_path)
             sess.run(tf.global_variables_initializer())
 
         num_batch = Y_data.shape[0] // batch_size
