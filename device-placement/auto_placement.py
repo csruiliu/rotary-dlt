@@ -23,20 +23,6 @@ def generateWorkload():
 
     return workload_dict
 
-'''
-def buildWorkload():
-    model_name_abbr = np.random.choice(randSeed, workloadNum, replace=False).tolist()
-
-    for idx, mt in enumerate(workload_model_list):
-        dm = DnnModel(mt, str(model_name_abbr.pop()), workloadNumLayer[0], imgHeight, imgWidth, numChannels, numClasses,
-                      workload_batchsize_list[idx], workload_opt_list[idx], workloadLearnRate[0], workload_activation_list[idx], True)
-        modelEntity = dm.getModelEntity()
-        modelLogit = modelEntity.build(features)
-        trainStep = modelEntity.train(modelLogit, labels)
-        trainOpCollection.append(trainStep)
-
-    return trainOpCollection
-'''
 
 def robin_resource_allocation():
     workload_list = list()
@@ -69,7 +55,6 @@ def run_single_job(model_type, batch_size, model_instance):
     modelEntity = dm.getModelEntity()
     modelLogit = modelEntity.build(features)
     trainOps = modelEntity.train(modelLogit, labels)
-    #evalOps = modelEntity.evaluate(modelLogit, labels)
 
     Y_data = load_imagenet_labels_onehot(label_path, numClasses)
 
@@ -103,7 +88,6 @@ def run_single_job(model_type, batch_size, model_instance):
 
         if os.path.exists(model_ckpt_path):
             shutil.rmtree(model_ckpt_path)
-            #os.rmdir(model_ckpt_path)
             os.mkdir(model_ckpt_path)
         else:
             os.mkdir(model_ckpt_path)
@@ -112,6 +96,7 @@ def run_single_job(model_type, batch_size, model_instance):
 
 def evaluate_model():
     workload_list = list()
+    acc_list = list()
     model_name_abbr = np.random.choice(randSeed, workloadNum, replace=False).tolist()
     for key, value in workload_placement.items():
         for v in value:
@@ -124,11 +109,14 @@ def evaluate_model():
         p = Process(target=evaluate_single_job, args=(job[0], job[1], job[2], child_conn))
         p.start()
         single_acc = parent_conn.recv()
+        acc_list.append(acc_list)
         sum_acc += single_acc
         parent_conn.close()
         p.join()
 
+    print('Accuracy List:', acc_list)
     return sum_acc / workloadNum
+
 
 def evaluate_single_job(model_type, batch_size, model_instance, conn):
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
@@ -157,6 +145,7 @@ def evaluate_single_job(model_type, batch_size, model_instance, conn):
     conn.send(acc_arg)
     conn.close()
     print("Accuracy:", acc_arg)
+
 
 if __name__ == "__main__":
 
@@ -201,11 +190,11 @@ if __name__ == "__main__":
     test_image_path_bin = cfg_yml.imagenet_t1k_bin_path
     test_label_path = cfg_yml.imagenet_t1k_label_path
 
-    #robin_time_limit = cfg_yml.robin_time_limit
-    #robin_resource_allocation()
+    robin_time_limit = cfg_yml.robin_time_limit
+    robin_resource_allocation()
 
-    avg_acc = evaluate_model()
-    print('Average Accuracy:', avg_acc)
+    #avg_acc = evaluate_model()
+    #print('Average Accuracy:', avg_acc)
 
     '''
     initResource = cfg_yml.simple_placement_init_res
