@@ -55,7 +55,7 @@ def robin_resource_allocation():
             p.join()
             end_time = timer()
             dur_time = end_time - start_time
-            if dur_time > 120:
+            if dur_time > robin_time_limit:
                 print(workload_list)
                 print('total running time:', dur_time)
                 return
@@ -111,12 +111,6 @@ def run_single_job(model_type, batch_size, model_instance):
 
 
 
-def simple_device_placement():
-    pass
-
-def sch_pack_knn():
-    pass
-
 
 if __name__ == "__main__":
 
@@ -157,14 +151,13 @@ if __name__ == "__main__":
     label_path = cfg_yml.imagenet_t1k_label_path
     ckpt_path = cfg_yml.ckpt_path
 
+    robin_time_limit = cfg_yml.robin_time_limit
     robin_resource_allocation()
 
     '''
     initResource = cfg_yml.simple_placement_init_res
     upRate = cfg_yml.simple_placement_up_rate
     discardRate = cfg_yml.simple_placement_discard_rate
-
-
 
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])

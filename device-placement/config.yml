@@ -103,6 +103,9 @@ device_placement_workload:
   measure_step: True
   use_tb_timeline: False
 
+robin_device_placement:
+  time_limit: 600
+
 simple_device_placement:
   init_resource_conf: 1
   up_rate: 2

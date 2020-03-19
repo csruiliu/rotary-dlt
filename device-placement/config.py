@@ -51,6 +51,13 @@ simple_placement_discard_rate = simple_placement_cfg['discard_rate']
 
 
 ##########################################
+# Robin device placement
+##########################################
+
+robin_device_placement = cfg['robin_device_placement']
+robin_time_limit = robin_device_placement['time_limit']
+
+##########################################
 # Path
 ##########################################
 
