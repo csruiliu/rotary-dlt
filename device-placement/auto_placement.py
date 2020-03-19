@@ -109,12 +109,17 @@ def evaluate_model():
         p = Process(target=evaluate_single_job, args=(job[0], job[1], job[2], child_conn))
         p.start()
         single_acc = parent_conn.recv()
-        acc_list.append(acc_list)
+        acc_list.append(single_acc)
         sum_acc += single_acc
         parent_conn.close()
         p.join()
 
     print('Accuracy List:', acc_list)
+    print('Max', max(acc_list))
+    print('75Q:', np.quantile(acc_list, 0.75))
+    print('Median:', np.quantile(acc_list, 0.5))
+    print('25Q:', np.quantile(acc_list, 0.25))
+    print('Min', min(acc_list))
     return sum_acc / workloadNum
 
 
@@ -126,7 +131,6 @@ def evaluate_single_job(model_type, batch_size, model_instance, conn):
                   0.0001, 'relu', False)
     modelEntity = dm.getModelEntity()
     modelLogit = modelEntity.build(features)
-    trainOps = modelEntity.train(modelLogit, labels)
     evalOps = modelEntity.evaluate(modelLogit, labels)
 
     saver = tf.train.Saver()

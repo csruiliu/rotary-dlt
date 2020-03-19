@@ -104,7 +104,7 @@ device_placement_workload:
   use_tb_timeline: False
 
 robin_device_placement:
-  time_limit: 600
+  time_limit: 1800
 
 simple_device_placement:
   init_resource_conf: 1
