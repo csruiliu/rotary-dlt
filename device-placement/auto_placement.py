@@ -40,17 +40,17 @@ def buildWorkload():
 
 def robin_resource_allocation():
     workload_list = list()
+    model_name_abbr = np.random.choice(randSeed, workloadNum, replace=False).tolist()
     for key, value in workload_placement.items():
         for v in value:
-            temp = [key, v]
+            temp = [key, v, model_name_abbr.pop()]
             workload_list.append(temp)
 
     start_time = timer()
-    model_name_abbr = np.random.choice(randSeed, workloadNum, replace=False).tolist()
 
     while True:
         for job in workload_list:
-            p = Process(target=run_single_job, args=(job[0], job[1], model_name_abbr.pop()))
+            p = Process(target=run_single_job, args=(job[0], job[1], job[2]))
             p.start()
             p.join()
             end_time = timer()
@@ -110,7 +110,50 @@ def run_single_job(model_type, batch_size, model_instance):
         saver.save(sess, model_ckpt_path + '/' + model_type + '_' + str(batch_size))
 
 
+def evaluate_model():
+    workload_list = list()
+    model_name_abbr = np.random.choice(randSeed, workloadNum, replace=False).tolist()
+    for key, value in workload_placement.items():
+        for v in value:
+            temp = [key, v, model_name_abbr.pop()]
+            workload_list.append(temp)
 
+    for job in workload_list:
+        parent_conn, child_conn = Pipe()
+        p = Process(target=evaluate_single_job, args=(job[0], job[1], job[2], child_conn))
+        p.start()
+        acc_pack = parent_conn.recv()
+        parent_conn.close()
+        p.join()
+
+
+def evaluate_single_job(model_type, batch_size, model_instance, conn):
+    features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+    labels = tf.placeholder(tf.int64, [None, numClasses])
+
+    dm = DnnModel(model_type, str(model_instance), 1, imgHeight, imgWidth, numChannels, numClasses, batch_size, 'Adam',
+                  0.0001, 'relu', False)
+    modelEntity = dm.getModelEntity()
+    modelLogit = modelEntity.build(features)
+    trainOps = modelEntity.train(modelLogit, labels)
+    evalOps = modelEntity.evaluate(modelLogit, labels)
+
+    saver = tf.train.Saver()
+
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    config.allow_soft_placement = True
+    image_list = sorted(os.listdir(image_path_raw))
+    model_ckpt_path = ckpt_path + '/' + model_type + '_' + str(batch_size)
+
+    with tf.Session(config=config) as sess:
+        saver.restore(sess, model_ckpt_path + '/' + model_type + '_' + str(batch_size))
+        X_data_eval = load_imagenet_bin(test_image_path_bin, numChannels, imgWidth, imgHeight)
+        Y_data_eval = load_imagenet_labels_onehot(test_label_path, numClasses)
+        acc_arg = evalOps.eval({features: X_data_eval, labels: Y_data_eval})
+    conn.send(acc_arg)
+    conn.close()
+    print("Accuracy:", acc_arg)
 
 if __name__ == "__main__":
 
@@ -146,13 +189,19 @@ if __name__ == "__main__":
     # Model Placement
     #########################
 
-    image_path_raw = cfg_yml.imagenet_t1k_img_path
-    image_path_bin = cfg_yml.imagenet_t1k_bin_path
-    label_path = cfg_yml.imagenet_t1k_label_path
+    image_path_raw = cfg_yml.imagenet_t10k_img_path
+    image_path_bin = cfg_yml.imagenet_t10k_bin_path
+    label_path = cfg_yml.imagenet_t10k_label_path
     ckpt_path = cfg_yml.ckpt_path
 
-    robin_time_limit = cfg_yml.robin_time_limit
-    robin_resource_allocation()
+    test_image_path_raw = cfg_yml.imagenet_t1k_img_path
+    test_image_path_bin = cfg_yml.imagenet_t1k_bin_path
+    test_label_path = cfg_yml.imagenet_t1k_label_path
+
+    #robin_time_limit = cfg_yml.robin_time_limit
+    #robin_resource_allocation()
+
+    evaluate_model()
 
     '''
     initResource = cfg_yml.simple_placement_init_res
@@ -162,5 +211,4 @@ if __name__ == "__main__":
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
     '''
-    #simple_device_placement(workload_placement)
 
