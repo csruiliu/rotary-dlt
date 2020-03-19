@@ -118,14 +118,17 @@ def evaluate_model():
             temp = [key, v, model_name_abbr.pop()]
             workload_list.append(temp)
 
+    sum_acc = 0
     for job in workload_list:
         parent_conn, child_conn = Pipe()
         p = Process(target=evaluate_single_job, args=(job[0], job[1], job[2], child_conn))
         p.start()
-        acc_pack = parent_conn.recv()
+        single_acc = parent_conn.recv()
+        sum_acc += single_acc
         parent_conn.close()
         p.join()
 
+    return sum_acc / workloadNum
 
 def evaluate_single_job(model_type, batch_size, model_instance, conn):
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
@@ -201,7 +204,8 @@ if __name__ == "__main__":
     #robin_time_limit = cfg_yml.robin_time_limit
     #robin_resource_allocation()
 
-    evaluate_model()
+    avg_acc = evaluate_model()
+    print('Average Accuracy:', avg_acc)
 
     '''
     initResource = cfg_yml.simple_placement_init_res
