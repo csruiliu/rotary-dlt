@@ -1,9 +1,10 @@
 from __future__ import division
 import tensorflow as tf
+from tensorflow.python.client import device_lib
 import numpy as np
 from operator import itemgetter
 from timeit import default_timer as timer
-from multiprocessing import Process, Pipe
+from multiprocessing import Process, Pipe, Pool
 import os
 import shutil
 
@@ -11,7 +12,7 @@ from dnn_model import DnnModel
 from img_utils import *
 import config as cfg_yml
 
-def generateWorkload():
+def generate_workload():
     workload_dict = dict()
 
     np.random.seed(randSeed)
@@ -24,6 +25,36 @@ def generateWorkload():
     return workload_dict
 
 
+def get_device_list():
+    local_devices = device_lib.list_local_devices()
+    return [x.name for x in local_devices if x.device_type == 'GPU' or x.device_type == 'CPU']
+
+
+def robin_resource_allocation():
+    workload_list = list()
+    model_name_abbr = np.random.choice(randSeed, workloadNum, replace=False).tolist()
+    for key, value in workload_placement.items():
+        for v in value:
+            temp = [key, v, model_name_abbr.pop()]
+            workload_list.append(temp)
+
+    start_time = timer()
+    pool = Pool(processes=len(available_devices))
+
+    while True:
+        for job in workload_list:
+            pool.apply_async(run_single_job, (job[0], job[1], job[2],))
+            end_time = timer()
+            dur_time = end_time - start_time
+            if dur_time > 1:
+                pool.close()
+                pool.join()
+                print(workload_list)
+                print('total running time:', dur_time)
+                return
+
+'''
+% single process for round robin resource allocation
 def robin_resource_allocation():
     workload_list = list()
     model_name_abbr = np.random.choice(randSeed, workloadNum, replace=False).tolist()
@@ -45,53 +76,55 @@ def robin_resource_allocation():
                 print(workload_list)
                 print('total running time:', dur_time)
                 return
+'''
 
 
-def run_single_job(model_type, batch_size, model_instance):
-    features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
-    labels = tf.placeholder(tf.int64, [None, numClasses])
+def run_single_job(model_type, batch_size, model_instance, assign_device):
+    with tf.device(assign_device):
+        features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+        labels = tf.placeholder(tf.int64, [None, numClasses])
 
-    dm = DnnModel(model_type, str(model_instance), 1, imgHeight, imgWidth, numChannels, numClasses, batch_size, 'Adam', 0.0001, 'relu', False)
-    modelEntity = dm.getModelEntity()
-    modelLogit = modelEntity.build(features)
-    trainOps = modelEntity.train(modelLogit, labels)
+        dm = DnnModel(model_type, str(model_instance), 1, imgHeight, imgWidth, numChannels, numClasses, batch_size, 'Adam', 0.0001, 'relu', False)
+        modelEntity = dm.getModelEntity()
+        modelLogit = modelEntity.build(features)
+        trainOps = modelEntity.train(modelLogit, labels)
 
-    Y_data = load_imagenet_labels_onehot(label_path, numClasses)
+        Y_data = load_imagenet_labels_onehot(label_path, numClasses)
 
-    if not os.path.exists(ckpt_path):
-        os.mkdir(ckpt_path)
+        if not os.path.exists(ckpt_path):
+            os.mkdir(ckpt_path)
 
-    saver = tf.train.Saver()
+        saver = tf.train.Saver()
 
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    config.allow_soft_placement = True
-    image_list = sorted(os.listdir(image_path_raw))
-    model_ckpt_path = ckpt_path + '/' + model_type + '_' + str(batch_size)
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        config.allow_soft_placement = True
+        image_list = sorted(os.listdir(image_path_raw))
+        model_ckpt_path = ckpt_path + '/' + model_type + '_' + str(batch_size)
 
-    with tf.Session(config=config) as sess:
-        if os.path.exists(model_ckpt_path):
-            saver.restore(sess, model_ckpt_path + '/' + model_type + '_' + str(batch_size))
-        else:
-            os.mkdir(model_ckpt_path)
-            sess.run(tf.global_variables_initializer())
+        with tf.Session(config=config) as sess:
+            if os.path.exists(model_ckpt_path):
+                saver.restore(sess, model_ckpt_path + '/' + model_type + '_' + str(batch_size))
+            else:
+                os.mkdir(model_ckpt_path)
+                sess.run(tf.global_variables_initializer())
 
-        num_batch = Y_data.shape[0] // batch_size
-        for i in range(num_batch):
-            print('step %d / %d' % (i + 1, num_batch))
-            batch_offset = i * batch_size
-            batch_end = (i + 1) * batch_size
-            batch_list = image_list[batch_offset:batch_end]
-            X_mini_batch_feed = load_imagenet_raw(image_path_raw, batch_list, imgHeight, imgWidth)
-            Y_mini_batch_feed = Y_data[batch_offset:batch_end, :]
-            sess.run(trainOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+            num_batch = Y_data.shape[0] // batch_size
+            for i in range(num_batch):
+                print('step %d / %d' % (i + 1, num_batch))
+                batch_offset = i * batch_size
+                batch_end = (i + 1) * batch_size
+                batch_list = image_list[batch_offset:batch_end]
+                X_mini_batch_feed = load_imagenet_raw(image_path_raw, batch_list, imgHeight, imgWidth)
+                Y_mini_batch_feed = Y_data[batch_offset:batch_end, :]
+                sess.run(trainOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
-        if os.path.exists(model_ckpt_path):
-            shutil.rmtree(model_ckpt_path)
-            os.mkdir(model_ckpt_path)
-        else:
-            os.mkdir(model_ckpt_path)
-        saver.save(sess, model_ckpt_path + '/' + model_type + '_' + str(batch_size))
+            if os.path.exists(model_ckpt_path):
+                shutil.rmtree(model_ckpt_path)
+                os.mkdir(model_ckpt_path)
+            else:
+                os.mkdir(model_ckpt_path)
+            saver.save(sess, model_ckpt_path + '/' + model_type + '_' + str(batch_size))
 
 
 def evaluate_model():
@@ -179,7 +212,7 @@ if __name__ == "__main__":
     #########################
 
     workloadNum = sum(workloadModelNum)
-    workload_placement = generateWorkload()
+    workload_placement = generate_workload()
 
     #########################
     # Model Placement
@@ -194,11 +227,16 @@ if __name__ == "__main__":
     test_image_path_bin = cfg_yml.imagenet_t1k_bin_path
     test_label_path = cfg_yml.imagenet_t1k_label_path
 
-    robin_time_limit = cfg_yml.robin_time_limit
-    robin_resource_allocation()
+    #robin_time_limit = cfg_yml.robin_time_limit
+    #robin_resource_allocation()
 
     #avg_acc = evaluate_model()
     #print('Average Accuracy:', avg_acc)
+
+    available_devices = get_device_list()
+    robin_resource_allocation()
+
+
 
     '''
     initResource = cfg_yml.simple_placement_init_res
