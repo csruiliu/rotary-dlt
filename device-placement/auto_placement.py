@@ -46,7 +46,7 @@ def robin_resource_allocation():
             pool.apply_async(run_single_job, (job[0], job[1], job[2],))
             end_time = timer()
             dur_time = end_time - start_time
-            if dur_time > 1:
+            if dur_time > robin_time_limit:
                 pool.close()
                 pool.join()
                 print(workload_list)
@@ -227,15 +227,12 @@ if __name__ == "__main__":
     test_image_path_bin = cfg_yml.imagenet_t1k_bin_path
     test_label_path = cfg_yml.imagenet_t1k_label_path
 
-    #robin_time_limit = cfg_yml.robin_time_limit
-    #robin_resource_allocation()
+    available_devices = get_device_list()
+    robin_time_limit = cfg_yml.robin_time_limit
+    robin_resource_allocation()
 
     #avg_acc = evaluate_model()
     #print('Average Accuracy:', avg_acc)
-
-    available_devices = get_device_list()
-    robin_resource_allocation()
-
 
 
     '''
