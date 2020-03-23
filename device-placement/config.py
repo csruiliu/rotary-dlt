@@ -44,7 +44,7 @@ measure_step = hyperparams_workload_cfg['measure_step']
 # Simple device placement
 ##########################################
 
-simple_placement_cfg = cfg['simple_device_placement']
+simple_placement_cfg = cfg['simple_placement']
 simple_placement_init_res = simple_placement_cfg['init_resource_conf']
 simple_placement_up_rate = simple_placement_cfg['up_rate']
 simple_placement_discard_rate = simple_placement_cfg['discard_rate']
@@ -54,7 +54,7 @@ simple_placement_discard_rate = simple_placement_cfg['discard_rate']
 # Robin device placement
 ##########################################
 
-robin_device_placement = cfg['robin_device_placement']
+robin_device_placement = cfg['robin_placement']
 robin_time_limit = robin_device_placement['time_limit']
 
 ##########################################

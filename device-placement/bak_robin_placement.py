@@ -62,9 +62,7 @@ def robin_resource_allocation():
         for v in value:
             temp = [key, v, model_name_abbr.pop()]
             workload_list.append(temp)
-
     start_time = timer()
-
     while True:
         for job in workload_list:
             p = Process(target=run_single_job, args=(job[0], job[1], job[2]))
@@ -230,17 +228,3 @@ if __name__ == "__main__":
     available_devices = get_device_list()
     robin_time_limit = cfg_yml.robin_time_limit
     robin_resource_allocation()
-
-    #avg_acc = evaluate_model()
-    #print('Average Accuracy:', avg_acc)
-
-
-    '''
-    initResource = cfg_yml.simple_placement_init_res
-    upRate = cfg_yml.simple_placement_up_rate
-    discardRate = cfg_yml.simple_placement_discard_rate
-
-    features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
-    labels = tf.placeholder(tf.int64, [None, numClasses])
-    '''
-
