@@ -46,6 +46,10 @@ hp_path:
 base_parameter:
   #img_width and img_height differs for dataset
   img_width: 224
+  img_width1:
+    - 1
+    - 2
+    - 3
   img_height: 224
   num_channel: 3
   #num_class differs for dataset
@@ -106,6 +110,8 @@ device_placement_workload:
 robin_placement:
   # time unit: second
   time_limit: 1800
+  available_gpu: 1
+  available_cpu: 1
 
 simple_placement:
   init_resource_conf: 1

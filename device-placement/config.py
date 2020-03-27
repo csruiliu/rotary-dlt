@@ -56,14 +56,16 @@ simple_placement_discard_rate = simple_placement_cfg['discard_rate']
 
 robin_device_placement = cfg['robin_placement']
 robin_time_limit = robin_device_placement['time_limit']
+robin_available_cpu_num = robin_device_placement['available_cpu']
+robin_available_gpu_num = robin_device_placement['available_gpu']
 
 ##########################################
 # Path
 ##########################################
 
-#path_cfg = cfg['local_path']
+path_cfg = cfg['local_path']
 #path_cfg = cfg['roscoe_path']
-path_cfg = cfg['hp_path']
+#path_cfg = cfg['hp_path']
 
 mnist_train_img_path = path_cfg['mnist_train_img_path']
 mnist_train_label_path = path_cfg['mnist_train_label_path']
