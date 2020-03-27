@@ -259,3 +259,5 @@ if __name__ == "__main__":
         if dur_time > robin_time_limit:
             stop_flag.value = 1
             break
+
+    print("total running time:", dur_time)
