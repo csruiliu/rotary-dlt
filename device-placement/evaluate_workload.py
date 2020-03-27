@@ -26,18 +26,20 @@ def generate_workload():
 
 def evaluate_model():
     acc_list = list()
+    result_list = list()
     sum_acc = 0
     for job in workload_placement:
         parent_conn, child_conn = Pipe()
         p = Process(target=evaluate_single_job, args=(job[0], job[1], job[2], child_conn))
         p.start()
         single_acc = parent_conn.recv()
-        acc_list.append(job[0]+str(job[1])+':'+single_acc)
+        result_list.append(job[0] + str(job[1]) + ':' + str(single_acc))
+        acc_list.append(single_acc)
         sum_acc += single_acc
         parent_conn.close()
         p.join()
 
-    print('Accuracy List:', acc_list)
+    print('Accuracy List:', result_list)
     print('Max', max(acc_list))
     print('75Q:', np.quantile(acc_list, 0.75))
     print('Median:', np.quantile(acc_list, 0.5))
