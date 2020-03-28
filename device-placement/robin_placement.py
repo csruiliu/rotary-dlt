@@ -3,7 +3,6 @@ import numpy as np
 from operator import itemgetter
 from timeit import default_timer as timer
 import os
-import shutil
 import time
 import tensorflow as tf
 from multiprocessing import Process, Queue, Value
@@ -11,6 +10,7 @@ from multiprocessing import Process, Queue, Value
 from dnn_model import DnnModel
 from img_utils import *
 import config as cfg_yml
+
 
 def generate_workload():
     workload_list = list()
@@ -26,13 +26,13 @@ def generate_workload():
 
     return workload_list
 
+
 def run_single_job_gpu(model_type, batch_size, model_instance, assign_device, proc_stop):
     with tf.device(assign_device):
         features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
         labels = tf.placeholder(tf.int64, [None, numClasses])
 
-        dm = DnnModel(model_type, str(model_instance), 1, imgHeight, imgWidth, numChannels, numClasses, batch_size,
-                      'Adam', 0.0001, 'relu', False)
+        dm = DnnModel(model_type, str(model_instance), 1, imgHeight, imgWidth, numChannels, numClasses, batch_size, 'Adam', 0.0001, 'relu', False)
         modelEntity = dm.getModelEntity()
         modelLogit = modelEntity.build(features)
         trainOps = modelEntity.train(modelLogit, labels)
@@ -42,7 +42,7 @@ def run_single_job_gpu(model_type, batch_size, model_instance, assign_device, pr
         if not os.path.exists(ckpt_path):
             os.mkdir(ckpt_path)
 
-        saver = tf.train.Saver()
+        saver = tf.train.Saver(max_to_keep=1)
 
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
@@ -61,14 +61,12 @@ def run_single_job_gpu(model_type, batch_size, model_instance, assign_device, pr
             for i in range(num_batch):
                 if proc_stop.value == 1:
                     print("gpu training stop")
-                    if os.path.exists(model_ckpt_path):
-                        shutil.rmtree(model_ckpt_path)
-                        os.mkdir(model_ckpt_path)
-                    else:
-                        os.mkdir(model_ckpt_path)
-                    saver.save(sess, model_ckpt_path + '/' + model_type + '_' + str(batch_size))
+                    model_ckpt_save_path = model_ckpt_path + '/' + model_type + '_' + str(batch_size)
+                    saver.save(sess, model_ckpt_save_path)
+                    print("save the mode to path:", model_ckpt_save_path)
                     return
-                print('step %d / %d' % (i + 1, num_batch))
+
+                print('{}-{}-{}: step {} / {}'.format(model_type, batch_size, model_instance, i + 1, num_batch))
                 batch_offset = i * batch_size
                 batch_end = (i + 1) * batch_size
                 batch_list = image_list[batch_offset:batch_end]
@@ -76,12 +74,9 @@ def run_single_job_gpu(model_type, batch_size, model_instance, assign_device, pr
                 Y_mini_batch_feed = Y_data[batch_offset:batch_end, :]
                 sess.run(trainOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
-            if os.path.exists(model_ckpt_path):
-                shutil.rmtree(model_ckpt_path)
-                os.mkdir(model_ckpt_path)
-            else:
-                os.mkdir(model_ckpt_path)
-            saver.save(sess, model_ckpt_path + '/' + model_type + '_' + str(batch_size))
+            model_ckpt_save_path = model_ckpt_path + '/' + model_type + '_' + str(batch_size)
+            saver.save(sess, model_ckpt_save_path)
+            print("save the mode to path:", model_ckpt_save_path)
 
 
 def run_single_job_cpu(model_type, batch_size, model_instance, assign_device, proc_stop):
@@ -89,8 +84,7 @@ def run_single_job_cpu(model_type, batch_size, model_instance, assign_device, pr
         features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
         labels = tf.placeholder(tf.int64, [None, numClasses])
 
-        dm = DnnModel(model_type, str(model_instance), 1, imgHeight, imgWidth, numChannels, numClasses, batch_size,
-                      'Adam', 0.0001, 'relu', False)
+        dm = DnnModel(model_type, str(model_instance), 1, imgHeight, imgWidth, numChannels, numClasses, batch_size, 'Adam', 0.0001, 'relu', False)
         modelEntity = dm.getModelEntity()
         modelLogit = modelEntity.build(features)
         trainOps = modelEntity.train(modelLogit, labels)
@@ -100,7 +94,7 @@ def run_single_job_cpu(model_type, batch_size, model_instance, assign_device, pr
         if not os.path.exists(ckpt_path):
             os.mkdir(ckpt_path)
 
-        saver = tf.train.Saver()
+        saver = tf.train.Saver(max_to_keep=1)
 
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
@@ -119,14 +113,12 @@ def run_single_job_cpu(model_type, batch_size, model_instance, assign_device, pr
             for i in range(num_batch):
                 if proc_stop.value == 1:
                     print("cpu training stop")
-                    if os.path.exists(model_ckpt_path):
-                        shutil.rmtree(model_ckpt_path)
-                        os.mkdir(model_ckpt_path)
-                    else:
-                        os.mkdir(model_ckpt_path)
-                    saver.save(sess, model_ckpt_path + '/' + model_type + '_' + str(batch_size))
+                    model_ckpt_save_path = model_ckpt_path + '/' + model_type + '_' + str(batch_size)
+                    saver.save(sess, model_ckpt_save_path)
+                    print("save the mode to path:", model_ckpt_save_path)
                     return
-                print('step %d / %d' % (i + 1, num_batch))
+
+                print('{}-{}-{}: step {} / {}'.format(model_type, batch_size, model_instance, i + 1, num_batch))
                 batch_offset = i * batch_size
                 batch_end = (i + 1) * batch_size
                 batch_list = image_list[batch_offset:batch_end]
@@ -134,12 +126,9 @@ def run_single_job_cpu(model_type, batch_size, model_instance, assign_device, pr
                 Y_mini_batch_feed = Y_data[batch_offset:batch_end, :]
                 sess.run(trainOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
-            if os.path.exists(model_ckpt_path):
-                shutil.rmtree(model_ckpt_path)
-                os.mkdir(model_ckpt_path)
-            else:
-                os.mkdir(model_ckpt_path)
-            saver.save(sess, model_ckpt_path + '/' + model_type + '_' + str(batch_size))
+            model_ckpt_save_path = model_ckpt_path + '/' + model_type + '_' + str(batch_size)
+            saver.save(sess, model_ckpt_save_path)
+            print("save the mode to path:", model_ckpt_save_path)
 
 
 def producer(queue, proc_stop):
@@ -150,7 +139,6 @@ def producer(queue, proc_stop):
             break
         if not queue.full():
             job_idx = index % workloadNum
-            print(workload_placement[job_idx])
             queue.put(workload_placement[job_idx])
             index += 1
 

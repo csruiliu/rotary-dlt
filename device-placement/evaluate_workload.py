@@ -33,7 +33,7 @@ def evaluate_model():
         p = Process(target=evaluate_single_job, args=(job[0], job[1], job[2], child_conn))
         p.start()
         single_acc = parent_conn.recv()
-        result_list.append(job[0] + str(job[1]) + ':' + str(single_acc))
+        result_list.append(job[0] + '_' + str(job[1]) + ':' + str(single_acc))
         acc_list.append(single_acc)
         sum_acc += single_acc
         parent_conn.close()
@@ -52,8 +52,7 @@ def evaluate_single_job(model_type, batch_size, model_instance, conn):
     features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
     labels = tf.placeholder(tf.int64, [None, numClasses])
 
-    dm = DnnModel(model_type, str(model_instance), 1, imgHeight, imgWidth, numChannels, numClasses, batch_size, 'Adam',
-                  0.0001, 'relu', False)
+    dm = DnnModel(model_type, str(model_instance), 1, imgHeight, imgWidth, numChannels, numClasses, batch_size, 'Adam', 0.0001, 'relu', False)
     modelEntity = dm.getModelEntity()
     modelLogit = modelEntity.build(features)
     evalOps = modelEntity.evaluate(modelLogit, labels)
