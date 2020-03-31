@@ -17,8 +17,13 @@ def generate_workload():
     np.random.seed(randSeed)
     model_name_abbr = np.random.choice(randSeed, workloadNum, replace=False).tolist()
 
-    for idx, mt in enumerate(expModelType):
-        workload_list.append([mt, model_name_abbr.pop(), expBatchSize[idx], expOptimizer[idx], expLearnRate[idx], expActivation[idx]])
+    for gidx, gnum in enumerate(gpuModelNum):
+        for gpu_job in range(gnum):
+            workload_list.append([gpuModelType[gidx], model_name_abbr.pop(), gpuBatchSize[gidx], gpuOptimizer[gidx], gpuLearnRate[gidx], gpuActivation[gidx]])
+
+    for cidx, cnum in enumerate(cpuModelNum):
+        for cpu_job in range(cnum):
+            workload_list.append([cpuModelType[cidx], model_name_abbr.pop(), cpuBatchSize[cidx], cpuOptimizer[cidx], cpuLearnRate[cidx], cpuActivation[cidx]])
 
     return workload_list
 
@@ -114,12 +119,14 @@ def consumer_gpu(queue, assign_device):
 
 
 def consumer_cpu(queue, assign_device):
-    if not queue.empty():
-        cpu_job = queue.get()
-        p = Process(target=run_single_job_cpu, args=(cpu_job[0], cpu_job[1], cpu_job[2], cpu_job[3], cpu_job[4], cpu_job[5], assign_device))
-        p.start()
-        p.join()
-
+    while True:
+        if not queue.empty():
+            cpu_job = queue.get()
+            p = Process(target=run_single_job_cpu, args=(cpu_job[0], cpu_job[1], cpu_job[2], cpu_job[3], cpu_job[4], cpu_job[5], assign_device))
+            p.start()
+            p.join()
+        else:
+            break
 
 if __name__ == "__main__":
 
@@ -133,19 +140,30 @@ if __name__ == "__main__":
     numClasses = cfg_yml.num_classes
     randSeed = cfg_yml.rand_seed
 
-    expModelType = cfg_yml.exp_model_type
-    expBatchSize = cfg_yml.exp_batch_size
-    expLearnRate = cfg_yml.exp_learning_rate
-    expActivation = cfg_yml.exp_activation
-    expOptimizer = cfg_yml.exp_optimizer
+    cpuModelType = cfg_yml.cpu_model_type
+    cpuModelNum = cfg_yml.cpu_model_num
+    cpuBatchSize = cfg_yml.cpu_batch_size
+    cpuLearnRate = cfg_yml.cpu_learning_rate
+    cpuActivation = cfg_yml.cpu_activation
+    cpuOptimizer = cfg_yml.cpu_optimizer
+
+    gpuModelType = cfg_yml.gpu_model_type
+    gpuModelNum = cfg_yml.gpu_model_num
+    gpuBatchSize = cfg_yml.gpu_batch_size
+    gpuLearnRate = cfg_yml.gpu_learning_rate
+    gpuActivation = cfg_yml.gpu_activation
+    gpuOptimizer = cfg_yml.gpu_optimizer
+
     expRecordMarker = cfg_yml.exp_marker
 
     ##########################
     # Build Workload
     ##########################
 
-    workloadNum = len(expModelType)
+    workloadNum = sum(cpuModelNum) + sum(gpuModelNum)
     expWorkload = generate_workload()
+
+    print(expWorkload)
 
     ##########################
     # Model Placement

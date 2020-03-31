@@ -108,20 +108,29 @@ device_placement_workload:
   use_tb_timeline: False
 
 exp_cpu_gpu_workload:
-  model_type:
-    - resnet
+  cpu_model_num:
+    - 71
+  cpu_model_type:
     - mobilenet
-  batch_size:
+  cpu_batch_size:
     - 32
-    - 32
-  learning_rate:
+  cpu_learning_rate:
     - 0.01
-    - 0.01
-  activation:
+  cpu_activation:
     - relu
-    - relu
-  optimizer:
+  cpu_optimizer:
     - Adam
+  gpu_model_num:
+    - 1
+  gpu_model_type:
+    - resnet
+  gpu_batch_size:
+    - 32
+  gpu_learning_rate:
+    - 0.01
+  gpu_activation:
+    - relu
+  gpu_optimizer:
     - Adam
   record_marker: 2
 
@@ -129,7 +138,7 @@ robin_placement:
   # time unit: second
   time_limit: 1800
   available_gpu: 1
-  available_cpu: 1
+  available_cpu: 71
 
 simple_placement:
   init_resource_conf: 1
