@@ -48,7 +48,7 @@ def run_single_job_gpu(model_type, model_instance, batch_size, optimizer, learni
             num_batch = Y_data.shape[0] // batch_size
             for i in range(num_batch):
                 print('{}-{}-{} on gpu: step {} / {}'.format(model_type, batch_size, model_instance, i + 1, num_batch))
-                if (i + 1) % recordMarker == 0:
+                if (i + 1) % expRecordMarker == 0:
                     start_time = timer()
 
                     batch_offset = i * batch_size
