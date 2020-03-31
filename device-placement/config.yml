@@ -114,7 +114,16 @@ exp_cpu_gpu_workload:
   batch_size:
     - 32
     - 32
-  record_marker: 3
+  learning_rate:
+    - 0.01
+    - 0.01
+  activation:
+    - relu
+    - relu
+  optimizer:
+    - Adam
+    - Adam
+  record_marker: 2
 
 robin_placement:
   # time unit: second

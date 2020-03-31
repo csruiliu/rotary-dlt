@@ -18,17 +18,17 @@ def generate_workload():
     model_name_abbr = np.random.choice(randSeed, workloadNum, replace=False).tolist()
 
     for idx, mt in enumerate(expModelType):
-        workload_list.append([mt, expBatchSize[idx], model_name_abbr.pop()])
+        workload_list.append([mt, model_name_abbr.pop(), expBatchSize[idx], expOptimizer[idx], expLearnRate[idx], expActivation[idx]])
 
     return workload_list
 
 
-def run_single_job_gpu(model_type, batch_size, model_instance, assign_device):
+def run_single_job_gpu(model_type, model_instance, batch_size, optimizer, learning_rate, activation, assign_device):
     with tf.device(assign_device):
         features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
         labels = tf.placeholder(tf.int64, [None, numClasses])
 
-        dm = DnnModel(model_type, str(model_instance), 1, imgHeight, imgWidth, numChannels, numClasses, batch_size, 'Adam', 0.0001, 'relu', False)
+        dm = DnnModel(model_type, str(model_instance), 1, imgHeight, imgWidth, numChannels, numClasses, batch_size, optimizer, learning_rate, activation, False)
         modelEntity = dm.getModelEntity()
         modelLogit = modelEntity.build(features)
         trainOps = modelEntity.train(modelLogit, labels)
@@ -75,12 +75,12 @@ def run_single_job_gpu(model_type, batch_size, model_instance, assign_device):
         print(step_count)
         print("average step time:", step_time / step_count * 1000)
 
-def run_single_job_cpu(model_type, batch_size, model_instance, assign_device):
+def run_single_job_cpu(model_type, model_instance, batch_size, optimizer, learning_rate, activation, assign_device):
     with tf.device(assign_device):
         features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
         labels = tf.placeholder(tf.int64, [None, numClasses])
 
-        dm = DnnModel(model_type, str(model_instance), 1, imgHeight, imgWidth, numChannels, numClasses, batch_size, 'Adam', 0.0001, 'relu', False)
+        dm = DnnModel(model_type, str(model_instance), 1, imgHeight, imgWidth, numChannels, numClasses, batch_size, optimizer, learning_rate, activation, False)
         modelEntity = dm.getModelEntity()
         modelLogit = modelEntity.build(features)
         trainOps = modelEntity.train(modelLogit, labels)
@@ -108,7 +108,7 @@ def run_single_job_cpu(model_type, batch_size, model_instance, assign_device):
 def consumer_gpu(queue, assign_device):
     if not queue.empty():
         gpu_job = queue.get()
-        p = Process(target=run_single_job_gpu, args=(gpu_job[0], gpu_job[1], gpu_job[2], assign_device))
+        p = Process(target=run_single_job_gpu, args=(gpu_job[0], gpu_job[1], gpu_job[2], gpu_job[3], gpu_job[4], gpu_job[5], assign_device))
         p.start()
         p.join()
 
@@ -116,7 +116,7 @@ def consumer_gpu(queue, assign_device):
 def consumer_cpu(queue, assign_device):
     if not queue.empty():
         cpu_job = queue.get()
-        p = Process(target=run_single_job_cpu, args=(cpu_job[0], cpu_job[1], cpu_job[2], assign_device))
+        p = Process(target=run_single_job_cpu, args=(cpu_job[0], cpu_job[1], cpu_job[2], cpu_job[3], cpu_job[4], cpu_job[5], assign_device))
         p.start()
         p.join()
 
@@ -135,6 +135,10 @@ if __name__ == "__main__":
 
     expModelType = cfg_yml.exp_model_type
     expBatchSize = cfg_yml.exp_batch_size
+    expLearnRate = cfg_yml.exp_learning_rate
+    expActivation = cfg_yml.exp_activation
+    expOptimizer = cfg_yml.exp_optimizer
+    expRecordMarker = cfg_yml.exp_marker
 
     ##########################
     # Build Workload
@@ -159,8 +163,6 @@ if __name__ == "__main__":
     available_gpu_num = cfg_yml.robin_available_gpu_num
 
     training_job_queue = Queue(available_cpu_num + available_gpu_num)
-
-    recordMarker = cfg_yml.exp_marker
 
     for job in expWorkload:
         training_job_queue.put(job)
