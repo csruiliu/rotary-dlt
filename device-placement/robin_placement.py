@@ -213,7 +213,7 @@ if __name__ == "__main__":
     available_cpu_num = cfg_yml.robin_available_cpu_num
     available_gpu_num = cfg_yml.robin_available_gpu_num
 
-    training_job_queue = Queue(2)
+    training_job_queue = Queue(available_cpu_num + available_gpu_num)
     stop_flag = Value("i", 0)
 
     producer_proc = Process(target=producer, args=(training_job_queue, stop_flag))

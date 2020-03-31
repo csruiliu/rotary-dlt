@@ -107,6 +107,14 @@ device_placement_workload:
   measure_step: True
   use_tb_timeline: False
 
+exp_cpu_gpu_workload:
+  model_type:
+    - mobilenet
+    - resnet
+  batch_size:
+    - 32
+    - 32
+
 robin_placement:
   # time unit: second
   time_limit: 1800

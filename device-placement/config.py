@@ -40,6 +40,18 @@ measure_step = hyperparams_workload_cfg['measure_step']
 #use_tb_timeline = hyperparams_pack_cfg['use_tb_timeline']
 
 
+##############################################################
+# Experiment for profiling overhead of training CPU/GPU
+##############################################################
+
+exp_cpu_gpu_workload = cfg['exp_cpu_gpu_workload']
+exp_model_type = exp_cpu_gpu_workload['model_type']
+exp_batch_size = exp_cpu_gpu_workload['batch_size']
+
+#robin_time_limit = robin_device_placement['time_limit']
+#robin_available_cpu_num = robin_device_placement['available_cpu']
+#robin_available_gpu_num = robin_device_placement['available_gpu']
+
 ##########################################
 # Simple device placement
 ##########################################
