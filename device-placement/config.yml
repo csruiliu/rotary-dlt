@@ -109,11 +109,12 @@ device_placement_workload:
 
 exp_cpu_gpu_workload:
   model_type:
-    - mobilenet
     - resnet
+    - mobilenet
   batch_size:
     - 32
     - 32
+  record_marker: 3
 
 robin_placement:
   # time unit: second
