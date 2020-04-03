@@ -16,6 +16,9 @@ num_classes = hyperparams_base_cfg['num_class']
 rand_seed = hyperparams_base_cfg['random_seed']
 device_num = hyperparams_base_cfg['device_num']
 total_epochs = hyperparams_base_cfg['total_epochs']
+available_cpu_num = hyperparams_base_cfg['available_cpu_num']
+available_gpu_num = hyperparams_base_cfg['available_gpu_num']
+
 
 ##########################################
 # Parameters for Workload
@@ -32,12 +35,12 @@ workload_num_layer = hyperparams_workload_cfg['num_model_layer']
 workload_learning_rate = hyperparams_workload_cfg['learning_rate']
 use_raw_image = hyperparams_workload_cfg['use_raw_image']
 measure_step = hyperparams_workload_cfg['measure_step']
-
 #same_input = hyperparams_workload_cfg['same_input']
 #record_marker = hyperparams_workload_cfg['record_marker']
 #batch_padding = hyperparams_workload_cfg['batch_padding']
 #use_cpu = hyperparams_workload_cfg['use_cpu']
 #use_tb_timeline = hyperparams_pack_cfg['use_tb_timeline']
+
 
 ##############################################################
 # Experiment for profiling overhead of training CPU/GPU
@@ -58,8 +61,6 @@ gpu_learning_rate = exp_cpu_gpu_workload['gpu_learning_rate']
 gpu_activation = exp_cpu_gpu_workload['gpu_activation']
 exp_marker = exp_cpu_gpu_workload['record_marker']
 
-#robin_available_cpu_num = robin_device_placement['available_cpu']
-#robin_available_gpu_num = robin_device_placement['available_gpu']
 
 ##########################################
 # Simple device placement
@@ -77,8 +78,7 @@ simple_placement_discard_rate = simple_placement_cfg['discard_rate']
 
 robin_device_placement = cfg['robin_placement']
 robin_time_limit = robin_device_placement['time_limit']
-robin_available_cpu_num = robin_device_placement['available_cpu']
-robin_available_gpu_num = robin_device_placement['available_gpu']
+
 
 ##########################################
 # Path

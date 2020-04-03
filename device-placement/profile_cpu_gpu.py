@@ -5,7 +5,7 @@ from timeit import default_timer as timer
 import os
 import time
 import tensorflow as tf
-from multiprocessing import Process, Queue
+import multiprocessing as mp
 
 from dnn_model import DnnModel
 from img_utils import *
@@ -80,6 +80,7 @@ def run_single_job_gpu(model_type, model_instance, batch_size, optimizer, learni
         print(step_count)
         print("average step time:", step_time / step_count * 1000)
 
+
 def run_single_job_cpu(model_type, model_instance, batch_size, optimizer, learning_rate, activation, assign_device):
     with tf.device(assign_device):
         features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
@@ -113,20 +114,20 @@ def run_single_job_cpu(model_type, model_instance, batch_size, optimizer, learni
 def consumer_gpu(queue, assign_device):
     if not queue.empty():
         gpu_job = queue.get()
-        p = Process(target=run_single_job_gpu, args=(gpu_job[0], gpu_job[1], gpu_job[2], gpu_job[3], gpu_job[4], gpu_job[5], assign_device))
+        p = mp.Process(target=run_single_job_gpu, args=(gpu_job[0], gpu_job[1], gpu_job[2], gpu_job[3], gpu_job[4], gpu_job[5], assign_device))
         p.start()
         p.join()
 
 
 def consumer_cpu(queue, assign_device):
-    while True:
+    for _ in range(osThreadNum):
         if not queue.empty():
             cpu_job = queue.get()
-            p = Process(target=run_single_job_cpu, args=(cpu_job[0], cpu_job[1], cpu_job[2], cpu_job[3], cpu_job[4], cpu_job[5], assign_device))
+            p = mp.Process(target=run_single_job_cpu, args=(cpu_job[0], cpu_job[1], cpu_job[2], cpu_job[3], cpu_job[4], cpu_job[5], assign_device))
             p.start()
-            p.join()
         else:
             break
+
 
 if __name__ == "__main__":
 
@@ -139,6 +140,9 @@ if __name__ == "__main__":
     numChannels = cfg_yml.num_channels
     numClasses = cfg_yml.num_classes
     randSeed = cfg_yml.rand_seed
+
+    available_cpu_num = cfg_yml.available_cpu_num
+    available_gpu_num = cfg_yml.available_gpu_num
 
     cpuModelType = cfg_yml.cpu_model_type
     cpuModelNum = cfg_yml.cpu_model_num
@@ -160,10 +164,9 @@ if __name__ == "__main__":
     # Build Workload
     ##########################
 
+    osThreadNum = mp.cpu_count()
     workloadNum = sum(cpuModelNum) + sum(gpuModelNum)
     expWorkload = generate_workload()
-
-    print(expWorkload)
 
     ##########################
     # Model Placement
@@ -173,35 +176,22 @@ if __name__ == "__main__":
     image_path_bin = cfg_yml.imagenet_t1k_bin_path
     label_path = cfg_yml.imagenet_t1k_label_path
 
-    #test_image_path_raw = cfg_yml.imagenet_t1k_img_path
-    #test_image_path_bin = cfg_yml.imagenet_t1k_bin_path
-    #test_label_path = cfg_yml.imagenet_t1k_label_path
-
-    available_cpu_num = cfg_yml.robin_available_cpu_num
-    available_gpu_num = cfg_yml.robin_available_gpu_num
-
-    training_job_queue = Queue(available_cpu_num + available_gpu_num)
+    training_job_queue = mp.Queue()
 
     for job in expWorkload:
-        training_job_queue.put(job)
+        if not training_job_queue.full():
+            training_job_queue.put(job)
 
-    proc_cpu_list = list()
     proc_gpu_list = list()
 
     for gn in range(available_gpu_num):
         assign_gpu = '/gpu:' + str(gn)
-        device_proc_gpu = Process(target=consumer_gpu, args=(training_job_queue, assign_gpu))
+        device_proc_gpu = mp.Process(target=consumer_gpu, args=(training_job_queue, assign_gpu))
         proc_gpu_list.append(device_proc_gpu)
-
-    for cn in range(available_cpu_num):
-        assign_cpu = '/cpu:' + str(cn)
-        device_proc_cpu = Process(target=consumer_cpu, args=(training_job_queue, assign_cpu))
-        proc_cpu_list.append(device_proc_cpu)
 
     for device_proc_gpu in proc_gpu_list:
         device_proc_gpu.start()
 
-    for device_proc_cpu in proc_cpu_list:
-        device_proc_cpu.start()
-
+    device_proc_cpu = mp.Process(target=consumer_cpu, args=(training_job_queue, '/cpu:0'))
+    device_proc_cpu.start()
 

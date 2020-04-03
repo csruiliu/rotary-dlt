@@ -190,6 +190,9 @@ if __name__ == "__main__":
     deviceNum = cfg_yml.device_num
     totalEpoch = cfg_yml.total_epochs
 
+    available_cpu_num = cfg_yml.available_cpu_num
+    available_gpu_num = cfg_yml.available_gpu_num
+
     #########################
     # Build Workload
     #########################
@@ -210,8 +213,6 @@ if __name__ == "__main__":
     test_image_path_bin = cfg_yml.imagenet_t1k_bin_path
     test_label_path = cfg_yml.imagenet_t1k_label_path
     robin_time_limit = cfg_yml.robin_time_limit
-    available_cpu_num = cfg_yml.robin_available_cpu_num
-    available_gpu_num = cfg_yml.robin_available_gpu_num
 
     training_job_queue = Queue(available_cpu_num + available_gpu_num)
     stop_flag = Value("i", 0)

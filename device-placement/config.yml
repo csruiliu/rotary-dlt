@@ -57,6 +57,8 @@ base_parameter:
   random_seed: 10000
   device_num: 2
   total_epochs: 100
+  available_gpu_num: 1
+  available_cpu_num: 1
 
 device_placement_workload:
   # model: mobilenet, densenet, mlp, resnet, scn
@@ -109,7 +111,7 @@ device_placement_workload:
 
 exp_cpu_gpu_workload:
   cpu_model_num:
-    - 71
+    - 6
   cpu_model_type:
     - mobilenet
   cpu_batch_size:
@@ -137,8 +139,6 @@ exp_cpu_gpu_workload:
 robin_placement:
   # time unit: second
   time_limit: 1800
-  available_gpu: 1
-  available_cpu: 71
 
 simple_placement:
   init_resource_conf: 1
