@@ -19,6 +19,9 @@ do
         echo "================EXP ${i}================" >> ./${FOLDER}/${CASE}.txt
         echo "########################################" >> ./${FOLDER}/${CASE}.txt
         python3 single_train_profiler.py -m ${midx} -b ${bidx} -d ${tidx} >> ./${FOLDER}/${CASE}.txt
+        rm -rf __pycache__
+        python3 clean_gpu_cache.py
+        sudo ./cleancache.sh
       done
       LEN=0
       SUM=0
