@@ -4,6 +4,7 @@ BATCHSIZE_LIST="32 50 64 100 128"
 TRAINSET_LIST="imagenet cifar10 mnist"
 REPEAT=5
 FOLDER="exp-results"
+SUDOPWD=""
 
 echo ${REPEAT}
 for midx in ${MODEL_LIST}
@@ -21,7 +22,7 @@ do
         python3 single_train_profiler.py -m ${midx} -b ${bidx} -d ${tidx} >> ./${FOLDER}/${CASE}.txt
         rm -rf __pycache__
         python3 clean_gpu_cache.py
-        sudo ./cleancache.sh
+        echo $SUDOPWD | sudo ./cleancache.sh
       done
       LEN=0
       SUM=0
