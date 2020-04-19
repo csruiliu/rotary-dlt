@@ -254,9 +254,9 @@ if __name__ == '__main__':
         X_data, Y_data = load_cifar_train(cifar10_path, randSeed)
 
         if measureStep:
-            profileStepRawImage()
+            profileStep()
         else:
-            profileEpochRawImage()
+            profileEpoch()
 
     elif trainData == 'mnist':
         imgWidth = cfg_yml.img_width_mnist
@@ -274,7 +274,7 @@ if __name__ == '__main__':
         Y_data = load_mnist_label_onehot(label_path, randSeed)
 
         if measureStep:
-            profileStepRawImage()
+            profileStep()
         else:
-            profileEpochRawImage()
+            profileEpoch()
 
