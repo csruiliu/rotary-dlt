@@ -9,6 +9,9 @@ import config as cfg_yml
 from dnn_model import DnnModel
 from img_utils import *
 
+import argparse
+
+
 def buildModel():
     model_name_abbr = np.random.choice(randSeed, 1, replace=False).tolist()
     dm = DnnModel(trainModel, str(model_name_abbr.pop()), trainNumLayer, imgHeight, imgWidth, numChannels, numClasses,
@@ -166,17 +169,13 @@ def profileEpoch():
 
 if __name__ == '__main__':
 
-    #########################
-    # Parameters
-    #########################
+    ##########################################
+    # Parameters read from config
+    ##########################################
 
-    imgWidth = cfg_yml.single_img_width
-    imgHeight = cfg_yml.single_img_height
-    numChannels = cfg_yml.single_num_channels
-    numClasses = cfg_yml.single_num_classes
     numEpochs = cfg_yml.single_num_epoch
-    trainModel = cfg_yml.single_model_type
-    trainBatchSize = cfg_yml.single_batch_size
+    #trainModel = cfg_yml.single_model_type
+    #trainBatchSize = cfg_yml.single_batch_size
     trainOptimizer = cfg_yml.single_opt
     randSeed = cfg_yml.single_rand_seed
     trainNumLayer = cfg_yml.single_num_layer
@@ -192,35 +191,90 @@ if __name__ == '__main__':
     if useCPU:
         os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
-    #########################
-    # Build
-    #########################
+    #########################################################################
+    # Parameters read from command, but can be placed by read from config
+    #########################################################################
 
-    features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
-    labels = tf.placeholder(tf.int64, [None, numClasses])
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-m', '--model', required=True, action='store', type=str, help='model type [resnet,mobilenet,mlp,densenet]')
+    parser.add_argument('-b', '--batchsize', required=True, action='store', type=int, help='batch size [32,50,64,100,128]')
+    parser.add_argument('-d', '--dataset', required=True, action='store', type=str, help='training set [imagenet, cifar10, mnist]')
 
-    trainOp = buildModel()
+    args = parser.parse_args()
 
-    #########################
-    # Train
-    #########################
+    trainData = args.dataset
+    trainModel = args.model
+    trainBatchSize = args.batchsize
 
-    image_path_raw = cfg_yml.imagenet_t1k_img_path
-    image_path_bin = cfg_yml.imagenet_t1k_bin_path
-    label_path = cfg_yml.imagenet_t1k_label_path
+    ###########################################################
+    # Build and train model due to input dataset
+    ###########################################################
 
-    if useRawImage:
-        Y_data = load_imagenet_labels_onehot(label_path, numClasses)
+    if trainData == 'imagenet':
+        image_path_raw = cfg_yml.imagenet_t1k_img_path
+        image_path_bin = cfg_yml.imagenet_t1k_bin_path
+        label_path = cfg_yml.imagenet_t1k_label_path
+
+        imgWidth = cfg_yml.img_width_imagenet
+        imgHeight = cfg_yml.img_height_imagenet
+        numChannels = cfg_yml.num_channels_rgb
+        numClasses = cfg_yml.num_class_imagenet
+
+        features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+        labels = tf.placeholder(tf.int64, [None, numClasses])
+        trainOp = buildModel()
+
+        if useRawImage:
+            Y_data = load_imagenet_labels_onehot(label_path, numClasses)
+
+            if measureStep:
+                profileStepRawImage()
+            else:
+                profileEpochRawImage()
+        else:
+            X_data = load_imagenet_bin(image_path_bin, numChannels, imgWidth, imgHeight)
+            Y_data = load_imagenet_labels_onehot(label_path, numClasses)
+
+            if measureStep:
+                profileStep()
+            else:
+                profileEpoch()
+
+    elif trainData == 'cifar10':
+        imgWidth = cfg_yml.img_width_cifar10
+        imgHeight = cfg_yml.img_height_cifar10
+        numChannels = cfg_yml.num_channels_rgb
+        numClasses = cfg_yml.num_class_cifar10
+
+        features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+        labels = tf.placeholder(tf.int64, [None, numClasses])
+        trainOp = buildModel()
+
+        cifar10_path = cfg_yml.cifar_10_path
+        X_data, Y_data = load_cifar_train(cifar10_path, randSeed)
 
         if measureStep:
             profileStepRawImage()
         else:
             profileEpochRawImage()
-    else:
-        X_data = load_imagenet_bin(image_path_bin, numChannels, imgWidth, imgHeight)
-        Y_data = load_imagenet_labels_onehot(label_path, numClasses)
+
+    elif trainData == 'mnist':
+        imgWidth = cfg_yml.img_width_mnist
+        imgHeight = cfg_yml.img_height_mnist
+        numChannels = cfg_yml.num_channels_bw
+        numClasses = cfg_yml.num_class_mnist
+
+        features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+        labels = tf.placeholder(tf.int64, [None, numClasses])
+        trainOp = buildModel()
+
+        img_path = cfg_yml.mnist_train_img_path
+        label_path = cfg_yml.mnist_train_label_path
+        X_data = load_mnist_image(img_path, randSeed)
+        Y_data = load_mnist_label_onehot(label_path, randSeed)
 
         if measureStep:
-            profileStep()
+            profileStepRawImage()
         else:
-            profileEpoch()
+            profileEpochRawImage()
+

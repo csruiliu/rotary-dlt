@@ -4,15 +4,27 @@ with open("config.yml", 'r') as ymlfile:
     cfg = yaml.load(ymlfile)
 
 ##########################################
+# Hyperparameters for input data
+##########################################
+
+hyperparams_input = cfg['hyperparams_input']
+img_width_imagenet = hyperparams_input['img_width_imagenet']
+img_height_imagenet = hyperparams_input['img_height_imagenet']
+img_width_cifar10 = hyperparams_input['img_width_cifar10']
+img_height_cifar10 = hyperparams_input['img_height_cifar10']
+img_width_mnist = hyperparams_input['img_width_mnist']
+img_height_mnist = hyperparams_input['img_height_mnist']
+num_class_imagenet = hyperparams_input['num_class_imagenet']
+num_class_cifar10 = hyperparams_input['num_class_cifar10']
+num_class_mnist = hyperparams_input['num_class_mnist']
+num_channels_rgb = hyperparams_input['num_channel_rgb']
+num_channels_bw = hyperparams_input['num_channel_bw']
+
+##########################################
 # Hyperparameters for single training
 ##########################################
 
 hyperparams_single_cfg = cfg['hyperparams_single_train']
-
-single_img_width = hyperparams_single_cfg['img_width']
-single_img_height = hyperparams_single_cfg['img_height']
-single_num_channels = hyperparams_single_cfg['num_channel']
-single_num_classes = hyperparams_single_cfg['num_class']
 single_num_epoch = hyperparams_single_cfg['num_epoch']
 single_rand_seed = hyperparams_single_cfg['random_seed']
 single_model_type = hyperparams_single_cfg['model_type']
@@ -32,11 +44,6 @@ single_use_tb_timeline = hyperparams_single_cfg['use_tb_timeline']
 ##########################################
 
 hyperparams_pack_cfg = cfg['hyperparams_pack_train']
-
-pack_img_width = hyperparams_pack_cfg['img_width']
-pack_img_height = hyperparams_pack_cfg['img_height']
-pack_num_channels = hyperparams_pack_cfg['num_channel']
-pack_num_classes = hyperparams_pack_cfg['num_class']
 pack_num_epoch = hyperparams_pack_cfg['num_epoch']
 pack_rand_seed = hyperparams_pack_cfg['random_seed']
 pack_model_type = hyperparams_pack_cfg['packed_model_type']

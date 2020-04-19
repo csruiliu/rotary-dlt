@@ -2,7 +2,6 @@ import numpy as np
 import pickle
 import cv2
 
-
 #####################################
 # read mnist training data
 #####################################
@@ -96,7 +95,7 @@ def load_cifar_test(path, rd_seed):
 
 
 ########################################################
-# read imagenet raw images
+# read imagenet raw images by batch
 ########################################################
 def load_imagenet_raw(image_dir, batch_list, img_h, img_w):
     img_list = []
