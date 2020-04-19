@@ -21,7 +21,7 @@ do
         python3 single_train_profiler.py -m ${midx} -b ${bidx} -d ${tidx} >> ./${FOLDER}/${CASE}.txt
         rm -rf __pycache__
         python3 clean_gpu_cache.py
-        echo $SUDOPWD | sudo ./cleancache.sh
+        echo $SUDOPWD | sudo -S ./cleancache.sh
       done
       LEN=0
       SUM=0
