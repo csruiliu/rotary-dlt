@@ -2,8 +2,6 @@ import tensorflow as tf
 import tensorflow.contrib as tc
 from tensorflow.keras.layers import GlobalAveragePooling2D
 
-channel_num = 3
-class_num = 1000
 growth_k = 32
 
 #DenseNet-121
@@ -72,7 +70,7 @@ class densenet(object):
             net = self.dense_block(net, dn_layers=16, block_name='dense_block_3')
             net = GlobalAveragePooling2D()(net)
             net = tc.layers.flatten(net)
-            self.model_logit = tf.layers.dense(net, units=class_num, name='full_connected')
+            self.model_logit = tf.layers.dense(net, units=self.num_classes, name='full_connected')
         return self.model_logit
     
     def train(self, logits, labels):

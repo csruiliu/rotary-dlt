@@ -2,8 +2,6 @@ import tensorflow as tf
 import tensorflow.contrib as tc
 from tensorflow.keras.layers import GlobalAveragePooling2D
 
-channel_num = 3
-class_num = 1000
 growth_k = 32
 
 #DenseNet-121
@@ -33,12 +31,12 @@ class densenet(object):
         with tf.variable_scope(block_name):
             block = tf.layers.batch_normalization(input, training=True, trainable=True, name=block_name+'_bn_0')
             block = tf.nn.relu(block, name=block_name+'_relu_0')
-            block = tf.layers.conv2d(block, filters=2*growth_k, kernel_size=(1,1), strides=1, padding='same', name=block_name+'_conv_0')
+            block = tf.layers.conv2d(block, filters=2*growth_k, kernel_size=(1, 1), strides=1, padding='same', name=block_name+'_conv_0')
             self.num_conv_layer += 1
 
             block = tf.layers.batch_normalization(block, training=True, trainable=True, name=block_name+'_bn_1')
             block = tf.nn.relu(block, name=block_name+'_relu_1')
-            block = tf.layers.conv2d(block, filters=2*growth_k, kernel_size=(3,3), strides=1, padding='same', name=block_name+'_conv_1')
+            block = tf.layers.conv2d(block, filters=2*growth_k, kernel_size=(3, 3), strides=1, padding='same', name=block_name+'_conv_1')
             self.num_conv_layer += 1
 
             return block
@@ -82,7 +80,7 @@ class densenet(object):
             self.num_pool_layer += 1
             net = tc.layers.flatten(net)
             self.num_dense_layer += 1
-            self.model_logit = tf.layers.dense(net, units=class_num, name='full_connected')
+            self.model_logit = tf.layers.dense(net, units=self.num_classes, name='full_connected')
             self.num_dense_layer += 1
 
         print('================number of conv layer===================:', self.num_conv_layer)
