@@ -1,12 +1,11 @@
 #!/bin/bash
-MODEL_LIST="mobilenet resnet mobilenet mlp"
+MODEL_LIST="mobilenet resnet densenet mlp"
 BATCHSIZE_LIST="32 50 64 100 128"
-TRAINSET_LIST="imagenet cifar10 mnist"
+TRAINSET_LIST="imagenet cifar10"
 REPEAT=5
 FOLDER="exp-results"
 SUDOPWD=""
 
-echo ${REPEAT}
 for midx in ${MODEL_LIST}
 do
   for bidx in ${BATCHSIZE_LIST}
@@ -36,7 +35,7 @@ do
         fi
       done < ./${FOLDER}/${CASE}.txt
       echo "================EXP: ${midx}-${bidx}-${tidx} ================" >> ./${FOLDER}/all-results.txt
-      echo AVG=$(echo "scale=3; ${SUM}/${LEN}" | bc) >> ./${FOLDER}/all-results.txt
+      echo AVG="$(echo "scale=3; ${SUM}/${LEN}" | bc)" >> ./${FOLDER}/all-results.txt
     done          
   done
 done
