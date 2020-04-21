@@ -109,7 +109,7 @@ device_placement_workload:
   measure_step: True
   use_tb_timeline: False
 
-exp_cpu_gpu_workload:
+profile_exp_cpu_gpu:
   cpu_model_num:
     - 6
   cpu_model_type:
@@ -135,6 +135,33 @@ exp_cpu_gpu_workload:
   gpu_optimizer:
     - Adam
   record_marker: 2
+
+profile_exp_cpu_gpu_workload:
+  cpu_job_num_candidates:
+    - 1
+    - 2
+    - 4
+    - 8
+    - 16
+  cpu_model_type_candidates:
+    - mobilenet
+    - resnet
+    - mlp
+    - densenet
+  cpu_batch_size_candidates:
+    - 32
+    - 50
+    - 64
+    - 100
+    - 128
+  cpu_learning_rate_candidates:
+    - 0.01
+  cpu_activation_candidates:
+    - relu
+  cpu_optimizer_candidates:
+    - Adam
+  gpu_job_num_candidates:
+    - 1
 
 robin_placement:
   # time unit: second

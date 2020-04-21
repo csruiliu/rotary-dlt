@@ -1,9 +1,7 @@
 from __future__ import division
 import numpy as np
-from operator import itemgetter
 from timeit import default_timer as timer
 import os
-import time
 import tensorflow as tf
 import multiprocessing as mp
 
@@ -150,7 +148,7 @@ if __name__ == "__main__":
     cpuLearnRate = cfg_yml.cpu_learning_rate
     cpuActivation = cfg_yml.cpu_activation
     cpuOptimizer = cfg_yml.cpu_optimizer
-
+    
     gpuModelType = cfg_yml.gpu_model_type
     gpuModelNum = cfg_yml.gpu_model_num
     gpuBatchSize = cfg_yml.gpu_batch_size
@@ -175,7 +173,6 @@ if __name__ == "__main__":
     image_path_raw = cfg_yml.imagenet_t1k_img_path
     image_path_bin = cfg_yml.imagenet_t1k_bin_path
     label_path = cfg_yml.imagenet_t1k_label_path
-
     training_job_queue = mp.Queue()
 
     for job in expWorkload:
@@ -194,4 +191,3 @@ if __name__ == "__main__":
 
     device_proc_cpu = mp.Process(target=consumer_cpu, args=(training_job_queue, '/cpu:0'))
     device_proc_cpu.start()
-

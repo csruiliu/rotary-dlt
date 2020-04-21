@@ -20,6 +20,7 @@ class mobilenet(object):
         self.train_op = None
         self.eval_op = None
         self.is_training = True
+        self.num_conv_layer = 0
 
 
     def _res_block(self, input, expansion_ratio, output_dim, stride, is_train, block_name, bias=False, shortcut=True):
@@ -69,6 +70,7 @@ class mobilenet(object):
                 regularizer = tc.layers.l2_regularizer(weight_decay),
                 initializer = tf.truncated_normal_initializer(stddev=stddev))
             conv = tf.nn.conv2d(input, w, strides=[1, strides_h, strides_w, 1], padding='SAME')
+            self.num_conv_layer += 1
             if bias:
                 biases = tf.get_variable('bias', [output_dim], initializer = tf.constant_initializer(0.0))
                 conv = tf.nn.bias_add(conv, biases)
@@ -82,6 +84,7 @@ class mobilenet(object):
                         regularizer=tc.layers.l2_regularizer(weight_decay),
                         initializer=tf.truncated_normal_initializer(stddev=stddev))
             conv = tf.nn.depthwise_conv2d(input, w, strides, padding, rate=None, name=None, data_format=None)
+            self.num_conv_layer += 1
             if bias:
                 biases = tf.get_variable('bias', [in_channel*channel_multiplier], initializer=tf.constant_initializer(0.0))
                 conv = tf.nn.bias_add(conv, biases)
@@ -93,6 +96,7 @@ class mobilenet(object):
     def _conv_1x1(self, input, output_dim, name, bias=False):
         with tf.variable_scope(name):
             net = self._conv2d(input, output_dim, 1, 1, 1, 1, stddev=0.02, name=name, bias=bias)
+            self.num_conv_layer += 1
         return net
 
     def _global_avg(self, x):
@@ -134,6 +138,7 @@ class mobilenet(object):
 
             self.model_logit = tc.layers.flatten(self._conv_1x1(net, self.num_classes, name='logits'))
 
+        print('number of conv layer:', self.num_conv_layer)
         return self.model_logit
 
     def train(self, logits, labels):
