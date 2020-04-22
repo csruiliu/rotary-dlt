@@ -1,5 +1,3 @@
-import sys
-
 
 class DnnModel(object):
     def __init__(self, model_type, model_instance_name, num_layer, input_h, input_w, num_channels,

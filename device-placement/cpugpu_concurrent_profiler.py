@@ -11,19 +11,23 @@ import config as cfg_yml
 
 
 def generate_workload():
-    workload_list = list()
+    cpu_job_queue = mp.Queue()
+    gpu_job_queue = mp.Queue()
+
     np.random.seed(randSeed)
     model_name_abbr = np.random.choice(randSeed, workloadNum, replace=False).tolist()
 
     for gidx, gnum in enumerate(gpuModelNum):
         for gpu_job in range(gnum):
-            workload_list.append([gpuModelType[gidx], model_name_abbr.pop(), gpuBatchSize[gidx], gpuOptimizer[gidx], gpuLearnRate[gidx], gpuActivation[gidx]])
+            if not gpu_job_queue.full():
+                gpu_job_queue.put([gpuModelType[gidx], model_name_abbr.pop(), gpuBatchSize[gidx], gpuOptimizer[gidx], gpuLearnRate[gidx], gpuActivation[gidx]])
 
     for cidx, cnum in enumerate(cpuModelNum):
         for cpu_job in range(cnum):
-            workload_list.append([cpuModelType[cidx], model_name_abbr.pop(), cpuBatchSize[cidx], cpuOptimizer[cidx], cpuLearnRate[cidx], cpuActivation[cidx]])
+            if not cpu_job_queue.full():
+                cpu_job_queue.put([cpuModelType[cidx], model_name_abbr.pop(), cpuBatchSize[cidx], cpuOptimizer[cidx], cpuLearnRate[cidx], cpuActivation[cidx]])
 
-    return workload_list
+    return gpu_job_queue, cpu_job_queue
 
 
 def run_single_job_gpu(model_type, model_instance, batch_size, optimizer, learning_rate, activation, assign_device):
@@ -164,7 +168,7 @@ if __name__ == "__main__":
 
     osThreadNum = mp.cpu_count()
     workloadNum = sum(cpuModelNum) + sum(gpuModelNum)
-    expWorkload = generate_workload()
+    training_gpu_queue, training_cpu_queue = generate_workload()
 
     ##########################
     # Model Placement
@@ -173,21 +177,21 @@ if __name__ == "__main__":
     image_path_raw = cfg_yml.imagenet_t1k_img_path
     image_path_bin = cfg_yml.imagenet_t1k_bin_path
     label_path = cfg_yml.imagenet_t1k_label_path
-    training_job_queue = mp.Queue()
+    #training_job_queue = mp.Queue()
 
-    for job in expWorkload:
-        if not training_job_queue.full():
-            training_job_queue.put(job)
+    #for job in expWorkload:
+    #    if not training_job_queue.full():
+    #        training_job_queue.put(job)
 
     proc_gpu_list = list()
 
     for gn in range(available_gpu_num):
         assign_gpu = '/gpu:' + str(gn)
-        device_proc_gpu = mp.Process(target=consumer_gpu, args=(training_job_queue, assign_gpu))
+        device_proc_gpu = mp.Process(target=consumer_gpu, args=(training_gpu_queue, assign_gpu))
         proc_gpu_list.append(device_proc_gpu)
 
     for device_proc_gpu in proc_gpu_list:
         device_proc_gpu.start()
 
-    device_proc_cpu = mp.Process(target=consumer_cpu, args=(training_job_queue, '/cpu:0'))
+    device_proc_cpu = mp.Process(target=consumer_cpu, args=(training_cpu_queue, '/cpu:0'))
     device_proc_cpu.start()
