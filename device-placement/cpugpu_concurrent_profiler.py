@@ -75,7 +75,7 @@ def run_single_job_gpu(model_type, model_instance, batch_size, optimizer, learni
             sess.run(tf.global_variables_initializer())
             num_batch = Y_data.shape[0] // batch_size
             for i in range(num_batch):
-                print('{}-{}-{} on gpu: step {} / {}'.format(model_type, batch_size, model_instance, i + 1, num_batch))
+                print('{}-{}-{} on gpu [{}]: step {} / {}'.format(model_type, batch_size, model_instance, timer(), i + 1, num_batch))
                 if (i + 1) % recordMarker == 0:
                     start_time = timer()
 
@@ -101,7 +101,7 @@ def run_single_job_gpu(model_type, model_instance, batch_size, optimizer, learni
 
         print(step_time)
         print(step_count)
-        print("average step time:", step_time / step_count * 1000)
+        print('GPU job average step time [{}]: {}'.format(timer(), step_time / step_count * 1000))
 
 
 def run_single_job_cpu(model_type, model_instance, batch_size, optimizer, learning_rate, activation, assign_device):
@@ -125,7 +125,7 @@ def run_single_job_cpu(model_type, model_instance, batch_size, optimizer, learni
             sess.run(tf.global_variables_initializer())
             num_batch = Y_data.shape[0] // batch_size
             for i in range(num_batch):
-                print('{}-{}-{} on cpu: step {} / {}'.format(model_type, batch_size, model_instance, i + 1, num_batch))
+                print('{}-{}-{} on cpu [{}]: step {} / {}'.format(model_type, batch_size, model_instance, timer(), i + 1, num_batch))
                 batch_offset = i * batch_size
                 batch_end = (i + 1) * batch_size
                 batch_list = image_list[batch_offset:batch_end]
