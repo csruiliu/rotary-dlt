@@ -43,22 +43,56 @@ hp_path:
   profile_path: /home/user/Development/mtml-tf/profile-result
   ckpt_path: /home/user/Development/mtml-tf/device-placement/model_ckpt
 
-base_parameter:
-  #img_width and img_height differs for dataset
-  img_width: 224
-  img_width1:
-    - 1
-    - 2
-    - 3
-  img_height: 224
-  num_channel: 3
-  #num_class differs for dataset
-  num_class: 1000
+hyperparams_input:
+  img_width_imagenet: 224
+  img_height_imagenet: 224
+  img_width_cifar10: 32
+  img_height_cifar10: 32
+  img_width_mnist: 28
+  img_height_mnist: 28
+  num_channel_rgb: 3
+  num_channel_bw: 1
+  num_class_imagenet: 1000
+  num_class_cifar10: 10
+  num_class_mnist: 10
+
+hyperparams_measure:
   random_seed: 10000
-  device_num: 2
-  total_epochs: 100
+  batch_padding: False
+  record_marker: 2
+  use_cpu: False
+  use_raw_image: True
+  measure_step: True
+  use_tb_timeline: False
+  same_input: True
   available_gpu_num: 1
   available_cpu_num: 1
+
+profile_concur_cpugpu_workload:
+  cpu_model_num:
+    - 6
+  cpu_model_type:
+    - mobilenet
+  cpu_batch_size:
+    - 32
+  cpu_learning_rate:
+    - 0.01
+  cpu_activation:
+    - relu
+  cpu_optimizer:
+    - Adam
+  gpu_model_num:
+    - 1
+  gpu_model_type:
+    - resnet
+  gpu_batch_size:
+    - 32
+  gpu_learning_rate:
+    - 0.01
+  gpu_activation:
+    - relu
+  gpu_optimizer:
+    - Adam
 
 device_placement_workload:
   # model: mobilenet, densenet, mlp, resnet, scn
@@ -101,67 +135,7 @@ device_placement_workload:
     - 128
   learning_rate:
     - 0.00001
-  record_marker: 3
-  batch_padding: False
-  use_cpu: False
-  use_raw_image: True
-  same_input: True
-  measure_step: True
-  use_tb_timeline: False
-
-profile_exp_cpu_gpu:
-  cpu_model_num:
-    - 6
-  cpu_model_type:
-    - mobilenet
-  cpu_batch_size:
-    - 32
-  cpu_learning_rate:
-    - 0.01
-  cpu_activation:
-    - relu
-  cpu_optimizer:
-    - Adam
-  gpu_model_num:
-    - 1
-  gpu_model_type:
-    - resnet
-  gpu_batch_size:
-    - 32
-  gpu_learning_rate:
-    - 0.01
-  gpu_activation:
-    - relu
-  gpu_optimizer:
-    - Adam
-  record_marker: 2
-
-profile_exp_cpu_gpu_workload:
-  cpu_job_num_candidates:
-    - 1
-    - 2
-    - 4
-    - 8
-    - 16
-  cpu_model_type_candidates:
-    - mobilenet
-    - resnet
-    - mlp
-    - densenet
-  cpu_batch_size_candidates:
-    - 32
-    - 50
-    - 64
-    - 100
-    - 128
-  cpu_learning_rate_candidates:
-    - 0.01
-  cpu_activation_candidates:
-    - relu
-  cpu_optimizer_candidates:
-    - Adam
-  gpu_job_num_candidates:
-    - 1
+  total_epochs: 100
 
 robin_placement:
   # time unit: second

@@ -198,7 +198,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--model', required=True, action='store', type=str, help='model type [resnet,mobilenet,mlp,densenet]')
     parser.add_argument('-b', '--batchsize', required=True, action='store', type=int, help='batch size [32,50,64,100,128]')
-    parser.add_argument('-d', '--dataset', required=True, action='store', type=str, help='training set [imagenet, cifar10, mnist]')
+    parser.add_argument('-d', '--dataset', required=True, action='store', type=str, help='training set [imagenet, cifar10]')
 
     args = parser.parse_args()
 

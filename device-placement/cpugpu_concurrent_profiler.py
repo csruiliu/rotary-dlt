@@ -9,11 +9,13 @@ from dnn_model import DnnModel
 from img_utils import *
 import config as cfg_yml
 
+import argparse
 
 def generate_workload():
     cpu_job_queue = mp.Queue()
     gpu_job_queue = mp.Queue()
 
+    workloadNum = sum(cpuModelNum) + sum(gpuModelNum)
     np.random.seed(randSeed)
     model_name_abbr = np.random.choice(randSeed, workloadNum, replace=False).tolist()
 
@@ -26,6 +28,25 @@ def generate_workload():
         for cpu_job in range(cnum):
             if not cpu_job_queue.full():
                 cpu_job_queue.put([cpuModelType[cidx], model_name_abbr.pop(), cpuBatchSize[cidx], cpuOptimizer[cidx], cpuLearnRate[cidx], cpuActivation[cidx]])
+
+    return gpu_job_queue, cpu_job_queue
+
+
+def generate_workload_from_cmd():
+    cpu_job_queue = mp.Queue()
+    gpu_job_queue = mp.Queue()
+
+    workloadNum = cpuModelNum + gpuModelNum
+    np.random.seed(randSeed)
+    model_name_abbr = np.random.choice(randSeed, workloadNum, replace=False).tolist()
+
+    for gpu_job in range(gpuModelNum):
+        if not gpu_job_queue.full():
+            gpu_job_queue.put([gpuModelType, model_name_abbr.pop(), batchSize, gpuOptimizer[0], gpuLearnRate[0], gpuActivation[0]])
+
+    for cpu_job in range(cpuModelNum):
+        if not cpu_job_queue.full():
+            cpu_job_queue.put([cpuModelType, model_name_abbr.pop(), batchSize, cpuOptimizer[0], cpuLearnRate[0], cpuActivation[0]])
 
     return gpu_job_queue, cpu_job_queue
 
@@ -133,55 +154,90 @@ def consumer_cpu(queue, assign_device):
 
 if __name__ == "__main__":
 
-    #########################
-    # Parameters
-    #########################
+    ########################################
+    # Get parameters using config
+    ########################################
 
-    imgWidth = cfg_yml.img_width
-    imgHeight = cfg_yml.img_height
-    numChannels = cfg_yml.num_channels
-    numClasses = cfg_yml.num_classes
     randSeed = cfg_yml.rand_seed
+    recordMarker = cfg_yml.record_marker
+    useRawImage = cfg_yml.use_raw_image
+    measureStep = cfg_yml.measure_step
 
-    available_cpu_num = cfg_yml.available_cpu_num
     available_gpu_num = cfg_yml.available_gpu_num
 
-    cpuModelType = cfg_yml.cpu_model_type
-    cpuModelNum = cfg_yml.cpu_model_num
-    cpuBatchSize = cfg_yml.cpu_batch_size
+    # cpuModelType = cfg_yml.cpu_model_type
+    # cpuModelNum = cfg_yml.cpu_model_num
+    # cpuBatchSize = cfg_yml.cpu_batch_size
     cpuLearnRate = cfg_yml.cpu_learning_rate
     cpuActivation = cfg_yml.cpu_activation
     cpuOptimizer = cfg_yml.cpu_optimizer
-    
-    gpuModelType = cfg_yml.gpu_model_type
-    gpuModelNum = cfg_yml.gpu_model_num
-    gpuBatchSize = cfg_yml.gpu_batch_size
+
+    # gpuModelType = cfg_yml.gpu_model_type
+    # gpuModelNum = cfg_yml.gpu_model_num
+    # gpuBatchSize = cfg_yml.gpu_batch_size
     gpuLearnRate = cfg_yml.gpu_learning_rate
     gpuActivation = cfg_yml.gpu_activation
     gpuOptimizer = cfg_yml.gpu_optimizer
 
-    expRecordMarker = cfg_yml.exp_marker
+    #########################################################################
+    # Parameters read from command, but can be placed by read from config
+    #########################################################################
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-cm', '--cpu_model', required=True, action='store', type=str,
+                        help='cpu model type [resnet,mobilenet,mlp,densenet]')
+    parser.add_argument('-cn', '--cpu_model_num', required=True, action='store', type=int,
+                        help='indicate the number of cpu model')
+    parser.add_argument('-gm', '--gpu_model', required=True, action='store', type=str,
+                        help='gpu model type [resnet,mobilenet,mlp,densenet]')
+    parser.add_argument('-gn', '--gpu_model_num', required=True, action='store', type=int,
+                        help='indicate the number of gpu model')
+    parser.add_argument('-b', '--batch_size', required=True, action='store', type=int,
+                        help='batch size [32,50,64,100,128]')
+    parser.add_argument('-d', '--dataset', required=True, action='store', type=str,
+                        help='training set [imagenet, cifar10]')
+
+    args = parser.parse_args()
+
+    cpuModelType = args.cpu_model
+    cpuModelNum = args.cpu_model_num
+    gpuModelType = args.gpu_model
+    gpuModelNum = args.gpu_model_num
+    batchSize = args.batch_size
+    trainData = args.dataset
 
     ##########################
     # Build Workload
     ##########################
 
     osThreadNum = mp.cpu_count()
-    workloadNum = sum(cpuModelNum) + sum(gpuModelNum)
-    training_gpu_queue, training_cpu_queue = generate_workload()
+    training_gpu_queue, training_cpu_queue = generate_workload_from_cmd()
 
-    ##########################
-    # Model Placement
-    ##########################
+    ###########################################################
+    # Build and train model due to input dataset
+    ###########################################################
 
-    image_path_raw = cfg_yml.imagenet_t1k_img_path
-    image_path_bin = cfg_yml.imagenet_t1k_bin_path
-    label_path = cfg_yml.imagenet_t1k_label_path
-    #training_job_queue = mp.Queue()
+    if trainData == 'imagenet':
+        image_path_raw = cfg_yml.imagenet_t1k_img_path
+        image_path_bin = cfg_yml.imagenet_t1k_bin_path
+        label_path = cfg_yml.imagenet_t1k_label_path
 
-    #for job in expWorkload:
-    #    if not training_job_queue.full():
-    #        training_job_queue.put(job)
+        imgWidth = cfg_yml.img_width_imagenet
+        imgHeight = cfg_yml.img_height_imagenet
+        numChannels = cfg_yml.num_channels_rgb
+        numClasses = cfg_yml.num_class_imagenet
+
+        features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+        labels = tf.placeholder(tf.int64, [None, numClasses])
+
+    elif trainData == 'cifar10':
+        imgWidth = cfg_yml.img_width_cifar10
+        imgHeight = cfg_yml.img_height_cifar10
+        numChannels = cfg_yml.num_channels_rgb
+        numClasses = cfg_yml.num_class_cifar10
+
+        features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+        labels = tf.placeholder(tf.int64, [None, numClasses])
 
     proc_gpu_list = list()
 

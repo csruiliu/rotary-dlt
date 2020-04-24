@@ -4,49 +4,57 @@ with open("config.yml", 'r') as ymlfile:
     cfg = yaml.load(ymlfile)
 
 ##########################################
-# General Hyperparameters
+# Hyperparameters for input
 ##########################################
 
-hyperparams_base_cfg = cfg['base_parameter']
+hyperparams_input = cfg['hyperparams_input']
+img_width_imagenet = hyperparams_input['img_width_imagenet']
+img_height_imagenet = hyperparams_input['img_height_imagenet']
+img_width_cifar10 = hyperparams_input['img_width_cifar10']
+img_height_cifar10 = hyperparams_input['img_height_cifar10']
+img_width_mnist = hyperparams_input['img_width_mnist']
+img_height_mnist = hyperparams_input['img_height_mnist']
+num_class_imagenet = hyperparams_input['num_class_imagenet']
+num_class_cifar10 = hyperparams_input['num_class_cifar10']
+num_class_mnist = hyperparams_input['num_class_mnist']
+num_channels_rgb = hyperparams_input['num_channel_rgb']
+num_channels_bw = hyperparams_input['num_channel_bw']
 
-img_width = hyperparams_base_cfg['img_width']
-img_height = hyperparams_base_cfg['img_height']
-num_channels = hyperparams_base_cfg['num_channel']
-num_classes = hyperparams_base_cfg['num_class']
-rand_seed = hyperparams_base_cfg['random_seed']
-device_num = hyperparams_base_cfg['device_num']
-total_epochs = hyperparams_base_cfg['total_epochs']
-available_cpu_num = hyperparams_base_cfg['available_cpu_num']
-available_gpu_num = hyperparams_base_cfg['available_gpu_num']
+##########################################
+# Hyperparameters for measurement
+##########################################
 
+hyperparams_measure_cfg = cfg['hyperparams_measure']
+
+rand_seed = hyperparams_measure_cfg['random_seed']
+batch_padding = hyperparams_measure_cfg['batch_padding']
+record_marker = hyperparams_measure_cfg['record_marker']
+use_cpu = hyperparams_measure_cfg['use_cpu']
+use_raw_image = hyperparams_measure_cfg['use_raw_image']
+measure_step = hyperparams_measure_cfg['measure_step']
+use_tb_timeline = hyperparams_measure_cfg['use_tb_timeline']
+same_input = hyperparams_measure_cfg['same_input']
+available_cpu_num = hyperparams_measure_cfg['available_cpu_num']
+available_gpu_num = hyperparams_measure_cfg['available_gpu_num']
 
 ##########################################
 # Parameters for Workload
 ##########################################
 
-hyperparams_workload_cfg = cfg['device_placement_workload']
-
-workload_model_type = hyperparams_workload_cfg['workload_model_type']
-workload_model_num = hyperparams_workload_cfg['workload_model_num']
-workload_activation = hyperparams_workload_cfg['activation']
-workload_opt = hyperparams_workload_cfg['optimizer']
-workload_batch_size = hyperparams_workload_cfg['batch_size']
-workload_num_layer = hyperparams_workload_cfg['num_model_layer']
-workload_learning_rate = hyperparams_workload_cfg['learning_rate']
-use_raw_image = hyperparams_workload_cfg['use_raw_image']
-measure_step = hyperparams_workload_cfg['measure_step']
-#same_input = hyperparams_workload_cfg['same_input']
-#record_marker = hyperparams_workload_cfg['record_marker']
-#batch_padding = hyperparams_workload_cfg['batch_padding']
-#use_cpu = hyperparams_workload_cfg['use_cpu']
-#use_tb_timeline = hyperparams_pack_cfg['use_tb_timeline']
-
+#hyperparams_workload_cfg = cfg['device_placement_workload']
+#workload_model_type = hyperparams_workload_cfg['workload_model_type']
+#workload_model_num = hyperparams_workload_cfg['workload_model_num']
+#workload_activation = hyperparams_workload_cfg['activation']
+#workload_opt = hyperparams_workload_cfg['optimizer']
+#workload_batch_size = hyperparams_workload_cfg['batch_size']
+#workload_num_layer = hyperparams_workload_cfg['num_model_layer']
+#workload_learning_rate = hyperparams_workload_cfg['learning_rate']
 
 ##############################################################
 # Experiment for profiling overhead of training CPU/GPU
 ##############################################################
 
-profile_exp_cpu_gpu = cfg['profile_exp_cpu_gpu']
+profile_exp_cpu_gpu = cfg['profile_concur_cpugpu_workload']
 cpu_model_type = profile_exp_cpu_gpu['cpu_model_type']
 cpu_model_num = profile_exp_cpu_gpu['cpu_model_num']
 cpu_batch_size = profile_exp_cpu_gpu['cpu_batch_size']
@@ -59,8 +67,6 @@ gpu_batch_size = profile_exp_cpu_gpu['gpu_batch_size']
 gpu_optimizer = profile_exp_cpu_gpu['gpu_optimizer']
 gpu_learning_rate = profile_exp_cpu_gpu['gpu_learning_rate']
 gpu_activation = profile_exp_cpu_gpu['gpu_activation']
-exp_marker = profile_exp_cpu_gpu['record_marker']
-
 
 ##########################################
 # Simple device placement
@@ -71,14 +77,12 @@ simple_placement_init_res = simple_placement_cfg['init_resource_conf']
 simple_placement_up_rate = simple_placement_cfg['up_rate']
 simple_placement_discard_rate = simple_placement_cfg['discard_rate']
 
-
 ##########################################
 # Robin device placement
 ##########################################
 
 robin_device_placement = cfg['robin_placement']
 robin_time_limit = robin_device_placement['time_limit']
-
 
 ##########################################
 # Path
