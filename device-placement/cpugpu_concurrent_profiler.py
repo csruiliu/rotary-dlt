@@ -71,11 +71,13 @@ def run_single_job_gpu(model_type, model_instance, batch_size, optimizer, learni
         step_time = 0
         step_count = 0
 
+        print('gpu job starts...')
+
         with tf.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
             num_batch = Y_data.shape[0] // batch_size
             for i in range(num_batch):
-                print('{}-{}-{} on gpu [{}]: step {} / {}'.format(model_type, batch_size, model_instance, timer(), i + 1, num_batch))
+                print('**GPU JOB**: {}-{}-{} on gpu [{}]: step {} / {}'.format(model_type, batch_size, model_instance, timer(), i + 1, num_batch))
                 if (i + 1) % recordMarker == 0:
                     start_time = timer()
 
@@ -85,7 +87,6 @@ def run_single_job_gpu(model_type, model_instance, batch_size, optimizer, learni
                     X_mini_batch_feed = load_imagenet_raw(image_path_raw, batch_list, imgHeight, imgWidth)
                     Y_mini_batch_feed = Y_data[batch_offset:batch_end, :]
                     sess.run(trainOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-
                     end_time = timer()
                     dur_time = end_time - start_time
                     print("step time:", dur_time)
@@ -121,11 +122,13 @@ def run_single_job_cpu(model_type, model_instance, batch_size, optimizer, learni
         config.allow_soft_placement = True
         image_list = sorted(os.listdir(image_path_raw))
 
+        print('cpu job starts...')
+
         with tf.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
             num_batch = Y_data.shape[0] // batch_size
             for i in range(num_batch):
-                print('{}-{}-{} on cpu [{}]: step {} / {}'.format(model_type, batch_size, model_instance, timer(), i + 1, num_batch))
+                print('**CPU JOB**: {}-{}-{} on cpu [{}]: step {} / {}'.format(model_type, batch_size, model_instance, timer(), i + 1, num_batch))
                 batch_offset = i * batch_size
                 batch_end = (i + 1) * batch_size
                 batch_list = image_list[batch_offset:batch_end]
