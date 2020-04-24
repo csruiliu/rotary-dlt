@@ -49,31 +49,9 @@ do
             for j in $(seq 1 ${REPEAT})
             do
               PROG_FLAG=0
-              COMPARE=0
               GPU_TIME=0
               while read -r line
               do
-                if [ ${COMPARE} -eq 1 ]
-                then
-                  if [[ $line =~ ^"**CPU JOB**" ]] && [ ${PROG_FLAG} -eq 0 ]
-                  then
-                    BAK_LINE=${line}
-                    CPU_TIME_PRE=${line#*[}
-                    CPU_TIME_POST=${CPU_TIME_PRE%]*}
-                    CPU_TIME="$(echo "scale=9; ${CPU_TIME_POST}" | bc)"
-                    if [ 1 -eq "$(echo "${CPU_TIME} > ${GPU_TIME}" | bc)" ]
-                    then
-                      if [ ${PROG_FLAG} -eq 0 ]
-                      then
-                        echo ${BAK_LINE} >> ./${FOLDER}/all-results.txt
-                        PROG_FLAG=1
-                      fi
-                    fi
-                  elif [[ $line =~ ^"cpu job starts..." ]]
-                  then
-                    PROG_FLAG=0
-                  fi
-                fi
                 if [[ $line =~ ^"GPU job average step time " ]]
                 then
                   BAK_LINE=$line
@@ -81,11 +59,28 @@ do
                   GPU_TIME_PRE=${BAK_LINE#*[}
                   GPU_TIME_POST=${GPU_TIME_PRE%]*}
                   GPU_TIME="$(echo "scale=9; ${GPU_TIME_POST}" | bc)"
-                  COMPARE=1
                   echo ${GPU_TIME}
                   echo ${AST}
                   LEN=$((${LEN}+1))
                   SUM=$(echo "${SUM} + ${AST}" | bc)
+                fi
+              done < ./${FOLDER}/${CASE}-REPEAT${j}.txt
+              while read -r line
+              do
+                if [[ $line =~ ^"**CPU JOB**" ]] && [ ${PROG_FLAG} -eq 0 ]
+                then
+                  BAK_LINE=${line}
+                  CPU_TIME_PRE=${line#*[}
+                  CPU_TIME_POST=${CPU_TIME_PRE%]*}
+                  CPU_TIME="$(echo "scale=9; ${CPU_TIME_POST}" | bc)"
+                  if [ 1 -eq "$(echo "${CPU_TIME} > ${GPU_TIME}" | bc)" ]
+                  then
+                    echo ${BAK_LINE} >> ./${FOLDER}/all-results.txt
+                    PROG_FLAG=1
+                  fi
+                elif [[ $line =~ ^"cpu job starts..." ]]
+                then
+                  PROG_FLAG=0
                 fi
               done < ./${FOLDER}/${CASE}-REPEAT${j}.txt
             done
