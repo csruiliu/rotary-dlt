@@ -1,14 +1,11 @@
 #!/bin/bash
-#CPU_MODEL_LIST="mobilenet resnet densenet mlp"
-CPU_MODEL_LIST="mobilenet"
-CPU_MODEL_NUM="2"
-#CPU_MODEL_NUM="1 2 4 8 16"
-GPU_MODEL_LIST="resnet"
+CPU_MODEL_LIST="mobilenet resnet densenet mlp"
+CPU_MODEL_NUM="1 2 4 8 16"
+GPU_MODEL_LIST="mobilenet resnet densenet mlp"
 GPU_MODEL_NUM="1"
-BATCHSIZE_LIST="32"
-#BATCHSIZE_LIST="32 50 64 100 128"
-TRAINSET_LIST="imagenet"
-REPEAT=2
+BATCHSIZE_LIST="32 50 64 100 128"
+TRAINSET_LIST="imagenet cifar10"
+REPEAT=5
 FOLDER="exp-results"
 SUDOPWD=""
 
@@ -78,7 +75,10 @@ do
                     echo ${BAK_LINE} >> ./${FOLDER}/all-results.txt
                     PROG_FLAG=1
                   fi
-                elif [[ $line =~ ^"cpu job starts..." ]]
+                elif [[ $line =~ ^"cpu job starts..." ]] && [ ${PROG_FLAG} -eq 0 ]
+                then
+                  echo 'CPU job has been done' >> ./${FOLDER}/all-results.txt
+                elif [[ $line =~ ^"cpu job starts..." ]] && [ ${PROG_FLAG} -eq 1 ]
                 then
                   PROG_FLAG=0
                 fi
