@@ -9,11 +9,11 @@ REPEAT=5
 FOLDER="exp-results"
 SUDOPWD=""
 
-if [ -d "./exp-results" ]
+if [ -d "./${FOLDER}" ]
 then
-    echo "Directory ./exp-results exists."
+    echo "Directory ./${FOLDER} exists."
 else
-    mkdir ./exp-results
+    mkdir ./${FOLDER}
 fi
 
 for tidx in ${TRAINSET_LIST}
@@ -45,7 +45,8 @@ do
             echo "================EXP: ${CASE} ================" >> ./${FOLDER}/all-results.txt
             for j in $(seq 1 ${REPEAT})
             do
-              PROG_FLAG=0
+              echo "### REPEAT ${j} ###" >> ./${FOLDER}/all-results.txt
+              PROG_FLAG=1
               GPU_TIME=0
               while read -r line
               do
@@ -84,7 +85,8 @@ do
                 fi
               done < ./${FOLDER}/${CASE}-REPEAT${j}.txt
             done
-            echo AVG="$(echo "scale=3; ${SUM}/${LEN}" | bc)" >> ./${FOLDER}/all-results.txt
+            echo "### GPU JOB ###" >> ./${FOLDER}/all-results.txt
+            echo "GPU JOB AVG STEP=$(echo "scale=3; ${SUM}/${LEN}" | bc)" >> ./${FOLDER}/all-results.txt
           done
         done
       done
