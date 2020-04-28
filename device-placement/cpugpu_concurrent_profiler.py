@@ -51,7 +51,7 @@ def generate_workload_from_cmd():
     return gpu_job_queue, cpu_job_queue
 
 
-def run_single_job_gpu(model_type, model_instance, batch_size, optimizer, learning_rate, activation, assign_device):
+def run_single_job_gpu_raw(model_type, model_instance, batch_size, optimizer, learning_rate, activation, assign_device):
     with tf.device(assign_device):
         features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
         labels = tf.placeholder(tf.int64, [None, numClasses])
@@ -80,7 +80,6 @@ def run_single_job_gpu(model_type, model_instance, batch_size, optimizer, learni
                 print('**GPU JOB**: {}-{}-{} on gpu [{}]: step {} / {}'.format(model_type, batch_size, model_instance, timer(), i + 1, num_batch))
                 if (i + 1) % recordMarker == 0:
                     start_time = timer()
-
                     batch_offset = i * batch_size
                     batch_end = (i + 1) * batch_size
                     batch_list = image_list[batch_offset:batch_end]
@@ -105,7 +104,7 @@ def run_single_job_gpu(model_type, model_instance, batch_size, optimizer, learni
         print('GPU job average step time [{}]: {}'.format(timer(), step_time / step_count * 1000))
 
 
-def run_single_job_cpu(model_type, model_instance, batch_size, optimizer, learning_rate, activation, assign_device):
+def run_single_job_cpu_raw(model_type, model_instance, batch_size, optimizer, learning_rate, activation, assign_device):
     with tf.device(assign_device):
         features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
         labels = tf.placeholder(tf.int64, [None, numClasses])
@@ -137,6 +136,82 @@ def run_single_job_cpu(model_type, model_instance, batch_size, optimizer, learni
                 sess.run(trainOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
 
+def run_single_job_gpu(model_type, model_instance, batch_size, optimizer, learning_rate, activation, assign_device):
+    with tf.device(assign_device):
+        features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+        labels = tf.placeholder(tf.int64, [None, numClasses])
+
+        dm = DnnModel(model_type, str(model_instance), 1, imgHeight, imgWidth, numChannels, numClasses, batch_size, optimizer, learning_rate, activation, False)
+        modelEntity = dm.getModelEntity()
+        modelLogit = modelEntity.build(features)
+        trainOps = modelEntity.train(modelLogit, labels)
+
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        config.allow_soft_placement = True
+
+        step_time = 0
+        step_count = 0
+
+        print('gpu job starts...')
+
+        with tf.Session(config=config) as sess:
+            sess.run(tf.global_variables_initializer())
+            num_batch = Y_data.shape[0] // batch_size
+            for i in range(num_batch):
+                print('**GPU JOB**: {}-{}-{} on gpu [{}]: step {} / {}'.format(model_type, batch_size, model_instance, timer(), i + 1, num_batch))
+                if (i + 1) % recordMarker == 0:
+                    start_time = timer()
+                    batch_offset = i * batch_size
+                    batch_end = (i + 1) * batch_size
+                    X_mini_batch_feed = X_data[batch_offset:batch_end, :, :, :]
+                    Y_mini_batch_feed = Y_data[batch_offset:batch_end, :]
+                    sess.run(trainOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    end_time = timer()
+                    dur_time = end_time - start_time
+                    print("step time:", dur_time)
+                    step_time += dur_time
+                    step_count += 1
+                else:
+                    batch_offset = i * batch_size
+                    batch_end = (i + 1) * batch_size
+                    X_mini_batch_feed = X_data[batch_offset:batch_end, :, :, :]
+                    Y_mini_batch_feed = Y_data[batch_offset:batch_end, :]
+                    sess.run(trainOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+
+        print(step_time)
+        print(step_count)
+        print('GPU job average step time [{}]: {}'.format(timer(), step_time / step_count * 1000))
+
+
+def run_single_job_cpu(model_type, model_instance, batch_size, optimizer, learning_rate, activation, assign_device):
+    with tf.device(assign_device):
+        features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
+        labels = tf.placeholder(tf.int64, [None, numClasses])
+
+        dm = DnnModel(model_type, str(model_instance), 1, imgHeight, imgWidth, numChannels, numClasses, batch_size, optimizer, learning_rate, activation, False)
+        modelEntity = dm.getModelEntity()
+        modelLogit = modelEntity.build(features)
+        trainOps = modelEntity.train(modelLogit, labels)
+
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        config.allow_soft_placement = True
+
+        print('cpu job starts...')
+
+        with tf.Session(config=config) as sess:
+            sess.run(tf.global_variables_initializer())
+            num_batch = Y_data.shape[0] // batch_size
+            for i in range(num_batch):
+                print('**CPU JOB**: {}-{}-{} on cpu [{}]: step {} / {}'.format(model_type, batch_size, model_instance, timer(), i + 1, num_batch))
+                batch_offset = i * batch_size
+                batch_end = (i + 1) * batch_size
+                X_mini_batch_feed = X_data[batch_offset:batch_end, :, :, :]
+                Y_mini_batch_feed = Y_data[batch_offset:batch_end, :]
+                sess.run(trainOps, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+
+
 def consumer_gpu(queue, assign_device):
     if not queue.empty():
         gpu_job = queue.get()
@@ -154,6 +229,23 @@ def consumer_cpu(queue, assign_device):
         else:
             break
 
+
+def consumer_gpu_raw(queue, assign_device):
+    if not queue.empty():
+        gpu_job = queue.get()
+        p = mp.Process(target=run_single_job_gpu_raw, args=(gpu_job[0], gpu_job[1], gpu_job[2], gpu_job[3], gpu_job[4], gpu_job[5], assign_device))
+        p.start()
+        p.join()
+
+
+def consumer_cpu_raw(queue, assign_device):
+    for _ in range(osThreadNum):
+        if not queue.empty():
+            cpu_job = queue.get()
+            p = mp.Process(target=run_single_job_cpu_raw, args=(cpu_job[0], cpu_job[1], cpu_job[2], cpu_job[3], cpu_job[4], cpu_job[5], assign_device))
+            p.start()
+        else:
+            break
 
 if __name__ == "__main__":
 
@@ -233,6 +325,19 @@ if __name__ == "__main__":
         features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
         labels = tf.placeholder(tf.int64, [None, numClasses])
 
+        proc_gpu_list = list()
+
+        for gn in range(available_gpu_num):
+            assign_gpu = '/gpu:' + str(gn)
+            device_proc_gpu = mp.Process(target=consumer_gpu_raw, args=(training_gpu_queue, assign_gpu))
+            proc_gpu_list.append(device_proc_gpu)
+
+        for device_proc_gpu in proc_gpu_list:
+            device_proc_gpu.start()
+
+        device_proc_cpu = mp.Process(target=consumer_cpu_raw, args=(training_cpu_queue, '/cpu:0'))
+        device_proc_cpu.start()
+
     elif trainData == 'cifar10':
         imgWidth = cfg_yml.img_width_cifar10
         imgHeight = cfg_yml.img_height_cifar10
@@ -242,15 +347,18 @@ if __name__ == "__main__":
         features = tf.placeholder(tf.float32, [None, imgWidth, imgHeight, numChannels])
         labels = tf.placeholder(tf.int64, [None, numClasses])
 
-    proc_gpu_list = list()
+        cifar10_path = cfg_yml.cifar_10_path
+        X_data, Y_data = load_cifar_train(cifar10_path, randSeed)
 
-    for gn in range(available_gpu_num):
-        assign_gpu = '/gpu:' + str(gn)
-        device_proc_gpu = mp.Process(target=consumer_gpu, args=(training_gpu_queue, assign_gpu))
-        proc_gpu_list.append(device_proc_gpu)
+        proc_gpu_list = list()
 
-    for device_proc_gpu in proc_gpu_list:
-        device_proc_gpu.start()
+        for gn in range(available_gpu_num):
+            assign_gpu = '/gpu:' + str(gn)
+            device_proc_gpu = mp.Process(target=consumer_gpu, args=(training_gpu_queue, assign_gpu))
+            proc_gpu_list.append(device_proc_gpu)
 
-    device_proc_cpu = mp.Process(target=consumer_cpu, args=(training_cpu_queue, '/cpu:0'))
-    device_proc_cpu.start()
+        for device_proc_gpu in proc_gpu_list:
+            device_proc_gpu.start()
+
+        device_proc_cpu = mp.Process(target=consumer_cpu, args=(training_cpu_queue, '/cpu:0'))
+        device_proc_cpu.start()
