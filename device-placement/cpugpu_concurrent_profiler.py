@@ -80,9 +80,11 @@ def run_single_job_gpu(model_type, model_instance, batch_size, optimizer, learni
         step_time = 0
         step_count = 0
 
+        print("gpu job start...")
+
         with tf.Session(config=tf_config) as sess:
             sess.run(tf.global_variables_initializer())
-            num_batch = Y_data.shape[0] // batch_size
+            num_batch = _Y_data.shape[0] // batch_size
             for i in range(num_batch):
                 print('**GPU JOB**: {}-{}-{} on gpu [{}]: step {} / {}'.format(model_type, batch_size, model_instance, timer(), i + 1, num_batch))
                 if (i + 1) % _record_marker == 0:
@@ -93,8 +95,8 @@ def run_single_job_gpu(model_type, model_instance, batch_size, optimizer, learni
                         batch_list = image_list[batch_offset:batch_end]
                         X_mini_batch_feed = load_imagenet_raw(_image_path_raw, batch_list, _img_height, _img_width)
                     else:
-                        X_mini_batch_feed = X_data[batch_offset:batch_end, :, :, :]
-                    Y_mini_batch_feed = Y_data[batch_offset:batch_end, :]
+                        X_mini_batch_feed = _X_data[batch_offset:batch_end, :, :, :]
+                    Y_mini_batch_feed = _Y_data[batch_offset:batch_end, :]
                     sess.run(train_ops, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                     end_time = timer()
                     dur_time = end_time - start_time
@@ -108,8 +110,8 @@ def run_single_job_gpu(model_type, model_instance, batch_size, optimizer, learni
                         batch_list = image_list[batch_offset:batch_end]
                         X_mini_batch_feed = load_imagenet_raw(_image_path_raw, batch_list, _img_height, _img_width)
                     else:
-                        X_mini_batch_feed = X_data[batch_offset:batch_end, :, :, :]
-                    Y_mini_batch_feed = Y_data[batch_offset:batch_end, :]
+                        X_mini_batch_feed = _X_data[batch_offset:batch_end, :, :, :]
+                    Y_mini_batch_feed = _Y_data[batch_offset:batch_end, :]
                     sess.run(train_ops, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
         print(step_time)
@@ -135,9 +137,11 @@ def run_single_job_cpu(model_type, model_instance, batch_size, optimizer, learni
         tf_config.gpu_options.allow_growth = True
         tf_config.allow_soft_placement = True
 
+        print("cpu job start...")
+
         with tf.Session(config=tf_config) as sess:
             sess.run(tf.global_variables_initializer())
-            num_batch = Y_data.shape[0] // batch_size
+            num_batch = _Y_data.shape[0] // batch_size
             for i in range(num_batch):
                 print('**CPU JOB**: Proc-{}, {}-{}-{} on cpu [{}]: step {} / {}'.format(proc_idx, model_type, batch_size, model_instance, timer(), i + 1, num_batch))
                 batch_offset = i * batch_size
@@ -146,8 +150,8 @@ def run_single_job_cpu(model_type, model_instance, batch_size, optimizer, learni
                     batch_list = image_list[batch_offset:batch_end]
                     X_mini_batch_feed = load_imagenet_raw(_image_path_raw, batch_list, _img_height, _img_width)
                 else:
-                    X_mini_batch_feed = X_data[batch_offset:batch_end, :, :, :]
-                Y_mini_batch_feed = Y_data[batch_offset:batch_end, :]
+                    X_mini_batch_feed = _X_data[batch_offset:batch_end, :, :, :]
+                Y_mini_batch_feed = _Y_data[batch_offset:batch_end, :]
                 sess.run(train_ops, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
 
@@ -244,10 +248,10 @@ if __name__ == "__main__":
         _num_classes = cfg_yml.num_class_imagenet
 
         if _use_raw_image:
-            Y_data = load_imagenet_labels_onehot(_label_path, _num_classes)
+            _Y_data = load_imagenet_labels_onehot(_label_path, _num_classes)
         else:
-            X_data = load_imagenet_bin(_image_path_bin, _num_channels, _img_width, _img_height)
-            Y_data = load_imagenet_labels_onehot(_label_path, _num_classes)
+            _X_data = load_imagenet_bin(_image_path_bin, _num_channels, _img_width, _img_height)
+            _Y_data = load_imagenet_labels_onehot(_label_path, _num_classes)
 
     elif _train_data == 'cifar10':
         _img_width = cfg_yml.img_width_cifar10
@@ -258,7 +262,7 @@ if __name__ == "__main__":
         _use_raw_image = False
 
         _cifar10_path = cfg_yml.cifar_10_path
-        X_data, Y_data = load_cifar_train(_cifar10_path, _rand_seed)
+        _X_data, _Y_data = load_cifar_train(_cifar10_path, _rand_seed)
 
     proc_gpu_list = list()
 
