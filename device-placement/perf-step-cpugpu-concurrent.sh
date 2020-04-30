@@ -1,4 +1,5 @@
 #!/bin/bash
+
 CPU_MODEL_LIST="mobilenet resnet densenet mlp"
 CPU_MODEL_NUM="1 2 4 8 16"
 GPU_MODEL_LIST="mobilenet resnet densenet mlp"
@@ -8,6 +9,8 @@ TRAINSET_LIST="imagenet cifar10"
 REPEAT=5
 FOLDER="exp-results"
 SUDOPWD=""
+
+declare -A progress_dict
 
 if [ -d "./${FOLDER}" ]
 then
@@ -63,25 +66,23 @@ do
                   SUM=$(echo "${SUM} + ${AST}" | bc)
                 fi
               done < ./${FOLDER}/${CASE}-REPEAT${j}.txt
+
               while read -r line
               do
-                if [[ $line =~ ^"**CPU JOB**" ]] && [ ${PROG_FLAG} -eq 0 ]
+                if [[ $line =~ ^"**CPU JOB**: Proc-**" ]]
                 then
                   BAK_LINE=${line}
-                  CPU_TIME_PRE=${line#*[}
+                  BAK_RES=${line}
+                  PROC_PRE=${line#*"**CPU JOB**: Proc-"}
+                  PROC=${PROC_PRE%","*}
+                  CPU_TIME_PRE=${BAK_RES#*[}
                   CPU_TIME_POST=${CPU_TIME_PRE%]*}
                   CPU_TIME="$(echo "scale=9; ${CPU_TIME_POST}" | bc)"
-                  if [ 1 -eq "$(echo "${CPU_TIME} > ${GPU_TIME}" | bc)" ]
+                  if [ 1 -eq "$(echo "${CPU_TIME} > ${GPU_TIME}" | bc)" ] && [ ${progress_dict[proc-${PROC}]} -ne 1 ]
                   then
                     echo ${BAK_LINE} >> ./${FOLDER}/all-results.txt
-                    PROG_FLAG=1
+                    progress_dict+=([proc-${PROC}]=1)
                   fi
-                elif [[ $line =~ ^"cpu job starts..." ]] && [ ${PROG_FLAG} -eq 0 ]
-                then
-                  echo 'CPU job has been done' >> ./${FOLDER}/all-results.txt
-                elif [[ $line =~ ^"cpu job starts..." ]] && [ ${PROG_FLAG} -eq 1 ]
-                then
-                  PROG_FLAG=0
                 fi
               done < ./${FOLDER}/${CASE}-REPEAT${j}.txt
             done
