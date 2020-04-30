@@ -49,7 +49,7 @@ do
             for j in $(seq 1 ${REPEAT})
             do
               echo "### REPEAT ${j} ###" >> ./${FOLDER}/all-results.txt
-              PROG_FLAG=1
+              echo "total cpu job: ${cpu_concur}" >> ./${FOLDER}/all-results.txt
               GPU_TIME=0
               while read -r line
               do
@@ -67,9 +67,11 @@ do
                 fi
               done < ./${FOLDER}/${CASE}-REPEAT${j}.txt
 
+              progress_dict=()
+
               while read -r line
               do
-                if [[ $line =~ ^"**CPU JOB**: Proc-**" ]]
+                if [[ $line =~ ^"**CPU JOB**: Proc-" ]]
                 then
                   BAK_LINE=${line}
                   BAK_RES=${line}
@@ -78,7 +80,7 @@ do
                   CPU_TIME_PRE=${BAK_RES#*[}
                   CPU_TIME_POST=${CPU_TIME_PRE%]*}
                   CPU_TIME="$(echo "scale=9; ${CPU_TIME_POST}" | bc)"
-                  if [ 1 -eq "$(echo "${CPU_TIME} > ${GPU_TIME}" | bc)" ] && [ ${progress_dict[proc-${PROC}]} -ne 1 ]
+                  if [ 1 -eq "$(echo "${CPU_TIME} > ${GPU_TIME}" | bc)" ] && [[ ${progress_dict[proc-${PROC}]} -ne 1 ]]
                   then
                     echo ${BAK_LINE} >> ./${FOLDER}/all-results.txt
                     progress_dict+=([proc-${PROC}]=1)
