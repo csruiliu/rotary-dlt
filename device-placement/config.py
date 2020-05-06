@@ -37,18 +37,19 @@ same_input = hyperparams_measure_cfg['same_input']
 available_cpu_num = hyperparams_measure_cfg['available_cpu_num']
 available_gpu_num = hyperparams_measure_cfg['available_gpu_num']
 
-##########################################
-# Parameters for Workload
-##########################################
+##################################################
+# Hyperparameters placement schedule simulation
+##################################################
 
-#hyperparams_workload_cfg = cfg['device_placement_workload']
-#workload_model_type = hyperparams_workload_cfg['workload_model_type']
-#workload_model_num = hyperparams_workload_cfg['workload_model_num']
-#workload_activation = hyperparams_workload_cfg['activation']
-#workload_opt = hyperparams_workload_cfg['optimizer']
-#workload_batch_size = hyperparams_workload_cfg['batch_size']
-#workload_num_layer = hyperparams_workload_cfg['num_model_layer']
-#workload_learning_rate = hyperparams_workload_cfg['learning_rate']
+placement_schedule_workload_cfg = cfg['placement_schedule_simulation']
+sch_model_num = placement_schedule_workload_cfg['job_num']
+sch_model_type_set = placement_schedule_workload_cfg['model_type_set']
+sch_batch_size_set = placement_schedule_workload_cfg['batch_size_set']
+sch_optimizer_set = placement_schedule_workload_cfg['optimizer_set']
+sch_learning_rate_set = placement_schedule_workload_cfg['learning_rate_set']
+sch_activation_set = placement_schedule_workload_cfg['activation_set']
+sch_reward_function = placement_schedule_workload_cfg['reward_function']
+placement_proportion_rate = placement_schedule_workload_cfg['placement_proportion_rate']
 
 ##############################################################
 # Experiment for profiling overhead of training CPU/GPU
