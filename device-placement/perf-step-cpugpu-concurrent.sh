@@ -45,6 +45,7 @@ do
             done
             LEN=0
             SUM=0
+            PROGRESS_STEP_SUM=0
             echo "================EXP: ${CASE} ================" >> ./${FOLDER}/all-results.txt
             for j in $(seq 1 ${REPEAT})
             do
@@ -83,11 +84,16 @@ do
                   if [ 1 -eq "$(echo "${CPU_TIME} > ${GPU_TIME}" | bc)" ] && [[ ${progress_dict[proc-${PROC}]} -ne 1 ]]
                   then
                     echo ${BAK_LINE} >> ./${FOLDER}/all-results.txt
+                    PROGRESS_STEP_PRE=${BAK_LINE#*"step "}
+                    PROGRESS_STEP=${PROGRESS_STEP_PRE%" / "*}
+                    PROGRESS_STEP_SUM=$((PROGRESS_STEP_SUM + PROGRESS_STEP - 1))
                     progress_dict+=([proc-${PROC}]=1)
                   fi
                 fi
               done < ./${FOLDER}/${CASE}-REPEAT${j}.txt
             done
+            TOTAL_TRAIN_NUM=$((REPEAT * cpu_concur))
+            echo "CPU JOB AVG STEP PROGRESS=$(echo "scale=4"; ${PROGRESS_STEP_SUM}/${TOTAL_TRAIN_NUM})" >> ./${FOLDER}/all-results.txt
             echo "### GPU JOB ###" >> ./${FOLDER}/all-results.txt
             echo "GPU JOB AVG STEP=$(echo "scale=3; ${SUM}/${LEN}" | bc)" >> ./${FOLDER}/all-results.txt
           done
