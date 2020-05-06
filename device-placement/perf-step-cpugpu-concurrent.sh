@@ -93,7 +93,7 @@ do
               done < ./${FOLDER}/${CASE}-REPEAT${j}.txt
             done
             TOTAL_TRAIN_NUM=$((REPEAT * cpu_concur))
-            echo "CPU JOB AVG STEP PROGRESS=$(echo "scale=4"; ${PROGRESS_STEP_SUM}/${TOTAL_TRAIN_NUM})" >> ./${FOLDER}/all-results.txt
+            echo "CPU JOB AVG STEP PROGRESS=$(echo "scale=4; ${PROGRESS_STEP_SUM}/${TOTAL_TRAIN_NUM}" | bc)" >> ./${FOLDER}/all-results.txt
             echo "### GPU JOB ###" >> ./${FOLDER}/all-results.txt
             echo "GPU JOB AVG STEP=$(echo "scale=3; ${SUM}/${LEN}" | bc)" >> ./${FOLDER}/all-results.txt
           done
