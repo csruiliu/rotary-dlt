@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+
 class mlp(object):
     def __init__(self, net_name, num_layer, input_h, input_w, num_channel, num_classes, batch_size, opt,
                  learning_rate=0.0001, activation='relu', batch_padding=False):
@@ -19,8 +20,6 @@ class mlp(object):
         self.train_op = None
         self.eval_op = None
         self.is_training = True
-
-
 
     def perceptron_layer(self, input, layer_name):
         with tf.variable_scope(layer_name):

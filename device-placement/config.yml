@@ -95,6 +95,8 @@ placement_schedule_simulation:
   # highest_accuracy, lowest_accuracy, average_accuracy
   reward_function: average_accuracy
   placement_proportion_rate: 0.382
+  # time unit: second
+  timie_limit: 3
 
 
 profile_concur_cpugpu_workload:

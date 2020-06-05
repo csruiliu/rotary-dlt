@@ -1,7 +1,7 @@
 import yaml
 
 with open("config.yml", 'r') as ymlfile:
-    cfg = yaml.load(ymlfile)
+    cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
 ##########################################
 # Hyperparameters for input
@@ -50,6 +50,8 @@ sch_learning_rate_set = placement_schedule_workload_cfg['learning_rate_set']
 sch_activation_set = placement_schedule_workload_cfg['activation_set']
 sch_reward_function = placement_schedule_workload_cfg['reward_function']
 placement_proportion_rate = placement_schedule_workload_cfg['placement_proportion_rate']
+sch_time_limit = placement_schedule_workload_cfg['timie_limit']
+
 
 ##############################################################
 # Experiment for profiling overhead of training CPU/GPU
