@@ -126,7 +126,7 @@ def policy_gradient_run():
 
                     # reset episode-specific variables
                     obs, done, reward_eps_list = _env.reset(), False, []
-                    
+
                     if len(obs_batch_list) > _batch_size:
                         break
 
