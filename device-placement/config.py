@@ -42,7 +42,8 @@ available_gpu_num = hyperparams_measure_cfg['available_gpu_num']
 ##################################################
 
 placement_schedule_workload_cfg = cfg['placement_schedule_simulation']
-sch_model_num = placement_schedule_workload_cfg['job_num']
+sch_device_num = placement_schedule_workload_cfg['device_num']
+sch_job_num = placement_schedule_workload_cfg['job_num']
 sch_model_type_set = placement_schedule_workload_cfg['model_type_set']
 sch_batch_size_set = placement_schedule_workload_cfg['batch_size_set']
 sch_optimizer_set = placement_schedule_workload_cfg['optimizer_set']

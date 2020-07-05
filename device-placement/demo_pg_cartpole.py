@@ -26,7 +26,7 @@ class PolicyGradient:
     # the input of this function is a batch of observation and compute a batch of actions
     def build_policy_network(self, obs_batch):
         with tf.variable_scope('policy_network'):
-            hidden_layer_neurons = 10
+            hidden_layer_neurons = 32
             variable_initializer = tf.contrib.layers.xavier_initializer()
             W1 = tf.get_variable("W1", shape=[self.num_feature, hidden_layer_neurons], initializer=variable_initializer)
             hidden_layer = tf.nn.relu(tf.matmul(obs_batch, W1))
@@ -39,7 +39,7 @@ class PolicyGradient:
     # the input of this function is a batch of actions
     def train_policy_network(self, action_batch_ph, weights_batch_ph):
         # transferring the batch of actions to onehot
-        actions_onehot = tf.one_hot(action_batch_ph, _num_action_space)
+        actions_onehot = tf.one_hot(action_batch_ph, self.num_action_output)
         log_probs = tf.reduce_sum(actions_onehot * tf.nn.log_softmax(self.policy_logit), axis=1)
         self.policy_loss_op = -tf.reduce_mean(weights_batch_ph * log_probs)
         self.policy_train_op = tf.train.AdamOptimizer(self.learn_rate).minimize(self.policy_loss_op)
@@ -77,7 +77,7 @@ def policy_gradient_run():
 
     # build policy gradient
     pg = PolicyGradient(n_feature=_obs_dim, n_action_space=_num_action_space, n_action_output=_num_action_output)
-    #pg_logit = pg.mlp(obs_ph, sizes=[32] + [_num_action_space])
+    #pg_logit = pg.build_policy_network_alternative(obs_ph, sizes=[32] + [_num_action_space])
     pg.build_policy_network(obs_ph)
     pg_loss_op, pg_train_op = pg.train_policy_network(act_ph, weights_ph)
     pg_action = pg.action_policy_network()

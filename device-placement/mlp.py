@@ -3,7 +3,7 @@ import tensorflow as tf
 
 class mlp(object):
     def __init__(self, net_name, num_layer, input_h, input_w, num_channel, num_classes, batch_size, opt,
-                 learning_rate=0.0001, activation='relu', batch_padding=False):
+                 learning_rate=0.001, activation='relu', batch_padding=False):
         self.net_name = net_name
         self.num_layer = num_layer
         self.img_h = input_h
