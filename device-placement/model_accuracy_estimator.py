@@ -33,16 +33,17 @@ def generate_conv_model_dataset():
 
         conv_model_info_dict['input_size'] = int(conv_model_info_list[0])
         conv_model_info_dict['channel_num'] = int(conv_model_info_list[1])
-        conv_model_info_dict['batch_size'] = int(conv_model_info_list[2])
-        conv_model_info_dict['conv_layer_num'] = int(conv_model_info_list[3])
-        conv_model_info_dict['pooling_layer_num'] = int(conv_model_info_list[4])
-        conv_model_info_dict['total_layer_num'] = int(conv_model_info_list[5])
-        conv_model_info_dict['learning_rate'] = float(conv_model_info_list[6])
-        conv_model_info_dict['optimizer'] = conv_model_info_list[7]
-        conv_model_info_dict['activation'] = conv_model_info_list[8]
+        conv_model_info_dict['class_num'] = int(conv_model_info_list[2])
+        conv_model_info_dict['batch_size'] = int(conv_model_info_list[3])
+        conv_model_info_dict['conv_layer_num'] = int(conv_model_info_list[4])
+        conv_model_info_dict['pooling_layer_num'] = int(conv_model_info_list[5])
+        conv_model_info_dict['total_layer_num'] = int(conv_model_info_list[6])
+        conv_model_info_dict['learning_rate'] = float(conv_model_info_list[7])
+        conv_model_info_dict['optimizer'] = conv_model_info_list[8]
+        conv_model_info_dict['activation'] = conv_model_info_list[9]
         conv_model_dataset.append(conv_model_info_dict)
 
-        conv_model_epoch_list.append(int(conv_model_info_list[9]))
+        conv_model_epoch_list.append(int(conv_model_info_list[10]))
         conv_model_accuracy_list.append(float(model_info['model_accuracy']))
 
     return conv_model_dataset, conv_model_accuracy_list, conv_model_epoch_list
@@ -59,7 +60,7 @@ def compute_model_similarity(center_model, candidate_models):
         input_binary_set = set()
         candidate_binary_set = set()
         for cfg_idx in center_model:
-            if cfg_idx in ('channel_num', 'optimizer', 'activation'):
+            if cfg_idx in ('channel_num', 'class_num', 'optimizer', 'activation'):
                 #input_size_similarity = 1 if center_model[cfg_idx] == model_idx[cfg_idx] else 0
                 #curmodel_hyperparam_similarity_list.append(input_size_similarity)
                 input_binary_set.add(center_model[cfg_idx])
@@ -101,21 +102,22 @@ def estimate_model_accuracy(input_model_epoch, predict_model_epoch_list, predict
 
 
 if __name__ == "__main__":
-    INPUT_MODEL_INFO = '224-3-64-1-1-5-0.001-SGD-relu-18'
+    INPUT_MODEL_INFO = '224-3-1000-64-1-1-5-0.001-SGD-relu-18'
     input_model_list = INPUT_MODEL_INFO.split('-')
     input_model_dict = dict()
 
     input_model_dict['input_size'] = int(input_model_list[0])
     input_model_dict['channel_num'] = int(input_model_list[1])
-    input_model_dict['batch_size'] = int(input_model_list[2])
-    input_model_dict['conv_layer_num'] = int(input_model_list[3])
-    input_model_dict['pooling_layer_num'] = int(input_model_list[4])
-    input_model_dict['total_layer_num'] = int(input_model_list[5])
-    input_model_dict['learning_rate'] = float(input_model_list[6])
-    input_model_dict['optimizer'] = input_model_list[7]
-    input_model_dict['activation'] = input_model_list[8]
+    input_model_dict['class_num'] = int(input_model_list[2])
+    input_model_dict['batch_size'] = int(input_model_list[3])
+    input_model_dict['conv_layer_num'] = int(input_model_list[4])
+    input_model_dict['pooling_layer_num'] = int(input_model_list[5])
+    input_model_dict['total_layer_num'] = int(input_model_list[6])
+    input_model_dict['learning_rate'] = float(input_model_list[7])
+    input_model_dict['optimizer'] = input_model_list[8]
+    input_model_dict['activation'] = input_model_list[9]
 
-    input_model_epoch = int(input_model_list[9])
+    input_model_epoch = int(input_model_list[10])
 
     model_info_list, model_accuracy_list, model_epoch_list = generate_conv_model_dataset()
     model_similarity_list = compute_model_similarity(input_model_dict, model_info_list)
