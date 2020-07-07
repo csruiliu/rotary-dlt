@@ -19,7 +19,7 @@ def build_model():
     return train_step, eval_step
 
 
-def train_eval_model(trainOp, evalOp):
+def train_eval_model(trainOp):
     config = tf.ConfigProto()
     config.allow_soft_placement = True
     config.gpu_options.allow_growth = True
@@ -29,15 +29,25 @@ def train_eval_model(trainOp, evalOp):
 
         for e in range(train_epoch):
             for i in range(num_batch):
+                print('{epoch {} / {}, step {} / {}'.format(e+1, train_epoch, i+1, num_batch))
                 batch_offset = i * train_batchsize
                 batch_end = (i+1) * train_batchsize
                 X_mini_batch_feed = X_data[batch_offset:batch_end, :, :, :]
                 Y_mini_batch_feed = Y_data[batch_offset:batch_end, :]
                 sess.run(trainOp, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
-        acc_arg = evalOp.eval({features: X_data_eval, labels: Y_data_eval})
+    print('Finish training model')
 
-    print("Accuracy:", acc_arg)
+
+def eval_model(evalOp):
+    print('')
+    config = tf.ConfigProto()
+    config.allow_soft_placement = True
+    config.gpu_options.allow_growth = True
+    with tf.Session(config=config) as sess:
+        acc_arg = sess.run(evalOp, feed_dict={features: X_data_eval, labels: Y_data_eval})
+
+    print('Accuracy: {}'.format(acc_arg))
 
 
 if __name__ == '__main__':
@@ -115,8 +125,9 @@ if __name__ == '__main__':
         X_data_eval = load_imagenet_bin(test_image_path, num_channels, img_width, img_height)
         Y_data_eval = load_imagenet_labels_onehot(test_label_path, num_classes)
 
-        train_eval_model(train_op, eval_op)
-    
+        train_model(train_op)
+        eval_model(eval_op)
+
     elif train_data == 'cifar10':
         pass
     elif train_data == 'mnist':
