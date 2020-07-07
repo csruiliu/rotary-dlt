@@ -96,8 +96,10 @@ if __name__ == '__main__':
     train_activation = args.activation
 
     if train_data == 'imagenet':
-        image_path_bin = cfg_yml.imagenet_t1k_bin_path
-        label_path = cfg_yml.imagenet_t1k_label_path
+        train_image_path = cfg_yml.imagenet_t10k_bin_path
+        train_label_path = cfg_yml.imagenet_t10k_label_path
+        test_image_path = cfg_yml.imagenet_t1k_bin_path
+        test_label_path = cfg_yml.imagenet_t1k_label_path
 
         img_width = cfg_yml.img_width_imagenet
         img_height = cfg_yml.img_height_imagenet
@@ -108,13 +110,13 @@ if __name__ == '__main__':
         labels = tf.placeholder(tf.int64, [None, num_classes])
         train_op, eval_op = build_model()
 
-        X_data = load_imagenet_bin(image_path_bin, num_channels, img_width, img_height)
-        Y_data = load_imagenet_labels_onehot(label_path, num_classes)
-        X_data_eval = load_imagenet_bin_pickle(image_path_bin, num_channels, img_width, img_height)
-        Y_data_eval = load_imagenet_labels_onehot(label_path, num_classes)
+        X_data = load_imagenet_bin(train_image_path, num_channels, img_width, img_height)
+        Y_data = load_imagenet_labels_onehot(train_label_path, num_classes)
+        X_data_eval = load_imagenet_bin(test_image_path, num_channels, img_width, img_height)
+        Y_data_eval = load_imagenet_labels_onehot(test_label_path, num_classes)
 
         train_eval_model(train_op, eval_op)
-
+    
     elif train_data == 'cifar10':
         pass
     elif train_data == 'mnist':

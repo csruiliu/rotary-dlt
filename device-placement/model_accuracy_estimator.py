@@ -121,6 +121,7 @@ if __name__ == "__main__":
 
     model_info_list, model_accuracy_list, model_epoch_list = generate_conv_model_dataset()
     model_similarity_list = compute_model_similarity(input_model_dict, model_info_list)
+    print(model_similarity_list)
     similarity_model_idx_list = rank_model_similarity(model_info_list, model_similarity_list)
 
     # return the nearest models info according to similarity
