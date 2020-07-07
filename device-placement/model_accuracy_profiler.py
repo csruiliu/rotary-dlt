@@ -19,7 +19,7 @@ def build_model():
     return train_step, eval_step
 
 
-def train_eval_model(trainOp):
+def train_model(trainOp):
     config = tf.ConfigProto()
     config.allow_soft_placement = True
     config.gpu_options.allow_growth = True
@@ -40,7 +40,7 @@ def train_eval_model(trainOp):
 
 
 def eval_model(evalOp):
-    print('')
+    print('start evaluating model')
     config = tf.ConfigProto()
     config.allow_soft_placement = True
     config.gpu_options.allow_growth = True
