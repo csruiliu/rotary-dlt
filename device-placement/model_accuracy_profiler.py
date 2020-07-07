@@ -19,7 +19,7 @@ def build_model():
     return train_step, eval_step
 
 
-def train_model(trainOp):
+def run_train_model(trainOp):
     config = tf.ConfigProto()
     config.allow_soft_placement = True
     config.gpu_options.allow_growth = True
@@ -29,7 +29,7 @@ def train_model(trainOp):
 
         for e in range(train_epoch):
             for i in range(num_batch):
-                print('{epoch {} / {}, step {} / {}'.format(e+1, train_epoch, i+1, num_batch))
+                print('epoch {} / {}, step {} / {}'.format(e+1, train_epoch, i+1, num_batch))
                 batch_offset = i * train_batchsize
                 batch_end = (i+1) * train_batchsize
                 X_mini_batch_feed = X_data[batch_offset:batch_end, :, :, :]
@@ -39,7 +39,7 @@ def train_model(trainOp):
     print('Finish training model')
 
 
-def eval_model(evalOp):
+def run_eval_model(evalOp):
     print('start evaluating model')
     config = tf.ConfigProto()
     config.allow_soft_placement = True
@@ -125,8 +125,8 @@ if __name__ == '__main__':
         X_data_eval = load_imagenet_bin(test_image_path, num_channels, img_width, img_height)
         Y_data_eval = load_imagenet_labels_onehot(test_label_path, num_classes)
 
-        train_model(train_op)
-        eval_model(eval_op)
+        run_train_model(train_op)
+        run_eval_model(eval_op)
 
     elif train_data == 'cifar10':
         pass
