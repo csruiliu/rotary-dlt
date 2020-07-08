@@ -1,8 +1,15 @@
 import numpy as np
+import json
 from scipy.optimize import curve_fit
 
-import model_accuracy_config as acc_json_cfg
 
+def import_accuracy_dataset():
+    with open('model_accuracy_dataset.json') as json_file:
+        json_data = json.load(json_file)
+
+    conv_model_list = json_data['conv_model']
+
+    return conv_model_list
 
 def sigmoid_function(x, x0, k):
     y = 1 / (1 + np.exp(-k * (x - x0)))
@@ -23,11 +30,11 @@ def jaccard_index(s1, s2):
     return jaccard_idx
 
 
-def generate_conv_model_dataset():
+def generate_conv_model_dataset(conv_model_list):
     conv_model_dataset = list()
     conv_model_accuracy_list = list()
     conv_model_epoch_list = list()
-    for model_info in acc_json_cfg.conv_model_list:
+    for model_info in conv_model_list:
         conv_model_info_dict = dict()
         conv_model_info_list = model_info['model_name'].split('-')
 
@@ -119,7 +126,9 @@ if __name__ == "__main__":
 
     input_model_epoch = int(input_model_list[10])
 
-    model_info_list, model_accuracy_list, model_epoch_list = generate_conv_model_dataset()
+    conv_model_list_json = import_accuracy_dataset()
+
+    model_info_list, model_accuracy_list, model_epoch_list = generate_conv_model_dataset(conv_model_list_json)
     model_similarity_list = compute_model_similarity(input_model_dict, model_info_list)
     print(model_similarity_list)
     similarity_model_idx_list = rank_model_similarity(model_info_list, model_similarity_list)

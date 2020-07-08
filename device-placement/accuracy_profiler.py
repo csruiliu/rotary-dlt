@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 import argparse
 
-import config as cfg_yml
+import config_parameter as cfg_para_yml
 from dnn_model import DnnModel
 from img_utils import *
 
@@ -45,6 +45,7 @@ def run_eval_model(evalOp):
     config.allow_soft_placement = True
     config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
+        sess.run(tf.global_variables_initializer())
         acc_arg = sess.run(evalOp, feed_dict={features: X_data_eval, labels: Y_data_eval})
 
     print('Accuracy: {}'.format(acc_arg))
@@ -106,15 +107,15 @@ if __name__ == '__main__':
     train_activation = args.activation
 
     if train_data == 'imagenet':
-        train_image_path = cfg_yml.imagenet_t10k_bin_path
-        train_label_path = cfg_yml.imagenet_t10k_label_path
-        test_image_path = cfg_yml.imagenet_t1k_bin_path
-        test_label_path = cfg_yml.imagenet_t1k_label_path
+        train_image_path = cfg_para_yml.imagenet_t10k_bin_path
+        train_label_path = cfg_para_yml.imagenet_t10k_label_path
+        test_image_path = cfg_para_yml.imagenet_t1k_bin_path
+        test_label_path = cfg_para_yml.imagenet_t1k_label_path
 
-        img_width = cfg_yml.img_width_imagenet
-        img_height = cfg_yml.img_height_imagenet
-        num_channels = cfg_yml.num_channels_rgb
-        num_classes = cfg_yml.num_class_imagenet
+        img_width = cfg_para_yml.img_width_imagenet
+        img_height = cfg_para_yml.img_height_imagenet
+        num_channels = cfg_para_yml.num_channels_rgb
+        num_classes = cfg_para_yml.num_class_imagenet
 
         features = tf.placeholder(tf.float32, [None, img_width, img_height, num_channels])
         labels = tf.placeholder(tf.int64, [None, num_classes])
