@@ -12,10 +12,10 @@ from timeit import default_timer as timer
 import numpy as np
 import tensorflow as tf
 
-
-import config as cfg_yml
-from dnn_model import DnnModel
-from img_utils import load_imagenet_labels_onehot, load_imagenet_bin, load_imagenet_raw, load_cifar_train
+import config_parameter as cfg_para_yml
+import config_path as cfg_path_yml
+from model_importer import ModelImporter
+from utils_img import load_imagenet_labels_onehot, load_imagenet_bin, load_imagenet_raw, load_cifar_train
 
 '''
 def generate_workload_from_cfg():
@@ -64,7 +64,7 @@ def run_single_job_gpu(model_type, model_instance, batch_size, optimizer, learni
         features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _num_channels])
         labels = tf.placeholder(tf.int64, [None, _num_classes])
 
-        train_model = DnnModel(model_type, str(model_instance), 1, _img_height, _img_width, _num_channels, _num_classes,
+        train_model = ModelImporter(model_type, str(model_instance), 1, _img_height, _img_width, _num_channels, _num_classes,
                                batch_size, optimizer, learning_rate, activation, False)
         model_entity = train_model.getModelEntity()
         model_logit = model_entity.build(features)
@@ -124,7 +124,7 @@ def run_single_job_cpu(model_type, model_instance, batch_size, optimizer, learni
         features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _num_channels])
         labels = tf.placeholder(tf.int64, [None, _num_classes])
 
-        train_model = DnnModel(model_type, str(model_instance), 1, _img_height, _img_width, _num_channels, _num_classes,
+        train_model = ModelImporter(model_type, str(model_instance), 1, _img_height, _img_width, _num_channels, _num_classes,
                                batch_size, optimizer, learning_rate, activation, False)
         model_entity = train_model.getModelEntity()
         model_logit = model_entity.build(features)
@@ -178,26 +178,26 @@ if __name__ == "__main__":
     # Get parameters using config
     ########################################
 
-    _rand_seed = cfg_yml.rand_seed
-    _record_marker = cfg_yml.record_marker
-    _use_raw_image = cfg_yml.use_raw_image
-    _use_measure_step = cfg_yml.measure_step
+    _rand_seed = cfg_para_yml.rand_seed
+    _record_marker = cfg_para_yml.record_marker
+    _use_raw_image = cfg_para_yml.use_raw_image
+    _use_measure_step = cfg_para_yml.measure_step
 
-    _available_gpu_num = cfg_yml.available_gpu_num
+    _available_gpu_num = cfg_para_yml.available_gpu_num
 
-    # cpu_model_type = cfg_yml.cpu_model_type
-    # cpu_model_num = cfg_yml.cpu_model_num
-    # cpu_batch_size = cfg_yml.cpu_batch_size
-    _cpu_learn_rate = cfg_yml.cpu_learning_rate
-    _cpu_activation = cfg_yml.cpu_activation
-    _cpu_optimizer = cfg_yml.cpu_optimizer
+    # cpu_model_type = cfg_para_yml.cpu_model_type
+    # cpu_model_num = cfg_para_yml.cpu_model_num
+    # cpu_batch_size = cfg_para_yml.cpu_batch_size
+    _cpu_learn_rate = cfg_para_yml.cpu_learning_rate
+    _cpu_activation = cfg_para_yml.cpu_activation
+    _cpu_optimizer = cfg_para_yml.cpu_optimizer
 
-    # gpu_model_type = cfg_yml.gpu_model_type
-    # gpu_model_num = cfg_yml.gpu_model_num
-    # gpu_batch_size = cfg_yml.gpu_batch_size
-    _gpu_learn_rate = cfg_yml.gpu_learning_rate
-    _gpu_activation = cfg_yml.gpu_activation
-    _gpu_optimizer = cfg_yml.gpu_optimizer
+    # gpu_model_type = cfg_para_yml.gpu_model_type
+    # gpu_model_num = cfg_para_yml.gpu_model_num
+    # gpu_batch_size = cfg_para_yml.gpu_batch_size
+    _gpu_learn_rate = cfg_para_yml.gpu_learning_rate
+    _gpu_activation = cfg_para_yml.gpu_activation
+    _gpu_optimizer = cfg_para_yml.gpu_optimizer
 
     #########################################################################
     # Parameters read from command, but can be placed by read from config
@@ -238,14 +238,14 @@ if __name__ == "__main__":
     ###########################################################
 
     if _train_data == 'imagenet':
-        _image_path_raw = cfg_yml.imagenet_t1k_img_path
-        _image_path_bin = cfg_yml.imagenet_t1k_bin_path
-        _label_path = cfg_yml.imagenet_t1k_label_path
+        _image_path_raw = cfg_path_yml.imagenet_t1k_img_path
+        _image_path_bin = cfg_path_yml.imagenet_t1k_bin_path
+        _label_path = cfg_path_yml.imagenet_t1k_label_path
 
-        _img_width = cfg_yml.img_width_imagenet
-        _img_height = cfg_yml.img_height_imagenet
-        _num_channels = cfg_yml.num_channels_rgb
-        _num_classes = cfg_yml.num_class_imagenet
+        _img_width = cfg_para_yml.img_width_imagenet
+        _img_height = cfg_para_yml.img_height_imagenet
+        _num_channels = cfg_para_yml.num_channels_rgb
+        _num_classes = cfg_para_yml.num_class_imagenet
 
         if _use_raw_image:
             _Y_data = load_imagenet_labels_onehot(_label_path, _num_classes)
@@ -254,14 +254,14 @@ if __name__ == "__main__":
             _Y_data = load_imagenet_labels_onehot(_label_path, _num_classes)
 
     elif _train_data == 'cifar10':
-        _img_width = cfg_yml.img_width_cifar10
-        _img_height = cfg_yml.img_height_cifar10
-        _num_channels = cfg_yml.num_channels_rgb
-        _num_classes = cfg_yml.num_class_cifar10
+        _img_width = cfg_para_yml.img_width_cifar10
+        _img_height = cfg_para_yml.img_height_cifar10
+        _num_channels = cfg_para_yml.num_channels_rgb
+        _num_classes = cfg_para_yml.num_class_cifar10
 
         _use_raw_image = False
 
-        _cifar10_path = cfg_yml.cifar_10_path
+        _cifar10_path = cfg_path_yml.cifar_10_path
         _X_data, _Y_data = load_cifar_train(_cifar10_path, _rand_seed)
 
     proc_gpu_list = list()

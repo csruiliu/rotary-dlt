@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+
 class scn(object):
     def __init__(self, net_name, num_layer, input_h, input_w, num_channel, num_classes, batch_size, opt,
                  learning_rate=0.0001, activation='relu', batch_padding=False):

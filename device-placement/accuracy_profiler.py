@@ -2,14 +2,14 @@ import numpy as np
 import tensorflow as tf
 import argparse
 
-import config_parameter as cfg_para_yml
-from dnn_model import DnnModel
-from img_utils import *
+import config_path as cfg_path_yml
+from model_importer import ModelImporter
+from utils_img import *
 
 
 def build_model():
     model_name_abbr = np.random.choice(rand_seed, 1, replace=False).tolist()
-    dm = DnnModel(train_model, str(model_name_abbr.pop()), train_conv_layer, img_height, img_width, num_channels,
+    dm = ModelImporter(train_model, str(model_name_abbr.pop()), train_conv_layer, img_height, img_width, num_channels,
                   num_classes, train_batchsize, train_opt, train_learn_rate, train_activation, False)
     model_entity = dm.getModelEntity()
     model_logit = model_entity.build(features)
@@ -107,15 +107,15 @@ if __name__ == '__main__':
     train_activation = args.activation
 
     if train_data == 'imagenet':
-        train_image_path = cfg_para_yml.imagenet_t10k_bin_path
-        train_label_path = cfg_para_yml.imagenet_t10k_label_path
-        test_image_path = cfg_para_yml.imagenet_t1k_bin_path
-        test_label_path = cfg_para_yml.imagenet_t1k_label_path
+        train_image_path = cfg_path_yml.imagenet_t10k_bin_path
+        train_label_path = cfg_path_yml.imagenet_t10k_label_path
+        test_image_path = cfg_path_yml.imagenet_t1k_bin_path
+        test_label_path = cfg_path_yml.imagenet_t1k_label_path
 
-        img_width = cfg_para_yml.img_width_imagenet
-        img_height = cfg_para_yml.img_height_imagenet
-        num_channels = cfg_para_yml.num_channels_rgb
-        num_classes = cfg_para_yml.num_class_imagenet
+        img_width = cfg_path_yml.img_width_imagenet
+        img_height = cfg_path_yml.img_height_imagenet
+        num_channels = cfg_path_yml.num_channels_rgb
+        num_classes = cfg_path_yml.num_class_imagenet
 
         features = tf.placeholder(tf.float32, [None, img_width, img_height, num_channels])
         labels = tf.placeholder(tf.int64, [None, num_classes])

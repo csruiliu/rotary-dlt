@@ -1,6 +1,7 @@
 import tensorflow as tf
 import tensorflow.contrib as tc
 
+
 #MobileNetV2
 class mobilenet(object):
     def __init__(self, net_name, num_layer, input_h, input_w, num_channel, num_classes, batch_size, opt,
