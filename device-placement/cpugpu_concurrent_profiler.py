@@ -66,7 +66,7 @@ def run_single_job_gpu(model_type, model_instance, batch_size, optimizer, learni
 
         train_model = ModelImporter(model_type, str(model_instance), 1, _img_height, _img_width, _num_channels, _num_classes,
                                batch_size, optimizer, learning_rate, activation, False)
-        model_entity = train_model.getModelEntity()
+        model_entity = train_model.get_model_entity()
         model_logit = model_entity.build(features)
         train_ops = model_entity.train(model_logit, labels)
 
@@ -126,7 +126,7 @@ def run_single_job_cpu(model_type, model_instance, batch_size, optimizer, learni
 
         train_model = ModelImporter(model_type, str(model_instance), 1, _img_height, _img_width, _num_channels, _num_classes,
                                batch_size, optimizer, learning_rate, activation, False)
-        model_entity = train_model.getModelEntity()
+        model_entity = train_model.get_model_entity()
         model_logit = model_entity.build(features)
         train_ops = model_entity.train(model_logit, labels)
 

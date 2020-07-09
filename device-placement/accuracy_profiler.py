@@ -12,7 +12,7 @@ def build_model():
     model_name_abbr = np.random.choice(rand_seed, 1, replace=False).tolist()
     dm = ModelImporter(train_model, str(model_name_abbr.pop()), train_conv_layer, img_height, img_width, num_channels,
                   num_classes, train_batchsize, train_opt, train_learn_rate, train_activation, False)
-    model_entity = dm.getModelEntity()
+    model_entity = dm.get_model_entity()
     model_logit = model_entity.build(features)
     train_step = model_entity.train(model_logit, labels)
     eval_step = model_entity.evaluate(model_logit, labels)
