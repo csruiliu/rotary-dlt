@@ -3,6 +3,7 @@ import tensorflow as tf
 import argparse
 
 import config_path as cfg_path_yml
+import config_parameter as cfg_para_yml
 from model_importer import ModelImporter
 from utils_img import *
 
@@ -103,33 +104,70 @@ if __name__ == '__main__':
     train_epoch = args.epoch
     train_opt = args.opt
     train_conv_layer = args.conv_layer
+    train_pool_layer = args.pool_layer
+    train_total_layer = args.total_layer
     train_learn_rate = args.learn_rate
     train_activation = args.activation
 
-    if train_data == 'imagenet':
-        train_image_path = cfg_path_yml.imagenet_t10k_bin_path
-        train_label_path = cfg_path_yml.imagenet_t10k_label_path
-        test_image_path = cfg_path_yml.imagenet_t1k_bin_path
-        test_label_path = cfg_path_yml.imagenet_t1k_label_path
+    train_op = None
+    eval_op = None
 
-        img_width = cfg_path_yml.img_width_imagenet
-        img_height = cfg_path_yml.img_height_imagenet
-        num_channels = cfg_path_yml.num_channels_rgb
-        num_classes = cfg_path_yml.num_class_imagenet
+    if train_data == 'imagenet':
+        print('train the model on imagenet')
+        img_width = cfg_para_yml.img_width_imagenet
+        img_height = cfg_para_yml.img_height_imagenet
+        num_channels = cfg_para_yml.num_channels_rgb
+        num_classes = cfg_para_yml.num_class_imagenet
 
         features = tf.placeholder(tf.float32, [None, img_width, img_height, num_channels])
         labels = tf.placeholder(tf.int64, [None, num_classes])
         train_op, eval_op = build_model()
+
+        train_image_path = cfg_path_yml.imagenet_t10k_bin_path
+        train_label_path = cfg_path_yml.imagenet_t10k_label_path
+        test_image_path = cfg_path_yml.imagenet_t1k_bin_path
+        test_label_path = cfg_path_yml.imagenet_t1k_label_path
 
         X_data = load_imagenet_bin(train_image_path, num_channels, img_width, img_height)
         Y_data = load_imagenet_labels_onehot(train_label_path, num_classes)
         X_data_eval = load_imagenet_bin(test_image_path, num_channels, img_width, img_height)
         Y_data_eval = load_imagenet_labels_onehot(test_label_path, num_classes)
 
-        run_train_model(train_op)
-        run_eval_model(eval_op)
-
     elif train_data == 'cifar10':
-        pass
+        print('train the model on cifar10')
+        img_width = cfg_para_yml.img_width_cifar10
+        img_height = cfg_para_yml.img_height_cifar10
+        num_channels = cfg_para_yml.num_channels_rgb
+        num_classes = cfg_para_yml.num_class_cifar10
+
+        features = tf.placeholder(tf.float32, [None, img_width, img_height, num_channels])
+        labels = tf.placeholder(tf.int64, [None, num_classes])
+        train_op, eval_op = build_model()
+
+        cifar10_path = cfg_path_yml.cifar_10_path
+        X_data, Y_data = load_cifar_train(cifar10_path, rand_seed)
+        X_data_eval, Y_data_eval = load_cifar_test(cifar_10_path, seed)
+
     elif train_data == 'mnist':
-        pass
+        print('train the model on mnist')
+        img_width = cfg_para_yml.img_width_mnist
+        img_height = cfg_para_yml.img_height_mnist
+        num_channels = cfg_para_yml.num_channels_bw
+        num_classes = cfg_para_yml.num_class_mnist
+
+        features = tf.placeholder(tf.float32, [None, img_width, img_height, num_channels])
+        labels = tf.placeholder(tf.int64, [None, num_classes])
+        train_op, eval_op = build_model()
+
+        mnist_train_img_path = cfg_path_yml.mnist_train_img_path
+        mnist_train_label_path = cfg_path_yml.mnist_train_label_path
+        mnist_t10k_img_path = cfg_path_yml.mnist_t10k_img_path
+        mnist_t10k_label_path = cfg_path_yml.mnist_t10k_label_path
+
+        X_data = load_mnist_image(mnist_train_img_path, rand_seed)
+        Y_data = load_mnist_label_onehot(mnist_train_label_path, rand_seed)
+        X_data_eval = load_mnist_image(mnist_t10k_img_path, rand_seed)
+        Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path, rand_seed)
+
+    run_train_model(train_op)
+    run_eval_model(eval_op)
