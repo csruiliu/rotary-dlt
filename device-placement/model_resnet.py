@@ -1,7 +1,27 @@
 import tensorflow as tf
 
 
-#resnet-50
+def activation_function(logit, act_name):
+    new_logit = None
+    if act_name == 'relu6':
+        new_logit = tf.nn.relu6(logit, 'relu6')
+    elif act_name == 'relu':
+        new_logit = tf.nn.relu(logit, 'relu')
+    elif act_name == 'leaky_relu':
+        new_logit = tf.nn.leaky_relu(logit, 'leaky_relu')
+    elif act_name == 'tanh':
+        new_logit = tf.math.tanh(logit, 'tanh')
+    elif act_name == 'sigmoid':
+        new_logit = tf.math.sigmoid(logit, 'sigmoid')
+    elif act_name == 'elu':
+        new_logit = tf.nn.elu(logit, 'elu')
+    elif act_name == 'selu':
+        new_logit = tf.nn.selu(logit, 'selu')
+
+    return new_logit
+
+
+# ResNet-50
 class resnet(object):
     def __init__(self, net_name, num_layer, input_h, input_w, num_channel, num_classes, batch_size, opt,
                  learning_rate=0.0001, activation='relu', batch_padding=False):
@@ -19,6 +39,19 @@ class resnet(object):
         self.model_logit = None
         self.train_op = None
         self.eval_op = None
+        self.num_conv_layer = 0
+        self.num_pool_layer = 0
+        self.num_total_layer = 0
+
+    def add_layer_num(self, layer_type, layer_num):
+        if layer_type == 'pool':
+            self.num_pool_layer += layer_num
+            self.num_total_layer += layer_num
+        elif layer_type == 'conv':
+            self.num_conv_layer += layer_num
+            self.num_total_layer += layer_num
+        elif layer_type == 'total':
+            self.num_total_layer += layer_num
 
     def weight_variable(self, w_name, shape):
         init_w = tf.truncated_normal_initializer(stddev=0.1)
@@ -31,23 +64,28 @@ class resnet(object):
 
             W_conv1 = self.weight_variable('w_conv1', [1, 1, in_filter, f1])
             X = tf.nn.conv2d(X_input, W_conv1, strides=[1, 1, 1, 1], padding='SAME')
+            self.add_layer_num('conv', 1)
             X = tf.layers.batch_normalization(X, axis=3, training=training)
-            X = tf.nn.relu(X)
+            self.add_layer_num('total', 1)
+            X = activation_function(X, self.activation)
 
             W_conv2 = self.weight_variable('w_conv2', [kernel_size, kernel_size, f1, f2])
             X = tf.nn.conv2d(X, W_conv2, strides=[1, 1, 1, 1], padding='SAME')
+            self.add_layer_num('conv', 1)
             X = tf.layers.batch_normalization(X, axis=3, training=training)
-            X = tf.nn.relu(X)
+            self.add_layer_num('total', 1)
+            X = activation_function(X, self.activation)
 
             W_conv3 = self.weight_variable('w_conv3', [1, 1, f2, f3])
             X = tf.nn.conv2d(X, W_conv3, strides=[1, 1, 1, 1], padding='VALID')
+            self.add_layer_num('conv', 1)
             X = tf.layers.batch_normalization(X, axis=3, training=training)
+            self.add_layer_num('total', 1)
 
             add = tf.add(X, X_shortcut)
-            add_result = tf.nn.relu(add)
+            add_result = activation_function(add, self.activation)
 
         return add_result
-
 
     def conv_block(self, X_input, kernel_size, in_filter, out_filters, stage, block, training, stride):
         f1, f2, f3 = out_filters
@@ -57,26 +95,32 @@ class resnet(object):
             W_conv1 = self.weight_variable('w_conv1',[1, 1, in_filter, f1])
             
             X = tf.nn.conv2d(X_input, W_conv1, strides=[1, stride, stride, 1], padding='VALID')
+            self.add_layer_num('conv', 1)
             X = tf.layers.batch_normalization(X, axis=3, training=training)
-            X = tf.nn.relu(X)
+            self.add_layer_num('total', 1)
+            X = activation_function(X, self.activation)
 
             W_conv2 = self.weight_variable('w_conv2',[kernel_size, kernel_size, f1, f2])
             X = tf.nn.conv2d(X, W_conv2, strides=[1, 1, 1, 1], padding='SAME')
+            self.add_layer_num('conv', 1)
             X = tf.layers.batch_normalization(X, axis=3, training=training)
-            X = tf.nn.relu(X)
+            self.add_layer_num('total', 1)
+            X = activation_function(X, self.activation)
 
             W_conv3 = self.weight_variable('w_conv3', [1, 1, f2, f3])
             X = tf.nn.conv2d(X, W_conv3, strides=[1, 1, 1, 1], padding='VALID')
+            self.add_layer_num('conv', 1)
             X = tf.layers.batch_normalization(X, axis=3, training=training)
+            self.add_layer_num('total', 1)
 
-            W_shortcut = self.weight_variable('w_shortcut',[1, 1, in_filter, f3])
+            W_shortcut = self.weight_variable('w_shortcut', [1, 1, in_filter, f3])
             x_shortcut = tf.nn.conv2d(x_shortcut, W_shortcut, strides=[1, stride, stride, 1], padding='VALID')
+            self.add_layer_num('conv', 1)
 
             add = tf.add(x_shortcut, X)
-            add_result = tf.nn.relu(add)
+            add_result = activation_function(add, self.activation)
 
         return add_result
-
 
     def build(self, input):
         training = True
@@ -88,9 +132,12 @@ class resnet(object):
             x = tf.pad(input, tf.constant([[0, 0], [3, 3, ], [3, 3], [0, 0]]), "CONSTANT")
             w_conv1 = self.weight_variable('w_conv1', [7, 7, 3, 64])
             x = tf.nn.conv2d(x, w_conv1, strides=[1, 2, 2, 1], padding='VALID')
+            self.add_layer_num('conv', 1)
             x = tf.layers.batch_normalization(x, axis=3, training=training)
-            x = tf.nn.relu(x)
+            self.add_layer_num('total', 1)
+            x = activation_function(x, self.activation)
             x = tf.nn.max_pool(x, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID')
+            self.add_layer_num('pool', 1)
 
             #stage 64
             x = self.conv_block(x, 3, 64, [64, 64, 256], stage='stage64', block='conv_block', training=training, stride=1)
@@ -119,14 +166,18 @@ class resnet(object):
             avg_pool_size = int(self.img_h // 32)
 
             x = tf.nn.avg_pool(x, [1, avg_pool_size, avg_pool_size, 1], strides=[1, 1, 1, 1], padding='VALID')
+            self.add_layer_num('pool', 1)
 
             flatten = tf.layers.flatten(x)
+            self.add_layer_num('total', 1)
             x = tf.layers.dense(flatten, units=50, activation=tf.nn.relu)
+            self.add_layer_num('total', 1)
 
             with tf.name_scope('dropout'):
                 x = tf.nn.dropout(x, keep_prob)
 
             self.model_logit = tf.layers.dense(x, units=self.num_classes, activation=tf.nn.softmax)
+            self.add_layer_num('total', 1)
 
         return self.model_logit
 
@@ -159,3 +210,8 @@ class resnet(object):
             self.eval_op = tf.reduce_mean(tf.cast(correct_prediction, "float"))
 
         return self.eval_op
+
+    def print_model_info(self):
+        print('=====================================================================')
+        print('number of conv layer: {}, number of pooling layer: {}, total layer: {}'.format(self.num_conv_layer, self.num_pool_layer, self.num_total_layer))
+        print('=====================================================================')

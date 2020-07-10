@@ -123,7 +123,6 @@ if __name__ == '__main__':
         features = tf.placeholder(tf.float32, [None, img_width, img_height, num_channels])
         labels = tf.placeholder(tf.int64, [None, num_classes])
         train_op, eval_op = build_model()
-        print_model_info()
 
         train_image_path = cfg_path_yml.imagenet_t10k_bin_path
         train_label_path = cfg_path_yml.imagenet_t10k_label_path

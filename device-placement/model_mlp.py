@@ -1,6 +1,26 @@
 import tensorflow as tf
 
 
+def activation_function(logit, act_name):
+    new_logit = None
+    if act_name == 'relu6':
+        new_logit = tf.nn.relu6(logit, 'relu6')
+    elif act_name == 'relu':
+        new_logit = tf.nn.relu(logit, 'relu')
+    elif act_name == 'leaky_relu':
+        new_logit = tf.nn.leaky_relu(logit, 'leaky_relu')
+    elif act_name == 'tanh':
+        new_logit = tf.math.tanh(logit, 'tanh')
+    elif act_name == 'sigmoid':
+        new_logit = tf.math.sigmoid(logit, 'sigmoid')
+    elif act_name == 'elu':
+        new_logit = tf.nn.elu(logit, 'elu')
+    elif act_name == 'selu':
+        new_logit = tf.nn.selu(logit, 'selu')
+
+    return new_logit
+
+
 class mlp(object):
     def __init__(self, net_name, num_layer, input_h, input_w, num_channel, num_classes, batch_size, opt,
                  learning_rate=0.001, activation='relu', batch_padding=False):
@@ -19,9 +39,22 @@ class mlp(object):
         self.model_logit = None
         self.train_op = None
         self.eval_op = None
-        self.is_training = True
+        self.num_conv_layer = 0
+        self.num_pool_layer = 0
+        self.num_total_layer = 0
+
+    def add_layer_num(self, layer_type, layer_num):
+        if layer_type == 'pool':
+            self.num_pool_layer += layer_num
+            self.num_total_layer += layer_num
+        elif layer_type == 'conv':
+            self.num_conv_layer += layer_num
+            self.num_total_layer += layer_num
+        elif layer_type == 'total':
+            self.num_total_layer += layer_num
 
     def perceptron_layer(self, input, layer_name):
+        self.add_layer_num('total', 1)
         with tf.variable_scope(layer_name):
             weights = tf.Variable(tf.random_normal([int(input.shape[1]), self.num_classes]))
             biases = tf.Variable(tf.random_normal([self.num_classes]))
@@ -71,5 +104,7 @@ class mlp(object):
 
         return self.eval_op
 
-
-
+    def print_model_info(self):
+        print('=====================================================================')
+        print('number of conv layer: {}, number of pooling layer: {}, total layer: {}'.format(self.num_conv_layer, self.num_pool_layer, self.num_total_layer))
+        print('=====================================================================')

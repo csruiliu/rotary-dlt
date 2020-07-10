@@ -2,9 +2,26 @@ import tensorflow as tf
 import tensorflow.contrib as tc
 from tensorflow.keras.layers import GlobalAveragePooling2D
 
-growth_k = 32
 
-#DenseNet-121
+def activation_function(logit, act_name):
+    new_logit = None
+    if act_name == 'relu':
+        new_logit = tf.nn.relu6(logit, 'relu6')
+    elif act_name == 'leaky_relu':
+        new_logit = tf.nn.leaky_relu(logit, 'leaky_relu')
+    elif act_name == 'tanh':
+        new_logit = tf.math.tanh(logit, 'tanh')
+    elif act_name == 'sigmoid':
+        new_logit = tf.math.sigmoid(logit, 'sigmoid')
+    elif act_name == 'elu':
+        new_logit = tf.nn.elu(logit, 'elu')
+    elif act_name == 'selu':
+        new_logit = tf.nn.selu(logit, 'selu')
+
+    return new_logit
+
+
+# DenseNet-121
 class densenet(object):
     def __init__(self, net_name, num_layer, input_h, input_w, num_channel, num_classes, batch_size, opt,
                  learning_rate=0.0001, activation='relu', batch_padding=False):
@@ -19,20 +36,36 @@ class densenet(object):
         self.learning_rate = learning_rate
         self.activation = activation
         self.batch_padding = batch_padding
+        self.growth_k = 32
         self.model_logit = None
         self.train_op = None
         self.eval_op = None
+        self.num_conv_layer = 0
+        self.num_pool_layer = 0
+        self.num_total_layer = 0
 
+    def add_layer_num(self, layer_type, layer_num):
+        if layer_type == 'pool':
+            self.num_pool_layer += layer_num
+            self.num_total_layer += layer_num
+        elif layer_type == 'conv':
+            self.num_conv_layer += layer_num
+            self.num_total_layer += layer_num
+        elif layer_type == 'total':
+            self.num_total_layer += layer_num
 
     def bottleneck_block(self, input, block_name):
         with tf.variable_scope(block_name):
             block = tf.layers.batch_normalization(input, training=True, trainable=True, name=block_name+'_bn_0')
-            block = tf.nn.relu(block, name=block_name+'_relu_0')
-            block = tf.layers.conv2d(block, filters=2*growth_k, kernel_size=(1,1), strides=1, padding='same', name=block_name+'_conv_0')
+            block = activation_function(block, self.activation)
+            block = tf.layers.conv2d(block, filters=2*self.growth_k, kernel_size=(1, 1), strides=1, padding='same', name=block_name+'_conv_0')
 
             block = tf.layers.batch_normalization(block, training=True, trainable=True, name=block_name+'_bn_1')
-            block = tf.nn.relu(block, name=block_name+'_relu_1')
-            block = tf.layers.conv2d(block, filters=2*growth_k, kernel_size=(3,3), strides=1, padding='same', name=block_name+'_conv_1')
+            block = activation_function(block, self.activation)
+            block = tf.layers.conv2d(block, filters=2*self.growth_k, kernel_size=(3, 3), strides=1, padding='same', name=block_name+'_conv_1')
+
+            self.add_layer_num('conv', 2)
+            self.add_layer_num('total', 2)
 
             return block
 
@@ -42,25 +75,28 @@ class densenet(object):
             block_input = tf.concat(values=[input, block], axis=3)
             for i in range(dn_layers - 1):
                 block = self.bottleneck_block(block_input, block_name=block_name+'_bottleneck_block_'+str(i+1))
-                block_input = tf.concat([block_input,block], axis=3)
+                block_input = tf.concat([block_input, block], axis=3)
             
-            return block
+        return block
     
     def transition_block(self, input, block_name):
         with tf.variable_scope(block_name):
             block = tf.layers.batch_normalization(input, training=True, trainable=True, name=block_name+'_bn_0')
-            block = tf.layers.conv2d(block, filters=2*growth_k, kernel_size=(1,1), strides=1, padding='same', name=block_name+'_conv_0')
-            block = tf.layers.average_pooling2d(block, pool_size=(2,2), strides=2, padding='same', name=block_name+'_avgpool_0')
-        
-            return block
+            self.add_layer_num('total', 1)
+            block = tf.layers.conv2d(block, filters=2*self.growth_k, kernel_size=(1, 1), strides=1, padding='same', name=block_name+'_conv_0')
+            self.add_layer_num('conv', 1)
+            block = tf.layers.average_pooling2d(block, pool_size=(2, 2), strides=2, padding='same', name=block_name+'_avgpool_0')
+            self.add_layer_num('pool', 1)
+
+        return block
 
     def build(self, input):
         if self.batch_padding == True:
             input = input[0:self.batch_size, :, :, :]
 
         with tf.variable_scope(self.net_name + '_instance'):
-            net = tf.layers.conv2d(input, filters=2*growth_k, kernel_size=(7,7), strides=2, padding='same', name='conv_0')
-            net = tf.layers.max_pooling2d(net, pool_size=(3,3), strides=2, padding='same', name='max_pool_0')
+            net = tf.layers.conv2d(input, filters=2*self.growth_k, kernel_size=(7, 7), strides=2, padding='same', name='conv_0')
+            net = tf.layers.max_pooling2d(net, pool_size=(3, 3), strides=2, padding='same', name='max_pool_0')
             net = self.dense_block(net, dn_layers=6, block_name='dense_block_0')
             net = self.transition_block(net, block_name='trans_block_0')
             net = self.dense_block(net, dn_layers=12, block_name='dense_block_1')
@@ -69,8 +105,10 @@ class densenet(object):
             net = self.transition_block(net, block_name='trans_block_2')
             net = self.dense_block(net, dn_layers=16, block_name='dense_block_3')
             net = GlobalAveragePooling2D()(net)
+            self.add_layer_num('pool', 1)
             net = tc.layers.flatten(net)
             self.model_logit = tf.layers.dense(net, units=self.num_classes, name='full_connected')
+            self.add_layer_num('total', 2)
         return self.model_logit
     
     def train(self, logits, labels):

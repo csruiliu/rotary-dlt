@@ -1,6 +1,24 @@
 import tensorflow as tf
 
 
+def activation_function(logit, act_name):
+    new_logit = None
+    if act_name == 'relu':
+        new_logit = tf.nn.relu6(logit, 'relu6')
+    elif act_name == 'leaky_relu':
+        new_logit = tf.nn.leaky_relu(logit, 'leaky_relu')
+    elif act_name == 'tanh':
+        new_logit = tf.math.tanh(logit, 'tanh')
+    elif act_name == 'sigmoid':
+        new_logit = tf.math.sigmoid(logit, 'sigmoid')
+    elif act_name == 'elu':
+        new_logit = tf.nn.elu(logit, 'elu')
+    elif act_name == 'selu':
+        new_logit = tf.nn.selu(logit, 'selu')
+
+    return new_logit
+
+
 class scn(object):
     def __init__(self, net_name, num_layer, input_h, input_w, num_channel, num_classes, batch_size, opt,
                  learning_rate=0.0001, activation='relu', batch_padding=False):
@@ -18,6 +36,19 @@ class scn(object):
         self.model_logit = None
         self.train_op = None
         self.eval_op = None
+        self.num_conv_layer = 0
+        self.num_pool_layer = 0
+        self.num_total_layer = 0
+
+    def add_layer_num(self, layer_type, layer_num):
+        if layer_type == 'pool':
+            self.num_pool_layer += layer_num
+            self.num_total_layer += layer_num
+        elif layer_type == 'conv':
+            self.num_conv_layer += layer_num
+            self.num_total_layer += layer_num
+        elif layer_type == 'total':
+            self.num_total_layer += layer_num
 
     def weight_variable(self, shape):
         init_w = tf.truncated_normal_initializer(stddev=0.01)
@@ -28,6 +59,7 @@ class scn(object):
         return tf.get_variable('b', dtype=tf.float32, initializer=init_b)
 
     def max_pool(self, x, ksize, stride, name):
+        self.add_layer_num('pool', 1)
         return tf.nn.max_pool(x, ksize=[1, ksize, ksize, 1], strides=[1, stride, stride, 1], padding="SAME", name=name)
 
     def conv_layer(self, x, filter_size, num_filters, stride, name):
@@ -36,10 +68,12 @@ class scn(object):
             W = self.weight_variable(shape=filter_shape)
             b = self.bias_variable(shape=[num_filters])
             layer = tf.nn.conv2d(x, W, strides=[1, stride, stride, 1], padding="SAME")
+            self.add_layer_num('conv', 1)
             layer += b
             return tf.nn.relu(layer)
 
     def fc_layer(self, x, num_units, name, use_activation=True):
+        self.add_layer_num('total', 1)
         with tf.variable_scope(name):
             in_dim = x.get_shape()[1]
             W = self.weight_variable(shape=[in_dim, num_units])
@@ -69,7 +103,9 @@ class scn(object):
                     pool = self.max_pool(conv, ksize=2, stride=2, name='pool'+str(midx+1))
 
             layer_flat = tf.layers.flatten(pool, name='flat')
+            self.add_layer_num('total', 1)
             layer_fc = self.fc_layer(layer_flat, num_units=128, name='fc', use_activation=True)
+            self.add_layer_num('total', 1)
             self.model_logit = self.fc_layer(layer_fc, num_units=self.num_classes, name='logit', use_activation=False)
         return self.model_logit
 
@@ -101,3 +137,8 @@ class scn(object):
             correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(labels, 1))
             self.eval_op = tf.reduce_mean(tf.cast(correct_prediction, "float"))
         return self.eval_op
+
+    def print_model_info(self):
+        print('=====================================================================')
+        print('number of conv layer: {}, number of pooling layer: {}, total layer: {}'.format(self.num_conv_layer, self.num_pool_layer, self.num_total_layer))
+        print('=====================================================================')
