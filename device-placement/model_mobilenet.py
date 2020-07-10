@@ -2,7 +2,25 @@ import tensorflow as tf
 import tensorflow.contrib as tc
 
 
-#MobileNetV2
+def activation_function(logit, act_name):
+    new_logit = None
+    if act_name == 'relu':
+        new_logit = tf.nn.relu6(logit, 'relu6')
+    elif act_name == 'leaky_relu':
+        new_logit = tf.nn.leaky_relu(logit, 'leaky_relu')
+    elif act_name == 'tanh':
+        new_logit = tf.math.tanh(logit, 'tanh')
+    elif act_name == 'sigmoid':
+        new_logit = tf.math.sigmoid(logit, 'sigmoid')
+    elif act_name == 'elu':
+        new_logit = tf.nn.elu(logit, 'elu')
+    elif act_name == 'selu':
+        new_logit = tf.nn.selu(logit, 'selu')
+
+    return new_logit
+
+
+# MobileNetV2
 class mobilenet(object):
     def __init__(self, net_name, num_layer, input_h, input_w, num_channel, num_classes, batch_size, opt,
                  learning_rate=0.0001, activation='relu', batch_padding=False):
@@ -22,58 +40,61 @@ class mobilenet(object):
         self.eval_op = None
         self.is_training = True
         self.num_conv_layer = 0
-
+        self.num_pool_layer = 0
+        self.num_total_layer = 0
 
     def _res_block(self, input, expansion_ratio, output_dim, stride, is_train, block_name, bias=False, shortcut=True):
         with tf.variable_scope(block_name):
             bottleneck_dim = round(expansion_ratio * input.get_shape().as_list()[-1])
             net = self._conv_1x1(input, bottleneck_dim, name='pw', bias=bias)
             net = self._batch_norm(net, train=is_train, name='pw_bn')
-            net = tf.nn.relu6(net, 'relu6')
+            net = activation_function(net, self.activation)
 
             net = self._dwise_conv(net, strides=[1, stride, stride, 1], name='dw', bias=bias)
             net = self._batch_norm(net, train=is_train, name='dw_bn')
-            net = tf.nn.relu6(net, 'relu6')
+            net = activation_function(net, self.activation)
 
             net = self._conv_1x1(net, output_dim, name='pw_linear', bias=bias)
             net = self._batch_norm(net, train=is_train, name='pw_linear_bn')
 
             # element wise add, only for stride==1
             if shortcut and stride == 1:
-                in_dim=int(input.get_shape().as_list()[-1])
+                in_dim = int(input.get_shape().as_list()[-1])
                 if in_dim != output_dim:
                     ins = self._conv_1x1(input, output_dim, name='ex_dim')
+                    self.num_conv_layer += 1
                     net = ins + net
                 else:
                     net = input + net
-            
+                self.num_total_layer += 1
+
         return net
             
     def _conv2d_block(self, input, out_dim, kernel_size, strides_size, is_train, block_name):
         with tf.variable_scope(block_name):
             block = self._conv2d(input, out_dim, kernel_size, kernel_size, strides_size, strides_size)
             block = self._batch_norm(block, train=is_train, name='bn')
-            block = tf.nn.relu6(block, 'relu6')
+            block = activation_function(block, self.activation)
         return block
 
     def _pwise_block(self, input, output_dim, is_train, block_name, bias=False):
         with tf.variable_scope(block_name):
             out = self._conv_1x1(input, output_dim, bias=bias, name='pwb')
             out = self._batch_norm(out, train=is_train, name='bn')
-            block = tf.nn.relu6(out, 'relu6')
+            block = activation_function(out, self.activation)
         return block
-
 
     def _conv2d(self, input, output_dim, kernel_height, kernel_width, strides_h, strides_w, stddev=0.02, bias=False, name='conv2d'):
         weight_decay = 1e-4
         with tf.variable_scope(name):
             w = tf.get_variable('w', [kernel_height, kernel_width, input.get_shape()[-1], output_dim],
-                regularizer = tc.layers.l2_regularizer(weight_decay),
-                initializer = tf.truncated_normal_initializer(stddev=stddev))
+                                regularizer=tc.layers.l2_regularizer(weight_decay),
+                                initializer=tf.truncated_normal_initializer(stddev=stddev))
             conv = tf.nn.conv2d(input, w, strides=[1, strides_h, strides_w, 1], padding='SAME')
             self.num_conv_layer += 1
+            self.num_total_layer += 1
             if bias:
-                biases = tf.get_variable('bias', [output_dim], initializer = tf.constant_initializer(0.0))
+                biases = tf.get_variable('bias', [output_dim], initializer=tf.constant_initializer(0.0))
                 conv = tf.nn.bias_add(conv, biases)
         return conv
 
@@ -82,27 +103,32 @@ class mobilenet(object):
         with tf.variable_scope(name):
             in_channel = input.get_shape().as_list()[-1]
             w = tf.get_variable('w', [kernel_height, kernel_width, in_channel, channel_multiplier],
-                        regularizer=tc.layers.l2_regularizer(weight_decay),
-                        initializer=tf.truncated_normal_initializer(stddev=stddev))
+                                regularizer=tc.layers.l2_regularizer(weight_decay),
+                                initializer=tf.truncated_normal_initializer(stddev=stddev))
             conv = tf.nn.depthwise_conv2d(input, w, strides, padding, rate=None, name=None, data_format=None)
             self.num_conv_layer += 1
+            self.num_total_layer += 1
             if bias:
                 biases = tf.get_variable('bias', [in_channel*channel_multiplier], initializer=tf.constant_initializer(0.0))
                 conv = tf.nn.bias_add(conv, biases)
-            return conv
+        return conv
 
     def _batch_norm(self, x, momentum=0.9, epsilon=1e-5, train=True, name='bn'):
+        self.num_total_layer += 1
         return tf.layers.batch_normalization(x, momentum=momentum, epsilon=epsilon, scale=True, training=train, name=name)
 
     def _conv_1x1(self, input, output_dim, name, bias=False):
         with tf.variable_scope(name):
             net = self._conv2d(input, output_dim, 1, 1, 1, 1, stddev=0.02, name=name, bias=bias)
             self.num_conv_layer += 1
+            self.num_total_layer += 1
         return net
 
     def _global_avg(self, x):
         with tf.name_scope('global_avg'):
             net = tf.layers.average_pooling2d(x, x.get_shape()[1:-1], 1)
+            self.num_pool_layer += 1
+            self.num_total_layer += 1
         return net
 
     def build(self, input):
@@ -138,8 +164,8 @@ class mobilenet(object):
             net = self._global_avg(net)
 
             self.model_logit = tc.layers.flatten(self._conv_1x1(net, self.num_classes, name='logits'))
+            self.num_total_layer += 1
 
-        print('number of conv layer:', self.num_conv_layer)
         return self.model_logit
 
     def train(self, logits, labels):
@@ -170,3 +196,6 @@ class mobilenet(object):
             self.eval_op = tf.reduce_mean(tf.cast(correct_prediction, "float"))
 
         return self.eval_op
+
+    def print_model_info(self):
+        print('number of conv layer: {}, number of pooling layer: {}, total layer: {}'.format(self.num_conv_layer, self.num_pool_layer, self.total_layer))

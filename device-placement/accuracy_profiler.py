@@ -14,6 +14,7 @@ def build_model():
                   num_classes, train_batchsize, train_opt, train_learn_rate, train_activation, False)
     model_entity = dm.get_model_entity()
     model_logit = model_entity.build(features)
+    model_entity.print_model_info()
     train_step = model_entity.train(model_logit, labels)
     eval_step = model_entity.evaluate(model_logit, labels)
 
@@ -122,6 +123,7 @@ if __name__ == '__main__':
         features = tf.placeholder(tf.float32, [None, img_width, img_height, num_channels])
         labels = tf.placeholder(tf.int64, [None, num_classes])
         train_op, eval_op = build_model()
+        print_model_info()
 
         train_image_path = cfg_path_yml.imagenet_t10k_bin_path
         train_label_path = cfg_path_yml.imagenet_t10k_label_path
