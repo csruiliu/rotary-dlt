@@ -198,4 +198,4 @@ class mobilenet(object):
         return self.eval_op
 
     def print_model_info(self):
-        print('number of conv layer: {}, number of pooling layer: {}, total layer: {}'.format(self.num_conv_layer, self.num_pool_layer, self.total_layer))
+        print('number of conv layer: {}, number of pooling layer: {}, total layer: {}'.format(self.num_conv_layer, self.num_pool_layer, self.num_total_layer))

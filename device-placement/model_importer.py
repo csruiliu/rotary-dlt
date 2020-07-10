@@ -2,7 +2,7 @@
 class ModelImporter(object):
     def __init__(self, model_type, model_instance_name, num_layer, input_h, input_w, num_channels,
                  num_classes, batch_size, optimizer, learning_rate, activation, batch_padding):
-        self.model_type = 'model_' + model_type
+        self.model_type = model_type
         self.model_instance_name = model_instance_name
         self.num_layer = num_layer
         self.input_width = input_w
