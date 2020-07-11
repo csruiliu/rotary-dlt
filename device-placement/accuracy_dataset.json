@@ -1,6 +1,9 @@
 {
   "conv_model": [
-    {"model_name": "224-3-1000-32-96-1-161-0.0001-Adam-relu-20", "model_accuracy": 0.001}
+    {"model_name": "224-3-1000-32-96-1-161-0.0001-Adam-relu-1", "model_accuracy": 0},
+    {"model_name": "224-3-1000-32-96-1-161-0.0001-Adam-relu-20", "model_accuracy": 0.001},
+    {"model_name": "224-3-1000-32-96-1-161-0.0001-Adam-relu-40", "model_accuracy": 0.002},
+    {"model_name": "224-3-1000-32-96-1-161-0.0001-Adam-relu-80", "model_accuracy": 0.003}
   ],
   "description": "The vectorization of the convolutional neural network is [input size]-[channel num]-[class num]-[batch size]-[conv layer num]-[pooling layer num]-[total layer num]-[learning rate]-[optimizer]-[activation]-[epochs]"
 }
