@@ -5,20 +5,24 @@ import argparse
 import config_path as cfg_path_yml
 import config_parameter as cfg_para_yml
 from model_importer import ModelImporter
-from utils_img import *
+from utils_img_func import *
 
 
 def build_model():
     model_name_abbr = np.random.choice(rand_seed, 1, replace=False).tolist()
     dm = ModelImporter(train_model, str(model_name_abbr.pop()), train_conv_layer, img_height, img_width, num_channels,
-                  num_classes, train_batchsize, train_opt, train_learn_rate, train_activation, False)
+                       num_classes, train_batchsize, train_opt, train_learn_rate, train_activation, False)
     model_entity = dm.get_model_entity()
     model_logit = model_entity.build(features)
-    model_entity.print_model_info()
+    conv_layer_num, pool_layer_num, total_layer_num = model_entity.get_layer_info()
+
+    model_name_output = '{}-{}-{}-{}-{}-{}-{}-{}-{}-{}-{}'.format(input_data_size, input_data_channel, output_class,
+                                                                  train_batchsize, conv_layer_num, pool_layer_num,
+                                                                  total_layer_num, train_learn_rate, train_opt,
+                                                                  train_activation, train_epoch)
     train_step = model_entity.train(model_logit, labels)
     eval_step = model_entity.evaluate(model_logit, labels)
-
-    return train_step, eval_step
+    return train_step, eval_step, model_name_output
 
 
 def run_train_model(trainOp):
@@ -41,7 +45,7 @@ def run_train_model(trainOp):
     print('Finish training model')
 
 
-def run_eval_model(evalOp):
+def run_eval_model(evalOp, model_info):
     print('start evaluating model')
     config = tf.ConfigProto()
     config.allow_soft_placement = True
@@ -50,7 +54,7 @@ def run_eval_model(evalOp):
         sess.run(tf.global_variables_initializer())
         acc_arg = sess.run(evalOp, feed_dict={features: X_data_eval, labels: Y_data_eval})
 
-    print('Accuracy: {}'.format(acc_arg))
+    print("{{\"model_name\": \"{}\", \"model_accuracy\": {}}}".format(model_info, acc_arg))
 
 
 if __name__ == '__main__':
@@ -82,14 +86,8 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--opt', required=True, action='store', type=str,
                         help='training opt [Adam, SGD, Adagrad, Momentum]')
 
-    parser.add_argument('-cl', '--conv_layer', required=False, action='store', type=int,
+    parser.add_argument('-l', '--conv_layer', required=True, action='store', type=int,
                         help='number of training conv layer, for example, 1, 2, 3')
-
-    parser.add_argument('-pl', '--pool_layer', required=False, action='store', type=int,
-                        help='number of training tool layer, for example, 1, 2, 3')
-
-    parser.add_argument('-tl', '--total_layer', required=False, action='store', type=int,
-                        help='number of training total layer, for example, 1, 2, 3')
 
     parser.add_argument('-r', '--learn_rate', required=True, action='store', type=float,
                         help='learning rate, for example, 0.01, 0.001, 0.0001')
@@ -105,13 +103,15 @@ if __name__ == '__main__':
     train_epoch = args.epoch
     train_opt = args.opt
     train_conv_layer = args.conv_layer
-    train_pool_layer = args.pool_layer
-    train_total_layer = args.total_layer
     train_learn_rate = args.learn_rate
     train_activation = args.activation
 
     train_op = None
     eval_op = None
+    img_width = None
+    img_height = None
+    num_channels = None
+    num_classes = None
 
     if train_data == 'imagenet':
         print('train the model on imagenet')
@@ -119,10 +119,9 @@ if __name__ == '__main__':
         img_height = cfg_para_yml.img_height_imagenet
         num_channels = cfg_para_yml.num_channels_rgb
         num_classes = cfg_para_yml.num_class_imagenet
-
-        features = tf.placeholder(tf.float32, [None, img_width, img_height, num_channels])
-        labels = tf.placeholder(tf.int64, [None, num_classes])
-        train_op, eval_op = build_model()
+        input_data_size = 224
+        input_data_channel = 3
+        output_class = 1000
 
         train_image_path = cfg_path_yml.imagenet_t10k_bin_path
         train_label_path = cfg_path_yml.imagenet_t10k_label_path
@@ -140,10 +139,9 @@ if __name__ == '__main__':
         img_height = cfg_para_yml.img_height_cifar10
         num_channels = cfg_para_yml.num_channels_rgb
         num_classes = cfg_para_yml.num_class_cifar10
-
-        features = tf.placeholder(tf.float32, [None, img_width, img_height, num_channels])
-        labels = tf.placeholder(tf.int64, [None, num_classes])
-        train_op, eval_op = build_model()
+        input_data_size = 32
+        input_data_channel = 3
+        output_class = 10
 
         cifar10_path = cfg_path_yml.cifar_10_path
         X_data, Y_data = load_cifar_train(cifar10_path, rand_seed)
@@ -155,10 +153,9 @@ if __name__ == '__main__':
         img_height = cfg_para_yml.img_height_mnist
         num_channels = cfg_para_yml.num_channels_bw
         num_classes = cfg_para_yml.num_class_mnist
-
-        features = tf.placeholder(tf.float32, [None, img_width, img_height, num_channels])
-        labels = tf.placeholder(tf.int64, [None, num_classes])
-        train_op, eval_op = build_model()
+        input_data_size = 28
+        input_data_channel = 1
+        output_class = 10
 
         mnist_train_img_path = cfg_path_yml.mnist_train_img_path
         mnist_train_label_path = cfg_path_yml.mnist_train_label_path
@@ -170,5 +167,9 @@ if __name__ == '__main__':
         X_data_eval = load_mnist_image(mnist_t10k_img_path, rand_seed)
         Y_data_eval = load_mnist_label_onehot(mnist_t10k_label_path, rand_seed)
 
+    features = tf.placeholder(tf.float32, [None, img_width, img_height, num_channels])
+    labels = tf.placeholder(tf.int64, [None, num_classes])
+    train_op, eval_op, train_model_name = build_model()
+
     run_train_model(train_op)
-    run_eval_model(eval_op)
+    run_eval_model(eval_op, train_model_name)

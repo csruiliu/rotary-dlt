@@ -1,26 +1,6 @@
 import tensorflow as tf
 
 
-def activation_function(logit, act_name):
-    new_logit = None
-    if act_name == 'relu6':
-        new_logit = tf.nn.relu6(logit, 'relu6')
-    elif act_name == 'relu':
-        new_logit = tf.nn.relu(logit, 'relu')
-    elif act_name == 'leaky_relu':
-        new_logit = tf.nn.leaky_relu(logit, 'leaky_relu')
-    elif act_name == 'tanh':
-        new_logit = tf.math.tanh(logit, 'tanh')
-    elif act_name == 'sigmoid':
-        new_logit = tf.math.sigmoid(logit, 'sigmoid')
-    elif act_name == 'elu':
-        new_logit = tf.nn.elu(logit, 'elu')
-    elif act_name == 'selu':
-        new_logit = tf.nn.selu(logit, 'selu')
-
-    return new_logit
-
-
 class mlp(object):
     def __init__(self, net_name, num_layer, input_h, input_w, num_channel, num_classes, batch_size, opt,
                  learning_rate=0.001, activation='relu', batch_padding=False):
@@ -103,6 +83,9 @@ class mlp(object):
             self.eval_op = tf.reduce_mean(tf.cast(correct_prediction, "float"))
 
         return self.eval_op
+
+    def get_layer_info(self):
+        return self.num_conv_layer, self.num_pool_layer, self.num_total_layer
 
     def print_model_info(self):
         print('=====================================================================')

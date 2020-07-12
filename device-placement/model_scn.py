@@ -1,29 +1,12 @@
 import tensorflow as tf
-
-
-def activation_function(logit, act_name):
-    new_logit = None
-    if act_name == 'relu':
-        new_logit = tf.nn.relu6(logit, 'relu6')
-    elif act_name == 'leaky_relu':
-        new_logit = tf.nn.leaky_relu(logit, 'leaky_relu')
-    elif act_name == 'tanh':
-        new_logit = tf.math.tanh(logit, 'tanh')
-    elif act_name == 'sigmoid':
-        new_logit = tf.math.sigmoid(logit, 'sigmoid')
-    elif act_name == 'elu':
-        new_logit = tf.nn.elu(logit, 'elu')
-    elif act_name == 'selu':
-        new_logit = tf.nn.selu(logit, 'selu')
-
-    return new_logit
+from utils_model_func import activation_function
 
 
 class scn(object):
     def __init__(self, net_name, num_layer, input_h, input_w, num_channel, num_classes, batch_size, opt,
                  learning_rate=0.0001, activation='relu', batch_padding=False):
         self.net_name = net_name
-        self.num_conv_layer = num_layer
+        self.num_layer = num_layer
         self.img_h = input_h
         self.img_w = input_w
         self.channel_num = num_channel
@@ -70,7 +53,8 @@ class scn(object):
             layer = tf.nn.conv2d(x, W, strides=[1, stride, stride, 1], padding="SAME")
             self.add_layer_num('conv', 1)
             layer += b
-            return tf.nn.relu(layer)
+
+            return activation_function(layer, self.activation)
 
     def fc_layer(self, x, num_units, name, use_activation=True):
         self.add_layer_num('total', 1)
@@ -80,14 +64,7 @@ class scn(object):
             b = self.bias_variable(shape=[num_units])
             layer = tf.matmul(x, W) + b
             if use_activation:
-                if self.activation == 'sigmoid':
-                    layer = tf.nn.sigmoid(layer)
-                elif self.activation == 'leaky_relu':
-                    layer = tf.nn.leaky_relu(layer)
-                elif self.activation == 'tanh':
-                    layer = tf.nn.tanh(layer)
-                elif self.activation == 'relu':
-                    layer = tf.nn.relu(layer)
+                layer = activation_function(layer, self.activation)
             return layer
 
     def build(self, input):
@@ -95,11 +72,11 @@ class scn(object):
             input = input[0:self.batch_size, :, :, :]
 
         with tf.variable_scope(self.net_name + '_instance'):
-            conv = self.conv_layer(input, filter_size=5, num_filters=16, stride=1, name='conv0')
+            conv = self.conv_layer(input, filter_size=5, num_filters=12, stride=1, name='conv0')
             pool = self.max_pool(conv, ksize=2, stride=2, name='pool0')
-            if self.num_conv_layer >= 1:
-                for midx in range(self.num_conv_layer - 1):
-                    conv = self.conv_layer(pool, filter_size=5, num_filters=16, stride=1, name='conv'+str(midx+1))
+            if self.num_layer >= 1:
+                for midx in range(self.num_layer - 1):
+                    conv = self.conv_layer(conv, filter_size=5, num_filters=12, stride=1, name='conv'+str(midx+1))
                     pool = self.max_pool(conv, ksize=2, stride=2, name='pool'+str(midx+1))
 
             layer_flat = tf.layers.flatten(pool, name='flat')
@@ -137,6 +114,9 @@ class scn(object):
             correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(labels, 1))
             self.eval_op = tf.reduce_mean(tf.cast(correct_prediction, "float"))
         return self.eval_op
+
+    def get_layer_info(self):
+        return self.num_conv_layer, self.num_pool_layer, self.num_total_layer
 
     def print_model_info(self):
         print('=====================================================================')

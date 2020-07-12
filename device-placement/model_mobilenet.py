@@ -1,23 +1,6 @@
 import tensorflow as tf
 import tensorflow.contrib as tc
-
-
-def activation_function(logit, act_name):
-    new_logit = None
-    if act_name == 'relu':
-        new_logit = tf.nn.relu6(logit, 'relu6')
-    elif act_name == 'leaky_relu':
-        new_logit = tf.nn.leaky_relu(logit, 'leaky_relu')
-    elif act_name == 'tanh':
-        new_logit = tf.math.tanh(logit, 'tanh')
-    elif act_name == 'sigmoid':
-        new_logit = tf.math.sigmoid(logit, 'sigmoid')
-    elif act_name == 'elu':
-        new_logit = tf.nn.elu(logit, 'elu')
-    elif act_name == 'selu':
-        new_logit = tf.nn.selu(logit, 'selu')
-
-    return new_logit
+from utils_model_func import activation_function
 
 
 # MobileNetV2
@@ -202,6 +185,9 @@ class mobilenet(object):
             self.eval_op = tf.reduce_mean(tf.cast(correct_prediction, "float"))
 
         return self.eval_op
+
+    def get_layer_info(self):
+        return self.num_conv_layer, self.num_pool_layer, self.num_total_layer
 
     def print_model_info(self):
         print('=====================================================================')

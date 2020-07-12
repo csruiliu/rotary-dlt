@@ -15,7 +15,7 @@ import tensorflow as tf
 import config_parameter as cfg_para_yml
 import config_path as cfg_path_yml
 from model_importer import ModelImporter
-from utils_img import load_imagenet_labels_onehot, load_imagenet_bin, load_imagenet_raw, load_cifar_train
+from utils_img_func import load_imagenet_labels_onehot, load_imagenet_bin, load_imagenet_raw, load_cifar_train
 
 '''
 def generate_workload_from_cfg():
