@@ -155,6 +155,12 @@ def run_single_job_cpu(model_type, model_instance, batch_size, optimizer, learni
                 sess.run(train_ops, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
 
+def profile_job_cpu(assign_device):
+    with tf.device(assign_device):
+        features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _num_channels])
+        labels = tf.placeholder(tf.int64, [None, _num_classes])
+
+
 def consumer_gpu(queue, assign_device):
     if not queue.empty():
         gpu_job = queue.get()
@@ -174,6 +180,22 @@ def consumer_cpu(queue, assign_device):
 
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+
+    subparsers = parser.add_subparsers(required=True, help='sub-command help')
+    parser_a = subparsers.add_parser('add', help='add help')
+    parser_a.add_argument('-x', required=True, type=int, help='x value')
+    parser_a.add_argument('-y', required=True, type=int, help='y value')
+    parser_s = subparsers.add_parser('sub', help='sub help')
+    parser_s.add_argument('-m', type=int, help='x value')
+    parser_s.add_argument('-n', type=int, help='y value')
+
+    args = parser.parse_args()
+
+
+
+    '''
     ########################################
     # Get parameters using config
     ########################################
@@ -204,6 +226,7 @@ if __name__ == "__main__":
     #########################################################################
 
     parser = argparse.ArgumentParser()
+    parser =
     parser.add_argument('-cm', '--cpu_model', required=True, action='store', type=str,
                         help='cpu model type [resnet,mobilenet,mlp,densenet]')
     parser.add_argument('-cn', '--cpu_model_num', required=True, action='store', type=int,
@@ -225,6 +248,8 @@ if __name__ == "__main__":
     _gpu_model_num = args.gpu_model_num
     _train_batch_size = args.batch_size
     _train_data = args.dataset
+
+
 
     ##########################
     # Build Workload
@@ -276,3 +301,4 @@ if __name__ == "__main__":
 
     device_proc_cpu = mp.Process(target=consumer_cpu, args=(training_cpu_queue, '/cpu:0'))
     device_proc_cpu.start()
+    '''
