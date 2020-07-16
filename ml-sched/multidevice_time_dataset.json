@@ -1,0 +1,15 @@
+{
+  "steptime_model_gpu": [
+    {"data_cost": "224-3-32", "model_cost":"96-161", "cpu_cost":"224-32-96-161", "environment_cost":"5.027-TF", "model_step_time": 274.787}
+  ],
+  "steptime_model_cpu": [
+    {"data_cost": "224-3-32", "model_cost":"96-161", "cpu_cost":"224-32-96-161", "environment_cost":"5.027-TF", "model_step_time": 274.787}
+  ],
+  "principle": "Data Cost + Model Cost + Overhead Cost + Environment Cost",
+  "description": ["data cost: [input size]-[channel size]-[batch size]",
+                  "model cost: [conv layer num]-[total layer num]",
+                  "cpu cost: [input size ncpu]-[batch size ncpu]-[total conv layer ncpu]-[total layer num]",
+                  "environment cost: [gpu TFLOPS]-[platform]",
+                  "model step time: [milliseconds]"],
+  "model-info":["resnet-50: 53-2-107", "mobilenet: 96-1-161", "densenet: 119-4-244", "mlp-1: 0-0-2"]
+}
