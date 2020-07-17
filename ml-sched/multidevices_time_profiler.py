@@ -119,7 +119,7 @@ def run_single_job_gpu(model_type, model_instance, batch_size, optimizer, learni
         print('GPU job average step time [{}]: {}'.format(timer(), step_time / step_count * 1000))
 
 
-def run_single_job_cpu(model_type, model_instance, batch_size, optimizer, learning_rate, activation, assign_device, proc_idx):
+def run_single_job_cpu(model_type, model_instance, batch_size, optimizer, learning_rate, activation, assign_device, proc_idx=0):
     with tf.device(assign_device):
         features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _num_channels])
         labels = tf.placeholder(tf.int64, [None, _num_classes])
@@ -139,26 +139,44 @@ def run_single_job_cpu(model_type, model_instance, batch_size, optimizer, learni
 
         print("cpu job start...")
 
+        step_time = 0
+        step_count = 0
+
         with tf.Session(config=tf_config) as sess:
             sess.run(tf.global_variables_initializer())
             num_batch = _Y_data.shape[0] // batch_size
             for i in range(num_batch):
                 print('**CPU JOB**: Proc-{}, {}-{}-{} on cpu [{}]: step {} / {}'.format(proc_idx, model_type, batch_size, model_instance, timer(), i + 1, num_batch))
-                batch_offset = i * batch_size
-                batch_end = (i + 1) * batch_size
-                if _use_raw_image:
-                    batch_list = image_list[batch_offset:batch_end]
-                    X_mini_batch_feed = load_imagenet_raw(_image_path_raw, batch_list, _img_height, _img_width)
+                if (i + 1) % _record_marker == 0:
+                    start_time = timer()
+                    batch_offset = i * batch_size
+                    batch_end = (i + 1) * batch_size
+                    if _use_raw_image:
+                        batch_list = image_list[batch_offset:batch_end]
+                        X_mini_batch_feed = load_imagenet_raw(_image_path_raw, batch_list, _img_height, _img_width)
+                    else:
+                        X_mini_batch_feed = _X_data[batch_offset:batch_end, :, :, :]
+                    Y_mini_batch_feed = _Y_data[batch_offset:batch_end, :]
+                    sess.run(train_ops, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    end_time = timer()
+                    dur_time = end_time - start_time
+                    print("step time:", dur_time)
+                    step_time += dur_time
+                    step_count += 1
                 else:
-                    X_mini_batch_feed = _X_data[batch_offset:batch_end, :, :, :]
-                Y_mini_batch_feed = _Y_data[batch_offset:batch_end, :]
-                sess.run(train_ops, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    batch_offset = i * batch_size
+                    batch_end = (i + 1) * batch_size
+                    if _use_raw_image:
+                        batch_list = image_list[batch_offset:batch_end]
+                        X_mini_batch_feed = load_imagenet_raw(_image_path_raw, batch_list, _img_height, _img_width)
+                    else:
+                        X_mini_batch_feed = _X_data[batch_offset:batch_end, :, :, :]
+                    Y_mini_batch_feed = _Y_data[batch_offset:batch_end, :]
+                    sess.run(train_ops, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
-
-def profile_job_cpu(assign_device):
-    with tf.device(assign_device):
-        features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _num_channels])
-        labels = tf.placeholder(tf.int64, [None, _num_classes])
+            print(step_time)
+            print(step_count)
+            print('CPU job average step time [{}]: {}'.format(timer(), step_time / step_count * 1000))
 
 
 def consumer_gpu(queue, assign_device):
@@ -181,21 +199,6 @@ def consumer_cpu(queue, assign_device):
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser()
-
-    subparsers = parser.add_subparsers(required=True, help='sub-command help')
-    parser_a = subparsers.add_parser('add', help='add help')
-    parser_a.add_argument('-x', required=True, type=int, help='x value')
-    parser_a.add_argument('-y', required=True, type=int, help='y value')
-    parser_s = subparsers.add_parser('sub', help='sub help')
-    parser_s.add_argument('-m', type=int, help='x value')
-    parser_s.add_argument('-n', type=int, help='y value')
-
-    args = parser.parse_args()
-
-
-
-    '''
     ########################################
     # Get parameters using config
     ########################################
@@ -226,7 +229,6 @@ if __name__ == "__main__":
     #########################################################################
 
     parser = argparse.ArgumentParser()
-    parser =
     parser.add_argument('-cm', '--cpu_model', required=True, action='store', type=str,
                         help='cpu model type [resnet,mobilenet,mlp,densenet]')
     parser.add_argument('-cn', '--cpu_model_num', required=True, action='store', type=int,
@@ -248,8 +250,6 @@ if __name__ == "__main__":
     _gpu_model_num = args.gpu_model_num
     _train_batch_size = args.batch_size
     _train_data = args.dataset
-
-
 
     ##########################
     # Build Workload
@@ -301,4 +301,3 @@ if __name__ == "__main__":
 
     device_proc_cpu = mp.Process(target=consumer_cpu, args=(training_cpu_queue, '/cpu:0'))
     device_proc_cpu.start()
-    '''
