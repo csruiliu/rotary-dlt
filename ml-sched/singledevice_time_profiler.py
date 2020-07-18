@@ -147,6 +147,6 @@ if __name__ == "__main__":
         train_data, label_data = load_cifar_train(cfg_path_yml.cifar_10_path, rand_seed)
 
     model_name_abbr = np.random.choice(rand_seed, 1, replace=False).tolist()
-    model_instance = model_name_abbr.pop()
+    model_instance = str(model_name_abbr.pop())
 
     run_job()

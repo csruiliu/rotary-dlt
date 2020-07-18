@@ -229,17 +229,19 @@ if __name__ == "__main__":
     #########################################################################
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-cm', '--cpu_model', required=True, action='store', type=str,
+    parser.add_argument('-cm', '--cpu_model', required=True, action='store',
+                        choices=['resnet', 'mobilenet', 'densenet', 'mlp', 'scn'],
                         help='cpu model type [resnet,mobilenet,mlp,densenet]')
     parser.add_argument('-cn', '--cpu_model_num', required=True, action='store', type=int,
                         help='indicate the number of cpu model')
-    parser.add_argument('-gm', '--gpu_model', required=True, action='store', type=str,
+    parser.add_argument('-gm', '--gpu_model', required=True, action='store',
+                        choices=['resnet', 'mobilenet', 'densenet', 'mlp', 'scn'],
                         help='gpu model type [resnet,mobilenet,mlp,densenet]')
     parser.add_argument('-gn', '--gpu_model_num', required=True, action='store', type=int,
                         help='indicate the number of gpu model')
     parser.add_argument('-b', '--batch_size', required=True, action='store', type=int,
                         help='batch size [32,50,64,100,128]')
-    parser.add_argument('-d', '--dataset', required=True, action='store', type=str,
+    parser.add_argument('-d', '--dataset', required=True, action='store', choices=['imagenet', 'cifar10'],
                         help='training set [imagenet, cifar10]')
 
     args = parser.parse_args()
