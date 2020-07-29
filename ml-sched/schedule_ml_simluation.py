@@ -3,11 +3,10 @@
 import math
 import numpy as np
 import tensorflow as tf
-import mdptoolbox
 
 import config as cfg_yml
 from schedule_ml_environment import MLSchEnv
-from policy_gradient_model import PolicyGradient
+from schedule_ml_engine import SchRLModel
 
 
 def log_workload(func):
@@ -74,8 +73,8 @@ def schedule_policy_gradient():
     features = tf.placeholder(tf.float32, shape=[None, 4], name='input_x')
     obs = np.arange(12).reshape(3, 4)
 
-    pg = PolicyGradient(4, 7)
-    action = pg.build_policy_network(features)
+    pg = SchRLModel(4, 7, 10)
+    action = pg.build_sch_model(features)
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())

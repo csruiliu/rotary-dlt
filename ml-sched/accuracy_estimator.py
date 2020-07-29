@@ -11,6 +11,7 @@ def import_accuracy_dataset():
 
     return conv_model_list
 
+
 def sigmoid_function(x, x0, k):
     y = 1 / (1 + np.exp(-k * (x - x0)))
     return y

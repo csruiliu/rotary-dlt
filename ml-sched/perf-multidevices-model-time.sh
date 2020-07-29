@@ -38,7 +38,7 @@ do
               echo "########################################" >> ./${FOLDER}/${CASE}-REPEAT${i}.txt
               echo "================EXP ${i}================" >> ./${FOLDER}/${CASE}-REPEAT${i}.txt
               echo "########################################" >> ./${FOLDER}/${CASE}-REPEAT${i}.txt
-              python3 cpugpu_concurrent_profiler.py -cm ${cpum} -cn ${cpu_concur} -gm ${gpum} -gn ${gpu_concur} -b ${bidx} -d ${tidx} >> ./${FOLDER}/${CASE}-REPEAT${i}.txt
+              python3 multidevices_time_profiler.py -cm ${cpum} -cn ${cpu_concur} -gm ${gpum} -gn ${gpu_concur} -b ${bidx} -d ${tidx} >> ./${FOLDER}/${CASE}-REPEAT${i}.txt
               rm -rf __pycache__
               python3 clean_gpu_cache.py
               echo $SUDOPWD | sudo -S ./cleancache.sh

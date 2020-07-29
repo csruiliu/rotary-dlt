@@ -71,19 +71,20 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-m', '--model', required=True, action='store', type=str,
+    parser.add_argument('-m', '--model', required=True, action='store',
+                        choices=['resnet', 'mobilenet', 'densenet', 'mlp', 'scn'],
                         help='model type [resnet, mobilenet, mlp, densenet, scn]')
 
     parser.add_argument('-b', '--batchsize', required=True, action='store', type=int,
                         help='batch size, for example: 32, 50, 100]')
 
-    parser.add_argument('-d', '--dataset', required=True, action='store', type=str,
+    parser.add_argument('-d', '--dataset', required=True, action='store', choices=['imagenet', 'cifar10'],
                         help='training set [imagenet, cifar10]')
 
     parser.add_argument('-e', '--epoch', required=True, action='store', type=int,
                         help='training epoch, for example, 1, 5, 10')
 
-    parser.add_argument('-o', '--opt', required=True, action='store', type=str,
+    parser.add_argument('-o', '--opt', required=True, action='store', choices=['SGD', 'Adam', 'Adagrad', 'Momentum'],
                         help='training opt [Adam, SGD, Adagrad, Momentum]')
 
     parser.add_argument('-l', '--conv_layer', required=True, action='store', type=int,
@@ -92,7 +93,8 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--learn_rate', required=True, action='store', type=float,
                         help='learning rate, for example, 0.01, 0.001, 0.0001')
 
-    parser.add_argument('-a', '--activation', required=True, action='store', type=str,
+    parser.add_argument('-a', '--activation', required=True, action='store',
+                        choices=['relu', 'sigmoid', 'tanh', 'leaky_relu'],
                         help='activation, for example, relu, sigmoid, tanh, leaky_relu')
 
     args = parser.parse_args()
@@ -145,7 +147,7 @@ if __name__ == '__main__':
 
         cifar10_path = cfg_path_yml.cifar_10_path
         X_data, Y_data = load_cifar_train(cifar10_path, rand_seed)
-        X_data_eval, Y_data_eval = load_cifar_test(cifar_10_path, seed)
+        X_data_eval, Y_data_eval = load_cifar_test(cifar10_path, rand_seed)
 
     elif train_data == 'mnist':
         print('train the model on mnist')

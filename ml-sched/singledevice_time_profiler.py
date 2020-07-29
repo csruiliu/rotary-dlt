@@ -1,7 +1,6 @@
 
 import tensorflow as tf
 import argparse
-import numpy as np
 import os
 from timeit import default_timer as timer
 
