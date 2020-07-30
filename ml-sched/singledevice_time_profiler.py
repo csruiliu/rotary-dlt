@@ -14,11 +14,15 @@ def run_job():
         features = tf.placeholder(tf.float32, [None, img_width, img_height, num_channels])
         labels = tf.placeholder(tf.int64, [None, num_classes])
 
-        train_model = ModelImporter(model_type, model_instance, model_layer_num, img_height, img_width,
-                                    num_channels, num_classes, batch_size, optimizer, learning_rate, activation, False)
-        model_entity = train_model.get_model_entity()
-        model_logit = model_entity.build(features)
-        train_ops = model_entity.train(model_logit, labels)
+        train_ops_pack = list()
+        for i in range(model_num):
+            train_model = ModelImporter(model_type, str(model_name_abbr[i]), model_layer_num, img_height, img_width,
+                                        num_channels, num_classes, batch_size, optimizer, learning_rate, activation,
+                                        False)
+            model_entity = train_model.get_model_entity()
+            model_logit = model_entity.build(features)
+            train_ops = model_entity.train(model_logit, labels)
+            train_ops_pack.append(train_ops)
 
         if use_raw_data:
             image_list = sorted(os.listdir(image_path))
@@ -36,8 +40,8 @@ def run_job():
             sess.run(tf.global_variables_initializer())
             num_batch = label_data.shape[0] // batch_size
             for i in range(num_batch):
-                print('**JOB on {}**: {}-{}-{}: step {} / {}'.format(train_device, model_type, batch_size,
-                                                                     model_instance, i + 1, num_batch))
+                print('**JOB on {}**: {}-{}: step {} / {}'.format(train_device, model_type,
+                                                                  batch_size, i + 1, num_batch))
                 if (i + 1) % record_marker == 0:
                     start_time = timer()
                     batch_offset = i * batch_size
@@ -48,7 +52,7 @@ def run_job():
                     else:
                         X_mini_batch_feed = train_data[batch_offset:batch_end, :, :, :]
                     Y_mini_batch_feed = label_data[batch_offset:batch_end, :]
-                    sess.run(train_ops, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    sess.run(train_ops_pack, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
                     end_time = timer()
                     dur_time = end_time - start_time
                     print("step time:", dur_time)
@@ -63,11 +67,11 @@ def run_job():
                     else:
                         X_mini_batch_feed = train_data[batch_offset:batch_end, :, :, :]
                     Y_mini_batch_feed = label_data[batch_offset:batch_end, :]
-                    sess.run(train_ops, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    sess.run(train_ops_pack, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
         print(step_time)
         print(step_count)
-        print('job average step time: {}'.format(step_time / step_count * 1000))
+        print('job average step time (ms): [{}]'.format(step_time / step_count * 1000))
 
 
 if __name__ == "__main__":
@@ -77,12 +81,13 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--model_type', required=True, action='store',
                         choices=['resnet', 'mobilenet', 'densenet', 'mlp', 'scn'],
                         help='cpu model type [resnet,mobilenet,mlp,densenet]')
-    parser.add_argument('--layer_num', action='store', type=int, help='how many layer the model has')
+    parser.add_argument('-l', '--layer_num', action='store', type=int,
+                        help='how many layer the model has')
     parser.add_argument('-n', '--model_num', required=True, action='store', type=int,
                         help='indicate the number of cpu model')
     parser.add_argument('-b', '--batch_size', required=True, action='store', type=int,
                         help='cpu job batch size [32,50,64,100,128]')
-    parser.add_argument('-l', '--learn_rate', required=True, action='store', type=float,
+    parser.add_argument('-r', '--learn_rate', required=True, action='store', type=float,
                         help='learning rate of cpu model like 0.01, 0.001')
     parser.add_argument('-o', '--optimization', required=True, action='store',
                         choices=['SGD', 'Adam', 'Adagrad', 'Momentum'],
@@ -145,7 +150,6 @@ if __name__ == "__main__":
         num_classes = 10
         train_data, label_data = load_cifar_train(cfg_path_yml.cifar_10_path, rand_seed)
 
-    model_name_abbr = np.random.choice(rand_seed, 1, replace=False).tolist()
-    model_instance = str(model_name_abbr.pop())
+    model_name_abbr = np.random.choice(rand_seed, model_num, replace=False).tolist()
 
     run_job()
