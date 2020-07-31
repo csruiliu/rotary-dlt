@@ -1,5 +1,7 @@
 import json
 import numpy as np
+from sklearn.linear_model import LinearRegression
+
 
 def import_steptime_dataset():
     with open('multidevices_time_dataset.json') as json_file:
@@ -57,7 +59,7 @@ def compute_model_similarity(center_model, candidate_models, model_type):
     return candidate_models_similarity_list
 
 
-def rank_model_similarity(candidate_models_info_list, candidate_models_similarity_list, k=1):
+def rank_model_similarity(candidate_models_info_list, candidate_models_similarity_list, k=10):
     assert len(candidate_models_info_list) >= k, 'the number of selected models is larger than the candidate models'
 
     similarity_sorted_idx_list = sorted(range(len(candidate_models_similarity_list)),
@@ -67,9 +69,14 @@ def rank_model_similarity(candidate_models_info_list, candidate_models_similarit
     return similarity_sorted_idx_list
 
 
-def rank_gpu_model_similarity(candidate_models_info_list, candidate_models_similarity_list, k=2):
-    pass
+def train_estimator(x_train, y_train):
+    linreg = LinearRegression()
+    estimator = linreg.fit(x_train, y_train)
+    print(estimator)
+    print(linreg.intercept_)
+    print(linreg.coef_)
 
+    return estimator
 
 def generate_model_dataset(model_list, model_type):
     model_dataset = list()
@@ -159,3 +166,5 @@ if __name__ == "__main__":
     selected_cpu_model_list = [cpu_job_info_list[i] for i in similarity_cpu_model_idx_list]
     selected_cpu_model_steptime_list = [cpu_job_steptime_list[i] for i in similarity_cpu_model_idx_list]
 
+    gpu_estimator = train_estimator(selected_gpu_model_list, selected_gpu_model_steptime_list)
+    cpu_estimator = train_estimator(selected_cpu_model_list, selected_cpu_model_steptime_list)
