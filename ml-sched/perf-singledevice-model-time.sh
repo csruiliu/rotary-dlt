@@ -41,14 +41,27 @@ do
                 do
                   rm -rf __pycache__
                   python3 clean_gpu_cache.py
-                  if [[ ${midx} == "scn" ]] || [[ ${midx} == "mlp" ]]
+                  if [[ ${tidx} == "imagenet" ]]
                   then
-                    for lidx in ${LAYER_NUM}
-                    do
-                      python3 singledevice_time_profiler.py -d ${didx} -m ${midx} -l ${lidx} -n ${nidx} -b ${bidx} -r ${ridx} -o ${oidx} -a ${aidx} -t ${tidx} >> ./${FOLDER}/${CASE}-REPEAT${i}.txt
-                    done
+                    if [[ ${midx} == "scn" ]] || [[ ${midx} == "mlp" ]]
+                    then
+                      for lidx in ${LAYER_NUM}
+                      do
+                        python3 singledevice_time_profiler.py -d ${didx} -m ${midx} -l ${lidx} -n ${nidx} -b ${bidx} -r ${ridx} -o ${oidx} -a ${aidx} -t ${tidx} --raw_data >> ./${FOLDER}/${CASE}-REPEAT${i}.txt
+                      done
+                    else
+                      python3 singledevice_time_profiler.py -d ${didx} -m ${midx} -n ${nidx} -b ${bidx} -r ${ridx} -o ${oidx} -a ${aidx} -t ${tidx} --raw_data >> ./${FOLDER}/${CASE}-REPEAT${i}.txt
+                    fi
                   else
-                    python3 singledevice_time_profiler.py -d ${didx} -m ${midx} -n ${nidx} -b ${bidx} -r ${ridx} -o ${oidx} -a ${aidx} -t ${tidx} >> ./${FOLDER}/${CASE}-REPEAT${i}.txt
+                    if [[ ${midx} == "scn" ]] || [[ ${midx} == "mlp" ]]
+                    then
+                      for lidx in ${LAYER_NUM}
+                      do
+                        python3 singledevice_time_profiler.py -d ${didx} -m ${midx} -l ${lidx} -n ${nidx} -b ${bidx} -r ${ridx} -o ${oidx} -a ${aidx} -t ${tidx} >> ./${FOLDER}/${CASE}-REPEAT${i}.txt
+                      done
+                    else
+                      python3 singledevice_time_profiler.py -d ${didx} -m ${midx} -n ${nidx} -b ${bidx} -r ${ridx} -o ${oidx} -a ${aidx} -t ${tidx} >> ./${FOLDER}/${CASE}-REPEAT${i}.txt
+                    fi
                   fi
                 done
                 LEN=0
