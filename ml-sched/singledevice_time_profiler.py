@@ -97,11 +97,11 @@ if __name__ == "__main__":
                         help='activation of cpu model like [relu, sigmoid, tanh, leaky_relu]')
     parser.add_argument('-t', '--train_set', required=True, action='store', choices=['imagenet', 'cifar10'],
                         help='training set [imagenet, cifar10]')
-    parser.add_argument('--raw_data', action='store_true', help='use raw data to train not binary')
+    parser.add_argument('--bin_data', action='store_true', help='use raw data to train not binary')
 
     args = parser.parse_args()
     if args.train_set in ['cifar10'] and args.raw_data:
-        parser.error('--raw-format can only be set when train_set=[imagenet]')
+        parser.error('--bin-format can only be set when train_set=[imagenet]')
     if args.model_type not in ['mlp', 'scn'] and args.layer_num:
         parser.error('--layer_number can only be set when model_type=[mlp, scn]')
 
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     optimizer = args.optimization
     activation = args.activation
     train_dataset = args.train_set
-    use_raw_data = args.raw_data
+    use_bin_data = args.bin_data
 
     if train_dataset == 'imagenet':
         img_width = 224
@@ -135,12 +135,12 @@ if __name__ == "__main__":
         num_channels = 3
         num_classes = 1000
 
-        if use_raw_data:
-            image_path = cfg_path_yml.imagenet_t1k_img_path
-        else:
+        if use_bin_data:
             image_path = cfg_path_yml.imagenet_t1k_bin_path
             train_data = load_imagenet_bin(image_path, num_channels, img_width, img_height)
-        label_path = cfg_path_yml.imagenet_t1k_img_path
+        else:
+            image_path = cfg_path_yml.imagenet_t1k_img_path
+        label_path = cfg_path_yml.imagenet_t1k_label_path
         label_data = load_imagenet_labels_onehot(label_path, num_classes)
 
     elif train_dataset == 'cifar10':
