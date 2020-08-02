@@ -59,7 +59,7 @@ def compute_model_similarity(center_model, candidate_models, model_type):
     return candidate_models_similarity_list
 
 
-def rank_model_similarity(candidate_models_info_list, candidate_models_similarity_list, k=10):
+def rank_model_similarity(candidate_models_info_list, candidate_models_similarity_list, k=3):
     assert len(candidate_models_info_list) >= k, 'the number of selected models is larger than the candidate models'
 
     similarity_sorted_idx_list = sorted(range(len(candidate_models_similarity_list)),
@@ -70,13 +70,19 @@ def rank_model_similarity(candidate_models_info_list, candidate_models_similarit
 
 
 def train_estimator(x_train, y_train):
+    assert len(x_train) == len(y_train), 'different size of feature data and label data'
+    x_train_list = list()
+    for xidx in x_train:
+        x_train_list.append(list(xidx.values()))
+
     linreg = LinearRegression()
-    estimator = linreg.fit(x_train, y_train)
-    print(estimator)
-    print(linreg.intercept_)
-    print(linreg.coef_)
+    estimator = linreg.fit(x_train_list, y_train)
+
+    # print(estimator.intercept_)
+    # print(estimator.coef_)
 
     return estimator
+
 
 def generate_model_dataset(model_list, model_type):
     model_dataset = list()
@@ -103,13 +109,10 @@ def generate_model_dataset(model_list, model_type):
         if model_type == 'CPU':
             environment_cost_list = model_info['environment_cost'].split('-')
             model_info_dict['threads_num'] = int(environment_cost_list[0])
-            model_info_dict['data_device'] = environment_cost_list[1]
-            model_info_dict['platform'] = environment_cost_list[2]
-
+            model_info_dict['data_device'] = int(environment_cost_list[1])
         elif model_type == 'GPU':
             environment_cost_list = model_info['environment_cost'].split('-')
             model_info_dict['gpu_tflops'] = float(environment_cost_list[0])
-            model_info_dict['platform'] = environment_cost_list[1]
 
         model_dataset.append(model_info_dict)
 
@@ -135,19 +138,16 @@ def generate_test_data(test_model, test_model_type):
 
     if test_model_type == 'CPU':
         input_model_dict['threads_num'] = int(input_model_split[9])
-        input_model_dict['data_device'] = input_model_split[10]
-        input_model_dict['platform'] = input_model_split[11]
-
+        input_model_dict['data_device'] = int(input_model_split[10])
     elif test_model_type == 'GPU':
         input_model_dict['gpu_tflops'] = float(input_model_split[9])
-        input_model_dict['platform'] = input_model_split[10]
 
     return input_model_dict
 
 
 if __name__ == "__main__":
-    INPUT_CPU_MODEL = '32-3-32-96-161-0-0-0-0-72-Memory-TF'
-    INPUT_GPU_MODEL = '32-3-32-96-101-224-64-96-161-6.027-TF'
+    INPUT_CPU_MODEL = '32-3-32-96-161-0-0-0-0-72-1'
+    INPUT_GPU_MODEL = '32-3-32-96-101-224-64-96-161-6.027'
     input_gpu_model_dict = generate_test_data(INPUT_GPU_MODEL, 'GPU')
     input_cpu_model_dict = generate_test_data(INPUT_CPU_MODEL, 'CPU')
 
