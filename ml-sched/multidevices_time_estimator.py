@@ -168,3 +168,13 @@ if __name__ == "__main__":
 
     gpu_estimator = train_estimator(selected_gpu_model_list, selected_gpu_model_steptime_list)
     cpu_estimator = train_estimator(selected_cpu_model_list, selected_cpu_model_steptime_list)
+
+    gpu_test_list = list()
+    gpu_test_list.append(list(input_gpu_model_dict.values()))
+    gpu_time = gpu_estimator.predict(gpu_test_list)
+    print(gpu_time)
+
+    cpu_test_list = list()
+    cpu_test_list.append(list(input_cpu_model_dict.values()))
+    cpu_time = cpu_estimator.predict(cpu_test_list)
+    print(cpu_time)
