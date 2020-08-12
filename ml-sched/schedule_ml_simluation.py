@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-
-import math
 import numpy as np
 import tensorflow as tf
+from tf_agents.policies import random_tf_policy
+from tf_agents.trajectories import time_step as ts
+from tf_agents.networks import actor_distribution_network
+from tf_agents.networks import q_network
+from tf_agents.utils import common
 
-import config as cfg_yml
+from tf_agents.agents.reinforce import reinforce_agent
+
+import config_parameter as cfg_para_yml
+import config_path as cfg_path_yml
+
 from schedule_ml_environment import MLSchEnv
-from schedule_ml_engine import SchRLModel
 
-
-def log_workload(func):
-    def wrapper():
-        print("log some information....")
-        func_result = func()
-        return func_result
-    return wrapper
+tf.compat.v1.enable_v2_behavior()
 
 
 def generate_workload():
@@ -41,118 +41,28 @@ def generate_workload():
     return sch_workload
 
 
-def generate_accuracy():
-    for i in range(_sch_job_num):
-        _sch_wl[i]['prev_accuracy'] = _sch_wl[i]['cur_accuracy']
-        acc_incremental = np.random.uniform(0, 0.1, 1)
-        _sch_wl[i]['cur_accuracy'] += acc_incremental[0]
+def evaluate_avg_reward(environment, policy, num_episodes=10):
+    total_return = 0.0
+    for _ in range(num_episodes):
+        time_step = environment.reset()
+        episode_return = 0.0
+
+        while not time_step.is_last():
+            action_step = policy.action(time_step)
+            time_step = environment.simulated_step(action_step.action)
+            episode_return += time_step.reward
+        total_return += episode_return
+
+    avg_reward = total_return / num_episodes
+    return avg_reward
 
 
-def rank_evaluate():
-    if _sch_reward_function == 'highest_accuracy':
-        print('using highest accuracy reward function...')
-        sch_wl_sorted = sorted(_sch_wl, key=lambda x: x['cur_accuracy'], reverse=True)
-    elif _sch_reward_function == 'lowest_accuracy':
-        print('using lowest accuracy reward function...')
-        sch_wl_sorted = sorted(_sch_wl, key=lambda x: x['cur_accuracy'], reverse=False)
-    elif _sch_reward_function == 'average_accuracy':
-        print('using average accuracy reward function...')
-        sch_wl_sorted = sorted(_sch_wl, key=lambda x: (x['cur_accuracy']-x['prev_accuracy']), reverse=True)
+def collect_step(environment, policy, replay_buffer, num_steps):
+    step_counter = 0
+    environment.reset()
 
-    placement_slice = math.floor(_proportion_rate * _sch_job_num)
-    print("The placement slice at {}".format(placement_slice))
-    sch_gpu_placement_list = sch_wl_sorted[0:placement_slice]
-    sch_cpu_placement_list = sch_wl_sorted[placement_slice:]
-
-    return sch_cpu_placement_list, sch_gpu_placement_list
-
-
-def schedule_policy_gradient():
-    print('starting schedule based on policy gradient...')
-
-    features = tf.placeholder(tf.float32, shape=[None, 4], name='input_x')
-    obs = np.arange(12).reshape(3, 4)
-
-    pg = SchRLModel(4, 7, 10)
-    action = pg.build_sch_model(features)
-
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        s1, s2, s3 = sess.run(action, feed_dict={features: obs})
-        print(s1, s2, s3)
-
-
-def build_sch_model(observation_size, action_space_size):
-    obs_ph = tf.placeholder(tf.float32, shape=[None, observation_size, _sch_job_num], name='obs_input')
-    act_ph = tf.placeholder(tf.int32, shape=[None], name='act_input')
-    weights_ph = tf.placeholder(tf.float32, shape=[None], name='weights_input')
-
-
-
-'''
-def random_action_simulation():
-    batch_size = 50
-    epoch_num = 2
-    obs_dim = 3
-
-    for i in range(epoch_num):
-        print('epoch ', i)
-        obs_batch_list = list()
-        act_batch_list = list()
-        reward_batch_list = list()
-        weights_batch_list = list()
-
-        act_len_list = list()
-        reward_eps_list = list()
-
-        obs = _env.reset()
-        obs_acc = obs['accuracy']
-        obs_epochs = obs['epochs']
-        obs_time = obs['time']
-        obs_array = np.array([obs_acc, obs_epochs, obs_time])
-
-        while True:
-            obs_batch_list.append(obs_array)
-
-            # generate a fake action
-            action_job = np.random.choice(_sch_wl)
-            action = dict()
-            action['job_id'] = action_job['job_id']
-            action['job_model_type'] = action_job['model_type']
-            action['job_batch_size'] = action_job['batch_size']
-            action['device_id'] = np.random.randint(0, 2)
-            action['order_id'] = np.random.randint(0, 100)
-
-            # store the action in to the list
-            act_batch_list.append(action)
-
-            # compute the next observation, reward, is_done according to the action
-            obs, reward, done, info = _env.step(action)
-            reward_eps_list.append(reward)
-
-            # convert obs to array to fit placeholder
-            obs_acc = obs['accuracy']
-            obs_epochs = obs['epochs']
-            obs_time = obs['time']
-            obs_array = np.array([obs_acc, obs_epochs, obs_time])
-
-            if done:
-                eps_reward = sum(reward_eps_list)
-                eps_reward_len = len(reward_eps_list)
-                reward_batch_list.append(eps_reward)
-                act_len_list.append(eps_reward_len)
-
-                # the weight for each logprob(a|s) is R(tau)
-                # so each logprob should use the total reward for the
-                weights_batch_list += [eps_reward] * eps_reward_len
-
-                # reset episode-specific variables
-                obs, done, reward_eps_list = _env.reset(), False, []
-
-                if len(obs_batch_list) > batch_size:
-                    print('batch size in epoch {}: {}'.format(i, len(obs_batch_list)))
-                    break
-'''
+    while step_counter < num_steps:
+        time_step = environment
 
 
 if __name__ == "__main__":
@@ -161,32 +71,33 @@ if __name__ == "__main__":
     # Get general parameters from config
     ######################################################
 
-    _rand_seed = cfg_yml.rand_seed
-    _record_marker = cfg_yml.record_marker
-    _use_raw_image = cfg_yml.use_raw_image
-    _use_measure_step = cfg_yml.measure_step
-
-    _image_path_raw = cfg_yml.imagenet_t1k_img_path
-    _image_path_bin = cfg_yml.imagenet_t1k_bin_path
-    _label_path = cfg_yml.imagenet_t1k_label_path
+    _rand_seed = cfg_para_yml.rand_seed
+    _record_marker = cfg_para_yml.record_marker
+    _use_raw_image = cfg_para_yml.use_raw_image
+    _use_measure_step = cfg_para_yml.measure_step
 
     ########################################
     # Get workload parameters from config
     ########################################
 
-    _sch_device_num = cfg_yml.sch_device_num
-    _sch_job_num = cfg_yml.sch_job_num
-    _sch_model_type_set = cfg_yml.sch_model_type_set
-    _sch_batch_size_set = cfg_yml.sch_batch_size_set
-    _sch_optimizer_set = cfg_yml.sch_optimizer_set
-    _sch_learning_rate_set = cfg_yml.sch_learning_rate_set
-    _sch_activation_set = cfg_yml.sch_activation_set
+    _sch_gpu_device_num = cfg_para_yml.sch_gpu_num
+    _sch_cpu_device_num = cfg_para_yml.sch_cpu_num
+    _sch_job_num = cfg_para_yml.sch_job_num
+    _sch_time_slots_num = cfg_para_yml.sch_time_slots_num
+    _sch_model_type_set = cfg_para_yml.sch_model_type_set
+    _sch_batch_size_set = cfg_para_yml.sch_batch_size_set
+    _sch_optimizer_set = cfg_para_yml.sch_optimizer_set
+    _sch_learning_rate_set = cfg_para_yml.sch_learning_rate_set
+    _sch_activation_set = cfg_para_yml.sch_activation_set
+    _sch_proportion_rate = cfg_para_yml.placement_proportion_rate
 
     ########################################
-    # Get workload parameters from config
+    # Get path parameters from config
     ########################################
 
-    _proportion_rate = cfg_yml.placement_proportion_rate
+    _image_path_raw = cfg_path_yml.imagenet_t1k_img_path
+    _image_path_bin = cfg_path_yml.imagenet_t1k_bin_path
+    _label_path = cfg_path_yml.imagenet_t1k_label_path
 
     ########################################
     # Generate workload
@@ -194,47 +105,38 @@ if __name__ == "__main__":
 
     np.random.seed(_rand_seed)
 
+    _sch_reward_function = cfg_para_yml.sch_reward_function
+    _sch_time_limit = cfg_para_yml.sch_time_limit
     _sch_wl = generate_workload()
-    _sch_reward_function = cfg_yml.sch_reward_function
-    _sch_time_limit = cfg_yml.sch_time_limit
+
     print("Reward Function: {}".format(_sch_reward_function))
     print("Time Limit: {}".format(_sch_time_limit))
 
-    ########################################
-    # Initialize Gym Custom Environment
-    ########################################
+    mlsch_env = MLSchEnv(time_slots_num=_sch_time_slots_num, gpu_device_num=_sch_gpu_device_num,
+                         cpu_device_num=_sch_cpu_device_num, workload=_sch_wl)
 
-    #_env = gym.make('MLSchEnv-v0')
-    #_env.init_env(num_devices=_sch_device_num, num_jobs=_sch_job_num, time_limit=_sch_time_limit)
+    actor_net = actor_distribution_network.ActorDistributionNetwork(mlsch_env.observation_spec(),
+                                                                    mlsch_env.action_spec(),
+                                                                    fc_layer_params=(100,))
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
+    train_step_counter = tf.Variable(0)
 
-    ########################################
-    # Initialize Gym-free Custom Environment
-    ########################################
+    tf_agent = reinforce_agent.ReinforceAgent(mlsch_env.time_step_spec(), mlsch_env.action_spec(),
+                                              actor_network=actor_net, optimizer=optimizer,
+                                              normalize_returns=True, train_step_counter=train_step_counter)
+    tf_agent.initialize()
+    tf_agent.train = common.function(tf_agent.train)
+    tf_agent.train_step_counter.assign(0)
 
-    _env = MLSchEnv(num_devices=_sch_device_num, num_jobs=_sch_job_num, time_limit=_sch_time_limit, is_simulate=True)
+    num_eval_episodes = 10
+    # Evaluate the agent's policy once before training.
+    avg_return = evaluate_avg_reward(mlsch_env, tf_agent.policy, num_eval_episodes)
+    returns = [avg_return]
+    print('Returns before training:{}'.format(returns))
 
-    ########################################
-    # Build the scheduling model
-    ########################################
+    num_iterations = 10
 
-    #random_action_simulation()
-
-    #schedule_policy_gradient()
-
-
-    #dur_time = 0
-    #start_time = timer()
-
-    #while dur_time < _sch_time_limit:
-    #    generate_accuracy()
-    #    end_time = timer()
-    #    dur_time = end_time - start_time
-    
-    #rank_evaluate()
-    #schedule_simulation()
-
-    #pg = PolicyGradient(1, 1)
-    #pg.build_policy_network()
-
-
+    for _ in range(num_iterations):
+        # Collect a few episodes using collect_policy and save to the replay buffer.
+        collect_episode(mlsch_env, tf_agent.collect_policy, collect_episodes_per_iteration)
 

@@ -17,7 +17,6 @@ class SchRLModel:
 
         return self.sch_logit
 
-
     def train_sch_model(self):
         pass
 

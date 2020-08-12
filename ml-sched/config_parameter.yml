@@ -24,12 +24,15 @@ hyperparams_measure:
   available_gpu_num: 1
   available_cpu_num: 1
 
-
 placement_schedule_simulation:
-  # number of total devices for workload schedule
-  device_num: 2
+  # number of gpu devices for workload schedule
+  gpu_device_num: 2
+  # number of cpu devices for workload schedule
+  cpu_device_num: 1
   # total number of jobs in a workload
-  job_num: 5
+  job_num: 20
+  # total number of time slots for a workload
+  time_slots_num: 20
   # total available model type
   model_type_set:
     - mobilenet
