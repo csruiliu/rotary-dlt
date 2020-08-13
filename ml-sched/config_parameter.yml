@@ -30,7 +30,7 @@ placement_schedule_simulation:
   # number of cpu devices for workload schedule
   cpu_device_num: 1
   # total number of jobs in a workload
-  job_num: 20
+  job_num: 16
   # total number of time slots for a workload
   time_slots_num: 20
   # total available model type

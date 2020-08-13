@@ -1,47 +1,23 @@
 #!/usr/bin/env python3
 import numpy as np
 import tensorflow as tf
-from tf_agents.policies import random_tf_policy
-from tf_agents.trajectories import time_step as ts
 from tf_agents.networks import actor_distribution_network
-from tf_agents.networks import q_network
 from tf_agents.utils import common
-
+from tf_agents.trajectories import trajectory
+from tf_agents.replay_buffers import tf_uniform_replay_buffer
 from tf_agents.agents.reinforce import reinforce_agent
 
 import config_parameter as cfg_para_yml
 import config_path as cfg_path_yml
 
 from schedule_ml_environment import MLSchEnv
+from utils_workload_func import generate_workload
 
 tf.compat.v1.enable_v2_behavior()
 
 
-def generate_workload():
-    sampled_model_type_list = np.random.choice(_sch_model_type_set, _sch_job_num, replace=True)
-    sampled_batch_size_list = np.random.choice(_sch_batch_size_set, _sch_job_num, replace=True)
-    sampled_optimizer_list = np.random.choice(_sch_optimizer_set, _sch_job_num, replace=True)
-    sampled_learning_rate_list = np.random.choice(_sch_learning_rate_set, _sch_job_num, replace=True)
-    sampled_activation_list = np.random.choice(_sch_activation_set, _sch_job_num, replace=True)
-
-    sch_workload = list()
-
-    for i in range(_sch_job_num):
-        sch_model_config_dict = dict()
-        sch_model_config_dict['job_id'] = i
-        sch_model_config_dict['model_type'] = sampled_model_type_list[i]
-        sch_model_config_dict['batch_size'] = sampled_batch_size_list[i]
-        sch_model_config_dict['optimizer'] = sampled_optimizer_list[i]
-        sch_model_config_dict['learning_rate'] = sampled_learning_rate_list[i]
-        sch_model_config_dict['activation'] = sampled_activation_list[i]
-        sch_model_config_dict['cur_accuracy'] = 0
-        sch_model_config_dict['prev_accuracy'] = 0
-        sch_workload.append(sch_model_config_dict)
-
-    return sch_workload
-
-
-def evaluate_avg_reward(environment, policy, num_episodes=10):
+def evaluate_avg_reward(environment, policy, num_episodes):
+    print('evaluate the algorithm for {} episodes.'.format(num_episodes))
     total_return = 0.0
     for _ in range(num_episodes):
         time_step = environment.reset()
@@ -57,12 +33,36 @@ def evaluate_avg_reward(environment, policy, num_episodes=10):
     return avg_reward
 
 
-def collect_step(environment, policy, replay_buffer, num_steps):
+def replay_collect_episode(environment, policy, num_episodes):
+    episode_counter = 0
+
+    while episode_counter < num_episodes:
+        current_time_step = environment.current_time_step()
+        action_step = policy.action(current_time_step)
+        next_time_step = environment.simulated_step(action_step.action)
+        traj = trajectory.from_transition(current_time_step, action_step, next_time_step)
+
+        # Add trajectory to the replay buffer
+        replay_buffer.add_batch(traj)
+
+        if traj.is_boundary():
+            environment.reset()
+            episode_counter += 1
+
+
+def replay_collect_step(environment, policy, num_steps):
     step_counter = 0
-    environment.reset()
 
     while step_counter < num_steps:
-        time_step = environment
+        current_time_step = environment.current_time_step()
+        action_step = policy.action(current_time_step)
+        next_time_step = environment.simulated_step(action_step.action)
+        traj = trajectory.from_transition(current_time_step, action_step, next_time_step)
+
+        # Add trajectory to the replay buffer
+        replay_buffer.add_batch(traj)
+
+        step_counter += 1
 
 
 if __name__ == "__main__":
@@ -107,7 +107,8 @@ if __name__ == "__main__":
 
     _sch_reward_function = cfg_para_yml.sch_reward_function
     _sch_time_limit = cfg_para_yml.sch_time_limit
-    _sch_wl = generate_workload()
+    _sch_wl = generate_workload(_sch_job_num, _sch_model_type_set, _sch_batch_size_set,
+                                _sch_optimizer_set, _sch_learning_rate_set, _sch_activation_set)
 
     print("Reward Function: {}".format(_sch_reward_function))
     print("Time Limit: {}".format(_sch_time_limit))
@@ -128,15 +129,38 @@ if __name__ == "__main__":
     tf_agent.train = common.function(tf_agent.train)
     tf_agent.train_step_counter.assign(0)
 
-    num_eval_episodes = 10
+    num_eval_episodes = 7
     # Evaluate the agent's policy once before training.
     avg_return = evaluate_avg_reward(mlsch_env, tf_agent.policy, num_eval_episodes)
     returns = [avg_return]
     print('Returns before training:{}'.format(returns))
 
-    num_iterations = 10
+    steps_num_per_batch = 1000
 
-    for _ in range(num_iterations):
-        # Collect a few episodes using collect_policy and save to the replay buffer.
-        collect_episode(mlsch_env, tf_agent.collect_policy, collect_episodes_per_iteration)
+    replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(data_spec=tf_agent.collect_data_spec,
+                                                                   batch_size=mlsch_env.batch_size(),
+                                                                   max_length=steps_num_per_batch)
+    iterations_num = 250
+    episodes_num_per_iteration = 2
 
+    for i in range(iterations_num):
+        # Collect a few step using collect_policy and save to the replay buffer.
+        replay_collect_episode(mlsch_env, tf_agent.collect_policy, episodes_num_per_iteration)
+
+        experience = replay_buffer.gather_all()
+        train_loss = tf_agent.train(experience)
+        replay_buffer.clear()
+
+        step = tf_agent.train_step_counter.numpy()
+
+        log_interval = 25
+
+        if step % log_interval == 0:
+            print('step = {0}: loss = {1}'.format(step, train_loss.loss))
+
+        eval_interval = 50
+
+        if step % eval_interval == 0:
+            avg_return = evaluate_avg_reward(mlsch_env, tf_agent.policy, num_eval_episodes)
+            print('step = {0}: Average Return = {1}'.format(step, avg_return))
+            returns.append(avg_return)

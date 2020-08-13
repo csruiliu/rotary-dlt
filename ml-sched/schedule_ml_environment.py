@@ -19,9 +19,12 @@ class MLSchEnv:
         self._observation_spec = tensor_spec.TensorSpec(self._workload_size, tf.float32)
         self._time_step_spec = ts.time_step_spec(self._observation_spec)
 
+        self._current_time_step = None
+
         self._observation_array = np.zeros(self._workload_size, dtype=np.float32)
         self._episode_ended = False
         self._assigned_time_slots_num = 0
+        self._batch_size = 1
 
     def simulated_step(self, action):
         if self._episode_ended:
@@ -38,22 +41,17 @@ class MLSchEnv:
         self._assigned_time_slots_num += 1
         reward = np.average(self._observation_array)
         if self._assigned_time_slots_num == self._time_slots_num:
-            return ts.termination(self._observation_array, reward)
+            self._current_time_step = ts.termination(self._observation_array, reward)
+            return self._current_time_step
         else:
-            return ts.transition(self._observation_array, reward)
+            self._current_time_step = ts.transition(self._observation_array, reward)
+            return self._current_time_step
 
     def step(self, action):
-        if self._episode_ended:
-            return self.reset()
-
-        for gidx in range(self._gpu_device_num):
-            print(action[gidx])
-
-        for cidx in range(self._gpu_device_num, self._total_device_num):
-            print(action[cidx])
-
-    def _reward_function(self):
         pass
+
+    def current_time_step(self):
+        return self._current_time_step
 
     def action_spec(self):
         return self._action_spec
@@ -64,8 +62,18 @@ class MLSchEnv:
     def time_step_spec(self):
         return self._time_step_spec
 
+    def set_batch_size(self, batch_size):
+        self._batch_size = batch_size
+
+    def batch_size(self):
+        return self._batch_size
+
     def reset(self):
         self._episode_ended = False
         self._assigned_time_slots_num = 0
-        self._observation_array = np.zeros(self._workload_size)
-        return ts.restart(np.zeros(self._time_step_spec.observation.shape, dtype=np.float32))
+        self._observation_array.fill(0)
+        self._current_time_step = ts.restart(np.zeros(self._time_step_spec.observation.shape, dtype=np.float32))
+        return self._current_time_step
+
+    def _reward_function(self):
+        pass
