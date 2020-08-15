@@ -5,7 +5,7 @@ from tf_agents.trajectories import time_step as ts
 
 
 class MLSchEnv:
-    def __init__(self, time_slots_num, gpu_device_num, cpu_device_num, workload):
+    def __init__(self, time_slots_num, gpu_device_num, cpu_device_num, workload, is_simulation=False):
         self._time_slots_num = time_slots_num
         self._gpu_device_num = gpu_device_num
         self._cpu_device_num = cpu_device_num
@@ -18,6 +18,7 @@ class MLSchEnv:
         # observation: the accuracy of each job in the workload
         self._observation_spec = tensor_spec.TensorSpec(self._workload_size, tf.float32)
         self._time_step_spec = ts.time_step_spec(self._observation_spec)
+        self.is_simulation = is_simulation
 
         self._current_time_step = None
 
@@ -26,17 +27,18 @@ class MLSchEnv:
         self._assigned_time_slots_num = 0
         self._batch_size = 1
 
-    def simulated_step(self, action):
+    def step(self, action):
         if self._episode_ended:
             return self.reset()
 
-        for gidx in range(self._gpu_device_num):
-            job_idx = action[gidx]
-            self._observation_array[job_idx] += np.random.uniform(0, 0.1, 1)
+        if self.is_simulation:
+            for gidx in range(self._gpu_device_num):
+                job_idx = action[gidx]
+                self._observation_array[job_idx] += np.random.uniform(0, 0.1, 1)
 
-        for cidx in range(self._gpu_device_num, self._total_device_num):
-            job_idx = action[cidx]
-            self._observation_array[job_idx] += np.random.uniform(0, 0.1, 1)
+            for cidx in range(self._gpu_device_num, self._total_device_num):
+                job_idx = action[cidx]
+                self._observation_array[job_idx] += np.random.uniform(0, 0.1, 1)
 
         self._assigned_time_slots_num += 1
         reward = np.average(self._observation_array)
@@ -46,9 +48,6 @@ class MLSchEnv:
         else:
             self._current_time_step = ts.transition(self._observation_array, reward)
             return self._current_time_step
-
-    def step(self, action):
-        pass
 
     def current_time_step(self):
         return self._current_time_step
