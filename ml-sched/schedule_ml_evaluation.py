@@ -63,7 +63,8 @@ if __name__ == "__main__":
     print("Time Limit: {}".format(_sch_time_limit))
 
     mlsch_env = MLSchEnv(time_slots_num=_sch_time_slots_num, gpu_device_num=_sch_gpu_device_num,
-                         cpu_device_num=_sch_cpu_device_num, workload=_sch_wl, is_simulation=True)
+                         cpu_device_num=_sch_cpu_device_num, workload=_sch_wl,
+                         reward_function=_sch_reward_function, is_simulation=True)
 
     mlsch_engine = MLSchEngine(mlsch_env)
 

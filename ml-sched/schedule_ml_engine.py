@@ -5,6 +5,9 @@ from tf_agents.agents.reinforce import reinforce_agent
 from tf_agents.trajectories import trajectory
 from tf_agents.replay_buffers import tf_uniform_replay_buffer
 
+import numpy as np
+import utils_reward_func
+
 
 class MLSchEngine:
     def __init__(self, sch_env):
@@ -46,27 +49,28 @@ class MLSchEngine:
                 print('step = {0}: loss = {1}'.format(step, train_loss.loss))
 
             if step % eval_interval == 0:
-                avg_reward = self.evaluate_sch_agent(num_eval_episodes_for_train)
-                print('evaluate the agent at step = {0}: Average Return = {1}'.format(step, avg_reward))
-                self.reward_list.append(avg_reward)
+                reward = self.evaluate_sch_agent(num_eval_episodes_for_train)
+                print('evaluate the agent at step = {0}: Average Return = {1}'.format(step, reward))
+                self.reward_list.append(reward)
 
         return self.reward_list
 
     def evaluate_sch_agent(self, eval_num_episodes):
         print('evaluate the agent for {} episodes.'.format(eval_num_episodes))
-        total_return = 0.0
+        episode_return_list = list()
+
         for _ in range(eval_num_episodes):
             time_step = self.mlsch_env.reset()
-            episode_return = 0.0
 
             while not time_step.is_last():
                 action_step = self.rl_agent.policy.action(time_step)
                 time_step = self.mlsch_env.step(action_step.action)
-                episode_return += time_step.reward
-            total_return += episode_return
+                episode_return_list.append(time_step.reward)
 
-        avg_reward = total_return / eval_num_episodes
-        return avg_reward
+        # avg_reward = total_return / eval_num_episodes
+        reward = getattr(utils_reward_func, self.mlsch_env.reward_function())(episode_return_list)
+
+        return reward
 
     def benchmark_before_training(self, benchmark_num_episodes=10):
         # Evaluate the agent's policy once before training.
