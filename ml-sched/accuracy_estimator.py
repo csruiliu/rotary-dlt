@@ -3,112 +3,131 @@ import json
 from scipy.optimize import curve_fit
 
 
-def import_accuracy_dataset():
-    with open('model_accuracy_dataset.json') as json_file:
-        json_data = json.load(json_file)
+class AccuracyEstimator:
+    def __init__(self, top_k):
+        self.similarity_top_k = top_k
 
-    conv_model_list = json_data['conv_model']
+        self.conv_model_list = None
+        self.accuracy_dataset_path = None
 
-    return conv_model_list
+        self.model_info_list = None
+        self.model_accuracy_list = None
+        self.model_epoch_list = None
 
+    def import_accuracy_dataset(self, dataset_path):
+        self.accuracy_dataset_path = dataset_path
 
-def sigmoid_function(x, x0, k):
-    y = 1 / (1 + np.exp(-k * (x - x0)))
-    return y
+        with open(self.accuracy_dataset_path) as json_file:
+            json_data = json.load(json_file)
 
+        self.conv_model_list = json_data['conv_model']
+        self.model_info_list, self.model_accuracy_list, self.model_epoch_list = self._build_conv_model_dataset(self.conv_model_list)
 
-def jaccard_index(s1, s2):
-    size_s1 = len(s1)
-    size_s2 = len(s2)
+    def predict_accuracy(self, input_model_dict, input_model_epoch):
+        model_similarity_list = self._compute_model_similarity(input_model_dict, self.model_info_list)
+        similarity_model_idx_list = self._rank_model_similarity(self.model_info_list, model_similarity_list)
 
-    # Get the intersection set
-    intersect = s1 & s2
-    size_in = len(intersect)
+        neighbor_model_accuracy_list = [self.model_accuracy_list[i] for i in similarity_model_idx_list]
+        neighbor_model_epoch_list = [self.model_epoch_list[i] for i in similarity_model_idx_list]
+        estimated_accuracy = self._estimate_model_accuracy(input_model_epoch, neighbor_model_epoch_list,
+                                                           neighbor_model_accuracy_list)
 
-    # Calculate the Jaccard index using the formula
-    jaccard_idx = size_in / (size_s1 + size_s2 - size_in)
+        return estimated_accuracy
 
-    return jaccard_idx
+    @staticmethod
+    def _sigmoid_function(x, x0, k):
+        y = 1 / (1 + np.exp(-k * (x - x0)))
+        return y
 
+    @staticmethod
+    def _jaccard_index(s1, s2):
+        size_s1 = len(s1)
+        size_s2 = len(s2)
 
-def generate_conv_model_dataset(conv_model_list):
-    conv_model_dataset = list()
-    conv_model_accuracy_list = list()
-    conv_model_epoch_list = list()
-    for model_info in conv_model_list:
-        conv_model_info_dict = dict()
-        conv_model_info_list = model_info['model_name'].split('-')
+        # Get the intersection set
+        intersect = s1 & s2
+        size_in = len(intersect)
 
-        conv_model_info_dict['input_size'] = int(conv_model_info_list[0])
-        conv_model_info_dict['channel_num'] = int(conv_model_info_list[1])
-        conv_model_info_dict['class_num'] = int(conv_model_info_list[2])
-        conv_model_info_dict['batch_size'] = int(conv_model_info_list[3])
-        conv_model_info_dict['conv_layer_num'] = int(conv_model_info_list[4])
-        conv_model_info_dict['pooling_layer_num'] = int(conv_model_info_list[5])
-        conv_model_info_dict['total_layer_num'] = int(conv_model_info_list[6])
-        conv_model_info_dict['learning_rate'] = float(conv_model_info_list[7])
-        conv_model_info_dict['optimizer'] = conv_model_info_list[8]
-        conv_model_info_dict['activation'] = conv_model_info_list[9]
-        conv_model_dataset.append(conv_model_info_dict)
+        # Calculate the Jaccard index using the formula
+        jaccard_idx = size_in / (size_s1 + size_s2 - size_in)
 
-        conv_model_epoch_list.append(int(conv_model_info_list[10]))
-        conv_model_accuracy_list.append(float(model_info['model_accuracy']))
+        return jaccard_idx
 
-    return conv_model_dataset, conv_model_accuracy_list, conv_model_epoch_list
+    @staticmethod
+    def _build_conv_model_dataset(conv_model_list):
+        conv_model_dataset = list()
+        conv_model_accuracy_list = list()
+        conv_model_epoch_list = list()
+        for model_info in conv_model_list:
+            conv_model_info_dict = dict()
+            conv_model_info_list = model_info['model_name'].split('-')
 
+            conv_model_info_dict['input_size'] = int(conv_model_info_list[0])
+            conv_model_info_dict['channel_num'] = int(conv_model_info_list[1])
+            conv_model_info_dict['class_num'] = int(conv_model_info_list[2])
+            conv_model_info_dict['batch_size'] = int(conv_model_info_list[3])
+            conv_model_info_dict['conv_layer_num'] = int(conv_model_info_list[4])
+            conv_model_info_dict['pooling_layer_num'] = int(conv_model_info_list[5])
+            conv_model_info_dict['total_layer_num'] = int(conv_model_info_list[6])
+            conv_model_info_dict['learning_rate'] = float(conv_model_info_list[7])
+            conv_model_info_dict['optimizer'] = conv_model_info_list[8]
+            conv_model_info_dict['activation'] = conv_model_info_list[9]
+            conv_model_dataset.append(conv_model_info_dict)
 
-def compute_model_similarity(center_model, candidate_models):
-    assert len(center_model) == len(candidate_models[0]), 'the input model and the candidate models are not in the same format'
+            conv_model_epoch_list.append(int(conv_model_info_list[10]))
+            conv_model_accuracy_list.append(float(model_info['model_accuracy']))
 
-    curmodel_similarity_list = list()
-    candidate_models_similarity_list = list()
+        return conv_model_dataset, conv_model_accuracy_list, conv_model_epoch_list
 
-    for model_idx in candidate_models:
-        curmodel_hyperparam_similarity_list = list()
-        input_binary_set = set()
-        candidate_binary_set = set()
-        for cfg_idx in center_model:
-            if cfg_idx in ('channel_num', 'class_num', 'optimizer', 'activation'):
-                #input_size_similarity = 1 if center_model[cfg_idx] == model_idx[cfg_idx] else 0
-                #curmodel_hyperparam_similarity_list.append(input_size_similarity)
-                input_binary_set.add(center_model[cfg_idx])
-                candidate_binary_set.add(model_idx[cfg_idx])
-            else:
-                max_x = max([center_model[cfg_idx], model_idx[cfg_idx]])
-                diff_x = np.abs(center_model[cfg_idx] - model_idx[cfg_idx])
-                input_size_similarity = 1 - diff_x / max_x
-                curmodel_hyperparam_similarity_list.append(input_size_similarity)
+    def _compute_model_similarity(self, center_model, candidate_models):
+        assert len(center_model) == len(candidate_models[0]), 'the input model and the candidate models are not in the same format'
 
-        curmodel_binary_similarity = jaccard_index(input_binary_set, candidate_binary_set)
-        curmodel_similarity_list.append(curmodel_binary_similarity)
-        curmodel_overall_similarity = sum(curmodel_hyperparam_similarity_list) / len(curmodel_hyperparam_similarity_list)
+        curmodel_similarity_list = list()
+        candidate_models_similarity_list = list()
 
-        candidate_models_similarity_list.append(curmodel_overall_similarity)
+        for model_idx in candidate_models:
+            curmodel_hyperparam_similarity_list = list()
+            input_binary_set = set()
+            candidate_binary_set = set()
+            for cfg_idx in center_model:
+                if cfg_idx in ('channel_num', 'class_num', 'optimizer', 'activation'):
+                    #input_size_similarity = 1 if center_model[cfg_idx] == model_idx[cfg_idx] else 0
+                    #curmodel_hyperparam_similarity_list.append(input_size_similarity)
+                    input_binary_set.add(center_model[cfg_idx])
+                    candidate_binary_set.add(model_idx[cfg_idx])
+                else:
+                    max_x = max([center_model[cfg_idx], model_idx[cfg_idx]])
+                    diff_x = np.abs(center_model[cfg_idx] - model_idx[cfg_idx])
+                    input_size_similarity = 1 - diff_x / max_x
+                    curmodel_hyperparam_similarity_list.append(input_size_similarity)
 
-    return candidate_models_similarity_list
+            curmodel_binary_similarity = self._jaccard_index(input_binary_set, candidate_binary_set)
+            curmodel_similarity_list.append(curmodel_binary_similarity)
+            curmodel_overall_similarity = sum(curmodel_hyperparam_similarity_list) / len(curmodel_hyperparam_similarity_list)
 
+            candidate_models_similarity_list.append(curmodel_overall_similarity)
 
-def rank_model_similarity(candidate_models_info_list, candidate_models_similarity_list, k=2):
-    assert len(candidate_models_info_list) >= k, 'the number of expected selected models is larger than the candidate models'
+        return candidate_models_similarity_list
 
-    similarity_sorted_idx_list = sorted(range(len(candidate_models_similarity_list)),
-                                        key=lambda k: candidate_models_similarity_list[k],
-                                        reverse=True)[:k]
+    def _rank_model_similarity(self, candidate_models_info_list, candidate_models_similarity_list):
+        assert len(candidate_models_info_list) >= self.similarity_top_k, 'the number of expected selected models is larger than the candidate models'
 
-    return similarity_sorted_idx_list
+        similarity_sorted_idx_list = sorted(range(len(candidate_models_similarity_list)),
+                                            key=lambda k: candidate_models_similarity_list[k],
+                                            reverse=True)[:self.similarity_top_k]
 
+        return similarity_sorted_idx_list
 
-def estimate_model_accuracy(input_model_epoch, predict_model_epoch_list, predict_model_accuracy_list):
+    def _estimate_model_accuracy(self, input_model_epoch, predict_model_epoch_list, predict_model_accuracy_list):
+        popt, pcov = curve_fit(self._sigmoid_function,
+                               predict_model_epoch_list,
+                               predict_model_accuracy_list,
+                               method='dogbox')
 
-    popt, pcov = curve_fit(sigmoid_function,
-                           predict_model_epoch_list,
-                           predict_model_accuracy_list,
-                           method='dogbox')
+        estimated_accuracy = self._sigmoid_function(input_model_epoch, popt[0], popt[1])
+        return estimated_accuracy
 
-    estimated_accuracy = sigmoid_function(input_model_epoch, popt[0], popt[1])
-    return estimated_accuracy
-
-
+'''
 if __name__ == "__main__":
     INPUT_MODEL_INFO = '224-3-1000-64-1-1-5-0.001-SGD-relu-18'
     input_model_list = INPUT_MODEL_INFO.split('-')
@@ -141,3 +160,4 @@ if __name__ == "__main__":
     estimated_accuracy = estimate_model_accuracy(input_model_epoch, neighbor_model_epoch_list, neighbor_model_accuracy_list)
 
     print(estimated_accuracy)
+'''

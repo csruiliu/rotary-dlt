@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 from tf_agents.specs import tensor_spec
 from tf_agents.trajectories import time_step as ts
+
 import utils_reward_func
 
 
@@ -40,6 +41,9 @@ class MLSchEnv:
             for cidx in range(self._gpu_device_num, self._total_device_num):
                 job_idx = action[cidx]
                 self._observation_array[job_idx] += np.random.uniform(0, 0.1, 1)
+        else:
+            for gidx in range(self._gpu_device_num):
+                job_idx = action[gidx]
 
         self._assigned_time_slots_num += 1
 

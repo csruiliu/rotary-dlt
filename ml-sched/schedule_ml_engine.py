@@ -5,7 +5,6 @@ from tf_agents.agents.reinforce import reinforce_agent
 from tf_agents.trajectories import trajectory
 from tf_agents.replay_buffers import tf_uniform_replay_buffer
 
-import numpy as np
 import utils_reward_func
 
 
