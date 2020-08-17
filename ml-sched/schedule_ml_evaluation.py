@@ -12,6 +12,8 @@ from accuracy_estimator import AccuracyEstimator
 
 from utils_workload_func import generate_workload
 
+from timeit import default_timer as timer
+
 tf.compat.v1.enable_v2_behavior()
 
 
@@ -78,34 +80,17 @@ if __name__ == "__main__":
     mlsch_ae = AccuracyEstimator(top_k=3)
     mlsch_ae.import_accuracy_dataset(_accuracy_dataset_path)
 
-    INPUT_MODEL_INFO = '224-3-1000-32-96-1-161-0.01-Adam-relu-10'
-    #INPUT_MODEL_INFO = '224-3-1000-64-1-1-5-0.001-SGD-relu-18'
-    input_model_list = INPUT_MODEL_INFO.split('-')
-    input_model_dict = dict()
+    mlsch_env.load_estimator(mlsch_mte, mlsch_ae)
 
-    input_model_dict['input_size'] = int(input_model_list[0])
-    input_model_dict['channel_num'] = int(input_model_list[1])
-    input_model_dict['class_num'] = int(input_model_list[2])
-    input_model_dict['batch_size'] = int(input_model_list[3])
-    input_model_dict['conv_layer_num'] = int(input_model_list[4])
-    input_model_dict['pooling_layer_num'] = int(input_model_list[5])
-    input_model_dict['total_layer_num'] = int(input_model_list[6])
-    print(input_model_list[7])
-    input_model_dict['learning_rate'] = float(input_model_list[7])
-    input_model_dict['optimizer'] = input_model_list[8]
-    input_model_dict['activation'] = input_model_list[9]
-
-    input_model_epoch = int(input_model_list[10])
-
-    predict_accuracy = mlsch_ae.predict_accuracy(input_model_dict, input_model_epoch)
-    print(predict_accuracy)
-    '''
     mlsch_engine = MLSchEngine(mlsch_env)
 
     mlsch_engine.build_sch_agent()
     mlsch_engine.benchmark_before_training(benchmark_num_episodes=20)
+    start_time = timer()
     mlsch_engine.train_sch_agent(num_train_iterations=100, collect_episodes_per_iteration=2, steps_num_per_batch=100,
-                                 log_interval=25, eval_interval=50, num_eval_episodes_for_train=15)
+                                 log_interval=25, include_eval=False, eval_interval=50, num_eval_episodes_for_train=15)
+    end_time = timer()
+    dur_time = end_time - start_time
+    print('training time: {0}'.format(dur_time))
     final_reward = mlsch_engine.evaluate_sch_agent(eval_num_episodes=20)
     print('final reward: {0}'.format(final_reward))
-    '''

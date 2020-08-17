@@ -30,9 +30,9 @@ placement_schedule_simulation:
   # number of cpu devices for workload schedule
   cpu_device_num: 1
   # total number of jobs in a workload
-  job_num: 16
+  job_num: 10
   # total number of time slots for a workload
-  time_slots_num: 20
+  time_slots_num: 144
   # total available model type
   model_type_set:
     - mobilenet
@@ -52,7 +52,7 @@ placement_schedule_simulation:
   activation_set:
     - relu
   # highest_accuracy, lowest_accuracy, average_accuracy
-  reward_function: top_accuracy
+  reward_function: average_accuracy
   placement_proportion_rate: 0.382
   # time unit: second
   timie_limit: 10000
