@@ -5,8 +5,8 @@ import tensorflow as tf
 import config_parameter as cfg_para_yml
 import config_path as cfg_path_yml
 
-from schedule_ml_environment import MLSchEnv
-from schedule_ml_engine import MLSchEngine
+from schedule_environment import MLSchEnv
+from schedule_engine import MLSchEngine
 from multidevices_time_estimator import MultiDeviceTimeEstimator
 from accuracy_estimator import AccuracyEstimator
 
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     mlsch_engine.build_sch_agent()
     mlsch_engine.benchmark_before_training(benchmark_num_episodes=20)
     start_time = timer()
-    mlsch_engine.train_sch_agent(num_train_iterations=100, collect_episodes_per_iteration=2, steps_num_per_batch=100,
+    mlsch_engine.train_sch_agent(num_train_iterations=100, collect_episodes_per_iteration=5, steps_num_per_batch=100,
                                  log_interval=25, include_eval=False, eval_interval=50, num_eval_episodes_for_train=15)
     end_time = timer()
     dur_time = end_time - start_time
