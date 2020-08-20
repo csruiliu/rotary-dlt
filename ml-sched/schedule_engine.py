@@ -23,8 +23,8 @@ class MLSchEngine:
         train_step_counter = tf.Variable(0)
 
         self._rl_agent = reinforce_agent.ReinforceAgent(self._mlsch_env.time_step_spec(), self._mlsch_env.action_spec(),
-                                                       actor_network=actor_net, optimizer=optimizer,
-                                                       normalize_returns=True, train_step_counter=train_step_counter)
+                                                        actor_network=actor_net, optimizer=optimizer,
+                                                        normalize_returns=True, train_step_counter=train_step_counter)
         self._rl_agent.initialize()
         self._rl_agent.train = common.function(self._rl_agent.train)
         self._rl_agent.train_step_counter.assign(0)
@@ -70,6 +70,17 @@ class MLSchEngine:
         reward = getattr(utils_reward_func, self._mlsch_env.evaluation_function())(episode_return_list)
 
         return reward
+
+    def generate_schedule(self):
+        print('generate the schedule...')
+        sch_action_list = list()
+        time_step = self._mlsch_env.reset()
+        while not time_step.is_last():
+            action_step = self._rl_agent.policy.action(time_step)
+            sch_action_list.append(action_step.action.numpy())
+            time_step = self._mlsch_env.step(action_step.action)
+
+        return sch_action_list
 
     def benchmark_before_training(self, benchmark_num_episodes=10):
         # Evaluate the agent's policy once before training.

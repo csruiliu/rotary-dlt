@@ -7,6 +7,7 @@ import config_path as cfg_path_yml
 
 from schedule_environment import MLSchEnv
 from schedule_engine import MLSchEngine
+from schedule_launcher import MLSchLauncher
 from multidevices_time_estimator import MultiDeviceTimeEstimator
 from accuracy_estimator import AccuracyEstimator
 
@@ -60,12 +61,10 @@ if __name__ == "__main__":
     np.random.seed(_rand_seed)
 
     _sch_reward_function = cfg_para_yml.sch_reward_function
-    _sch_time_limit = cfg_para_yml.sch_time_limit
     _sch_wl = generate_workload(_sch_job_num, _sch_model_type_set, _sch_batch_size_set,
                                 _sch_optimizer_set, _sch_learning_rate_set, _sch_activation_set)
 
     print("Reward Function: {}".format(_sch_reward_function))
-    print("Time Limit: {}".format(_sch_time_limit))
 
     # init schedule environment
     mlsch_env = MLSchEnv(time_slots_num=_sch_time_slots_num, gpu_device_num=_sch_gpu_device_num,
@@ -87,10 +86,15 @@ if __name__ == "__main__":
     mlsch_engine.build_sch_agent()
     mlsch_engine.benchmark_before_training(benchmark_num_episodes=20)
     start_time = timer()
-    mlsch_engine.train_sch_agent(num_train_iterations=100, collect_episodes_per_iteration=5, steps_num_per_batch=100,
+    mlsch_engine.train_sch_agent(num_train_iterations=50, collect_episodes_per_iteration=5, steps_num_per_batch=100,
                                  log_interval=25, include_eval=False, eval_interval=50, num_eval_episodes_for_train=15)
     end_time = timer()
     dur_time = end_time - start_time
     print('training time: {0}'.format(dur_time))
     final_reward = mlsch_engine.evaluate_sch_agent(eval_num_episodes=20)
     print('final reward: {0}'.format(final_reward))
+
+    sch_list = mlsch_engine.generate_schedule()
+
+    mlsch_launcher = MLSchLauncher(sch_list, _sch_wl, _sch_gpu_device_num, _sch_cpu_device_num)
+    mlsch_launcher.launch_schedule()

@@ -1,8 +1,6 @@
 from __future__ import division
 
 import tensorflow as tf
-import numpy as np
-from multiprocessing import Process
 from multiprocessing import Pool
 import argparse
 from timeit import default_timer as timer
@@ -81,7 +79,7 @@ def execParallelPreproc(pls):
             num_batch = Y_train.shape[0] // batch_size
             for e in range(num_epoch):
                 for i in range(num_batch):
-                    print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))      
+                    print('epoch %d / %d, step %d / %d' %(e+1, num_epoch, i+1, num_batch))
                     batch_offset = i * batch_size
                     batch_end = (i+1) * batch_size
                     batch_list = image_list[batch_offset:batch_end]   
