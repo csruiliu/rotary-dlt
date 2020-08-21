@@ -7,9 +7,9 @@ with open("config_path.yml", 'r') as ymlfile:
 # Path
 ##########################################
 
-#path_cfg = cfg['local_path']
+path_cfg = cfg['local_path']
 #path_cfg = cfg['roscoe_path']
-path_cfg = cfg['hp_path']
+#path_cfg = cfg['hp_path']
 
 mnist_train_img_path = path_cfg['mnist_train_img_path']
 mnist_train_label_path = path_cfg['mnist_train_label_path']

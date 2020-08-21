@@ -38,14 +38,15 @@ available_cpu_num = hyperparams_measure_cfg['available_cpu_num']
 available_gpu_num = hyperparams_measure_cfg['available_gpu_num']
 
 ##################################################
-# Hyperparameters placement schedule simulation
+# Hyperparameters placement schedule
 ##################################################
 
-placement_schedule_workload_cfg = cfg['placement_schedule_simulation']
+placement_schedule_workload_cfg = cfg['placement_schedule']
 sch_gpu_num = placement_schedule_workload_cfg['gpu_device_num']
 sch_cpu_num = placement_schedule_workload_cfg['cpu_device_num']
 sch_job_num = placement_schedule_workload_cfg['job_num']
 sch_time_slots_num = placement_schedule_workload_cfg['time_slots_num']
+sch_slot_time_period = placement_schedule_workload_cfg['slot_time_period']
 sch_model_type_set = placement_schedule_workload_cfg['model_type_set']
 sch_batch_size_set = placement_schedule_workload_cfg['batch_size_set']
 sch_optimizer_set = placement_schedule_workload_cfg['optimizer_set']
@@ -53,7 +54,6 @@ sch_learning_rate_set = placement_schedule_workload_cfg['learning_rate_set']
 sch_activation_set = placement_schedule_workload_cfg['activation_set']
 sch_reward_function = placement_schedule_workload_cfg['reward_function']
 placement_proportion_rate = placement_schedule_workload_cfg['placement_proportion_rate']
-sch_time_limit = placement_schedule_workload_cfg['timie_limit']
 
 
 ##############################################################

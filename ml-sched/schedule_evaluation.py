@@ -37,6 +37,7 @@ if __name__ == "__main__":
     _sch_cpu_device_num = cfg_para_yml.sch_cpu_num
     _sch_job_num = cfg_para_yml.sch_job_num
     _sch_time_slots_num = cfg_para_yml.sch_time_slots_num
+    _sch_slot_time_period = cfg_para_yml.sch_slot_time_period
     _sch_model_type_set = cfg_para_yml.sch_model_type_set
     _sch_batch_size_set = cfg_para_yml.sch_batch_size_set
     _sch_optimizer_set = cfg_para_yml.sch_optimizer_set
@@ -96,5 +97,5 @@ if __name__ == "__main__":
 
     sch_list = mlsch_engine.generate_schedule()
 
-    mlsch_launcher = MLSchLauncher(sch_list, _sch_wl, _sch_gpu_device_num, _sch_cpu_device_num)
+    mlsch_launcher = MLSchLauncher(sch_list, _sch_wl, _sch_gpu_device_num, _sch_cpu_device_num, _sch_slot_time_period)
     mlsch_launcher.launch_schedule()
