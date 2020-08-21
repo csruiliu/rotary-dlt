@@ -124,8 +124,8 @@ def run_single_job_cpu(model_type, model_instance, batch_size, optimizer, learni
         features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _num_channels])
         labels = tf.placeholder(tf.int64, [None, _num_classes])
 
-        train_model = ModelImporter(model_type, str(model_instance), 1, _img_height, _img_width, _num_channels, _num_classes,
-                               batch_size, optimizer, learning_rate, activation, False)
+        train_model = ModelImporter(model_type, str(model_instance), 1, _img_height, _img_width, _num_channels,
+                                    _num_classes, batch_size, optimizer, learning_rate, activation, False)
         model_entity = train_model.get_model_entity()
         model_logit = model_entity.build(features)
         train_ops = model_entity.train(model_logit, labels)

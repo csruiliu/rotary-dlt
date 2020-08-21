@@ -13,6 +13,7 @@ local_path:
   profile_path: /home/ruiliu/Development/mtml-tf/profile-result
   multidevices_time_dataset_path: /home/ruiliu/Development/mtml-tf/ml-sched/multidevices_time_dataset.json
   accuracy_dataset_path: /home/ruiliu/Development/mtml-tf/ml-sched/accuracy_dataset.json
+  ckpt_save_path: /home/ruiliu/Development/mtml-tf/ml-sched/model_ckpt/
 
 roscoe_path:
   cifar_10_path: /tank/local/ruiliu/dataset/cifar-10
@@ -29,6 +30,7 @@ roscoe_path:
   profile_path: /tank/local/ruiliu/mtml-tf/profile-result
   multidevices_time_dataset_path: /tank/local/ruiliu/mtml-tf/ml-sched/multidevices_time_dataset.json
   accuracy_dataset_path: /tank/local/ruiliu/mtml-tf/ml-sched/accuracy_dataset.json
+  ckpt_save_path: /tank/local/ruiliu/mtml-tf/ml-sched/model_ckpt/
 
 hp_path:
   cifar_10_path: /home/user/Development/dataset/cifar-10
@@ -45,6 +47,7 @@ hp_path:
   profile_path: /home/user/Development/mtml-tf/profile-result
   multidevices_time_dataset_path: /home/user/Development/mtml-tf/ml-sched/multidevices_time_dataset.json
   accuracy_dataset_path: /home/user/Development/mtml-tf/ml-sched/accuracy_dataset.json
+  ckpt_save_path: /home/user/Development/mtml-tf/ml-sched/model_ckpt/
 
 
 

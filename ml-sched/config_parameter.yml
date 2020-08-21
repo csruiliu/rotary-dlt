@@ -35,6 +35,8 @@ placement_schedule:
   time_slots_num: 15
   # time period of each slot (unit: seconds)
   slot_time_period: 2
+  # training dataset
+  train_dataset: imagenet
   # total available model type
   model_type_set:
     - mobilenet
@@ -55,7 +57,6 @@ placement_schedule:
     - relu
   # highest_accuracy, lowest_accuracy, average_accuracy
   reward_function: average_accuracy
-  placement_proportion_rate: 0.382
 
 
 profile_concur_cpugpu_workload:

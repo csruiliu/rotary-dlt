@@ -38,20 +38,17 @@ if __name__ == "__main__":
     _sch_job_num = cfg_para_yml.sch_job_num
     _sch_time_slots_num = cfg_para_yml.sch_time_slots_num
     _sch_slot_time_period = cfg_para_yml.sch_slot_time_period
+    _train_dataset = cfg_para_yml.train_dataset
     _sch_model_type_set = cfg_para_yml.sch_model_type_set
     _sch_batch_size_set = cfg_para_yml.sch_batch_size_set
     _sch_optimizer_set = cfg_para_yml.sch_optimizer_set
     _sch_learning_rate_set = cfg_para_yml.sch_learning_rate_set
     _sch_activation_set = cfg_para_yml.sch_activation_set
-    _sch_proportion_rate = cfg_para_yml.placement_proportion_rate
 
     ########################################
     # Get path parameters from config
     ########################################
 
-    _image_path_raw = cfg_path_yml.imagenet_t1k_img_path
-    _image_path_bin = cfg_path_yml.imagenet_t1k_bin_path
-    _label_path = cfg_path_yml.imagenet_t1k_label_path
     _steptime_dataset_path = cfg_path_yml.multidevices_time_dataset_path
     _accuracy_dataset_path = cfg_path_yml.accuracy_dataset_path
 
@@ -62,8 +59,8 @@ if __name__ == "__main__":
     np.random.seed(_rand_seed)
 
     _sch_reward_function = cfg_para_yml.sch_reward_function
-    _sch_wl = generate_workload(_sch_job_num, _sch_model_type_set, _sch_batch_size_set,
-                                _sch_optimizer_set, _sch_learning_rate_set, _sch_activation_set)
+    _sch_wl = generate_workload(_sch_job_num, _sch_model_type_set, _sch_batch_size_set, _sch_optimizer_set,
+                                _sch_learning_rate_set, _sch_activation_set, _train_dataset)
 
     print("Reward Function: {}".format(_sch_reward_function))
 
