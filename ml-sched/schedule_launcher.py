@@ -1,12 +1,12 @@
 import tensorflow as tf
 from multiprocessing import Pool
 from timeit import default_timer as timer
-import time
+import os
 
 import config_path as cfg_path_yml
 import config_parameter as cfg_para_yml
 from model_importer import ModelImporter
-from utils_img_func import load_imagenet_labels_onehot, load_cifar_test
+from utils_img_func import load_imagenet_labels_onehot, load_cifar_test, load_imagenet_raw
 
 
 class MLSchLauncher:
@@ -37,6 +37,8 @@ class MLSchLauncher:
 
     @staticmethod
     def run_single_job(time_limit, sch_job, sch_device):
+        proc_start_time = timer()
+
         with tf.device(sch_device):
             sch_job_id = sch_job[0]
             sch_model_type = sch_job[1]
@@ -56,8 +58,7 @@ class MLSchLauncher:
                 _img_height = cfg_para_yml.img_height_imagenet
                 _num_channels = cfg_para_yml.num_channels_rgb
                 _num_classes = cfg_para_yml.num_class_imagenet
-
-
+                train_image_list = sorted(os.listdir(_image_path_raw))
                 train_label = load_imagenet_labels_onehot(_label_path, _num_channels)
 
             elif train_dataset == 'cifar10':
@@ -70,6 +71,9 @@ class MLSchLauncher:
 
             else:
                 raise NameError('dataset cannot be found')
+
+            model_ckpt_save_path = _ckpt_path + '/' + sch_model_type + '_' + str(sch_job_id) + '/model.ckpt'
+            saver = tf.train.Saver()
 
             features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _num_channels])
             labels = tf.placeholder(tf.int64, [None, _num_classes])
@@ -87,16 +91,34 @@ class MLSchLauncher:
             tf_config.allow_soft_placement = True
 
             with tf.Session(config=tf_config) as sess:
-                sess.run(tf.global_variables_initializer())
-                num_batch = _Y_data.shape[0] // batch_size
+                if os.path.exists(model_ckpt_save_path):
+                    saver.restore(sess, model_ckpt_save_path)
+                else:
+                    sess.run(tf.global_variables_initializer())
 
-            proc_start_time = timer()
-            proc_dur_time = 0
+                num_batch = train_label.shape[0] // sch_batch_size
 
-            while proc_dur_time < time_limit:
-                time.sleep(1)
-                proc_end_time = timer()
-                proc_dur_time = proc_end_time - proc_start_time
+                epoch_count = 0
+                while True:
+                    for i in range(num_batch):
+                        print('*JOB at {0}*: job id {1}, model {2}-{3}, step {4}, epoch {5}'.format(sch_device, sch_job_id,
+                                                                                                    sch_model_type, sch_batch_size,
+                                                                                                    i, epoch_count))
 
-            print('finish job:{0} at device {1}'.format(sch_job, sch_device))
+                        batch_offset = i * sch_batch_size
+                        batch_end = (i + 1) * sch_batch_size
+                        batch_list = train_image_list[batch_offset:batch_end]
+                        X_mini_batch_feed = load_imagenet_raw(_image_path_raw, batch_list, _img_height, _img_width)
+                        Y_mini_batch_feed = train_label[batch_offset:batch_end, :]
+                        sess.run(train_ops, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+
+                        proc_end_time = timer()
+                        proc_dur_time = proc_end_time - proc_start_time
+                        if proc_dur_time > time_limit:
+                            saver.save(sess, model_ckpt_save_path)
+                            print('==============================================')
+                            print('finish job {0} at device {1}'.format(sch_job, sch_device))
+                            return
+
+                    epoch_count += 1
 
