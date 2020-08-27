@@ -1,4 +1,3 @@
-import numpy as np
 import tensorflow as tf
 import argparse
 
@@ -87,9 +86,6 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--opt', required=True, action='store', choices=['SGD', 'Adam', 'Adagrad', 'Momentum'],
                         help='training opt [Adam, SGD, Adagrad, Momentum]')
 
-    parser.add_argument('-l', '--conv_layer', required=True, action='store', type=int,
-                        help='number of training conv layer, for example, 1, 2, 3')
-
     parser.add_argument('-r', '--learn_rate', required=True, action='store', type=float,
                         help='learning rate, for example, 0.01, 0.001, 0.0001')
 
@@ -97,7 +93,15 @@ if __name__ == '__main__':
                         choices=['relu', 'sigmoid', 'tanh', 'leaky_relu'],
                         help='activation, for example, relu, sigmoid, tanh, leaky_relu')
 
+    parser.add_argument('-l', '--conv_layer', action='store', type=int,
+                        help='number of training conv layer, for example, 1, 2, 3')
+    parser.add_argument('--raw_data', action='store_true', help='use raw data to train not binary')
+
     args = parser.parse_args()
+    if args.dataset in ['cifar10'] and args.raw_data:
+        parser.error('--raw-format can only be set when train_set=[imagenet]')
+    if args.model not in ['mlp', 'scn'] and args.conv_layer:
+        parser.error('--layer_number can only be set when model_type=[mlp, scn]')
 
     train_data = args.dataset
     train_model = args.model
