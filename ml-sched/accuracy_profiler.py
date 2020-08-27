@@ -108,7 +108,7 @@ if __name__ == '__main__':
     if args.model not in ['mlp', 'scn'] and args.conv_layer:
         parser.error('--layer_number can only be set when model_type=[mlp, scn]')
 
-    train_data = args.dataset
+    train_data = args.train_set
     train_model = args.model
     train_batchsize = args.batchsize
     train_epoch = args.epoch
@@ -135,8 +135,8 @@ if __name__ == '__main__':
         input_data_channel = 3
         output_class = 1000
 
-        train_image_path = cfg_path_yml.imagenet_t10k_bin_path
-        train_label_path = cfg_path_yml.imagenet_t10k_label_path
+        train_image_path = cfg_path_yml.imagenet_t50k_bin_path
+        train_label_path = cfg_path_yml.imagenet_t50k_label_path
         test_image_path = cfg_path_yml.imagenet_t1k_bin_path
         test_label_path = cfg_path_yml.imagenet_t1k_label_path
 
