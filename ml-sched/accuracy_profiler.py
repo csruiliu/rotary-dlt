@@ -8,50 +8,53 @@ from utils_img_func import *
 
 
 def build_model():
-    model_name_abbr = np.random.choice(rand_seed, 1, replace=False).tolist()
-    dm = ModelImporter(train_model, str(model_name_abbr.pop()), train_conv_layer, img_height, img_width, num_channels,
-                       num_classes, train_batchsize, train_opt, train_learn_rate, train_activation, False)
-    model_entity = dm.get_model_entity()
-    model_logit = model_entity.build(features)
-    conv_layer_num, pool_layer_num, total_layer_num = model_entity.get_layer_info()
+    with tf.device(train_device):
+        model_name_abbr = np.random.choice(rand_seed, 1, replace=False).tolist()
+        dm = ModelImporter(train_model, str(model_name_abbr.pop()), train_conv_layer, img_height, img_width, num_channels,
+                           num_classes, train_batchsize, train_opt, train_learn_rate, train_activation, False)
+        model_entity = dm.get_model_entity()
+        model_logit = model_entity.build(features)
+        conv_layer_num, pool_layer_num, total_layer_num = model_entity.get_layer_info()
 
-    model_name_output = '{}-{}-{}-{}-{}-{}-{}-{}-{}-{}-{}'.format(input_data_size, input_data_channel, output_class,
-                                                                  train_batchsize, conv_layer_num, pool_layer_num,
-                                                                  total_layer_num, train_learn_rate, train_opt,
-                                                                  train_activation, train_epoch)
-    train_step = model_entity.train(model_logit, labels)
-    eval_step = model_entity.evaluate(model_logit, labels)
+        model_name_output = '{}-{}-{}-{}-{}-{}-{}-{}-{}-{}-{}'.format(input_data_size, input_data_channel, output_class,
+                                                                      train_batchsize, conv_layer_num, pool_layer_num,
+                                                                      total_layer_num, train_learn_rate, train_opt,
+                                                                      train_activation, train_epoch)
+        train_step = model_entity.train(model_logit, labels)
+        eval_step = model_entity.evaluate(model_logit, labels)
     return train_step, eval_step, model_name_output
 
 
 def run_train_model(trainOp):
-    config = tf.ConfigProto()
-    config.allow_soft_placement = True
-    config.gpu_options.allow_growth = True
-    with tf.Session(config=config) as sess:
-        sess.run(tf.global_variables_initializer())
-        num_batch = Y_data.shape[0] // train_batchsize
+    with tf.device(train_device):
+        config = tf.ConfigProto()
+        config.allow_soft_placement = True
+        config.gpu_options.allow_growth = True
+        with tf.Session(config=config) as sess:
+            sess.run(tf.global_variables_initializer())
+            num_batch = Y_data.shape[0] // train_batchsize
 
-        for e in range(train_epoch):
-            for i in range(num_batch):
-                print('epoch {} / {}, step {} / {}'.format(e+1, train_epoch, i+1, num_batch))
-                batch_offset = i * train_batchsize
-                batch_end = (i+1) * train_batchsize
-                X_mini_batch_feed = X_data[batch_offset:batch_end, :, :, :]
-                Y_mini_batch_feed = Y_data[batch_offset:batch_end, :]
-                sess.run(trainOp, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+            for e in range(train_epoch):
+                for i in range(num_batch):
+                    print('epoch {} / {}, step {} / {}'.format(e+1, train_epoch, i+1, num_batch))
+                    batch_offset = i * train_batchsize
+                    batch_end = (i+1) * train_batchsize
+                    X_mini_batch_feed = X_data[batch_offset:batch_end, :, :, :]
+                    Y_mini_batch_feed = Y_data[batch_offset:batch_end, :]
+                    sess.run(trainOp, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
     print('Finish training model')
 
 
 def run_eval_model(evalOp, model_info):
     print('start evaluating model')
-    config = tf.ConfigProto()
-    config.allow_soft_placement = True
-    config.gpu_options.allow_growth = True
-    with tf.Session(config=config) as sess:
-        sess.run(tf.global_variables_initializer())
-        acc_arg = sess.run(evalOp, feed_dict={features: X_data_eval, labels: Y_data_eval})
+    with tf.device(train_device):
+        config = tf.ConfigProto()
+        config.allow_soft_placement = True
+        config.gpu_options.allow_growth = True
+        with tf.Session(config=config) as sess:
+            sess.run(tf.global_variables_initializer())
+            acc_arg = sess.run(evalOp, feed_dict={features: X_data_eval, labels: Y_data_eval})
 
     print("{{\"model_name\": \"{}\", \"model_accuracy\": {}}}".format(model_info, acc_arg))
 
@@ -77,7 +80,7 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--batchsize', required=True, action='store', type=int,
                         help='batch size, for example: 32, 50, 100]')
 
-    parser.add_argument('-d', '--dataset', required=True, action='store', choices=['imagenet', 'cifar10'],
+    parser.add_argument('-t', '--train_set', required=True, action='store', choices=['imagenet', 'cifar10'],
                         help='training set [imagenet, cifar10]')
 
     parser.add_argument('-e', '--epoch', required=True, action='store', type=int,
@@ -96,9 +99,11 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--conv_layer', action='store', type=int,
                         help='number of training conv layer, for example, 1, 2, 3')
     parser.add_argument('--raw_data', action='store_true', help='use raw data to train not binary')
+    parser.add_argument('-d', '--device', action='store', type=str, default='/GPU:0', choices=['/GPU:0', '/GPU:1'],
+                        help='select a device to run device')
 
     args = parser.parse_args()
-    if args.dataset in ['cifar10'] and args.raw_data:
+    if args.train_set in ['cifar10'] and args.raw_data:
         parser.error('--raw-format can only be set when train_set=[imagenet]')
     if args.model not in ['mlp', 'scn'] and args.conv_layer:
         parser.error('--layer_number can only be set when model_type=[mlp, scn]')
@@ -111,6 +116,7 @@ if __name__ == '__main__':
     train_conv_layer = args.conv_layer
     train_learn_rate = args.learn_rate
     train_activation = args.activation
+    train_device = args.device
 
     train_op = None
     eval_op = None
