@@ -109,22 +109,21 @@ if __name__ == '__main__':
 
     parser.add_argument('-l', '--conv_layer', action='store', type=int,
                         help='number of training conv layer, for example, 1, 2, 3')
-    parser.add_argument('--raw_data', action='store_true', help='use raw data to train not binary')
+
     parser.add_argument('-d', '--device', action='store', type=str, default='/GPU:0', choices=['/GPU:0', '/GPU:1'],
                         help='select a device to run device')
 
     args = parser.parse_args()
-    if args.train_set in ['cifar10'] and args.raw_data:
-        parser.error('--raw-format can only be set when train_set=[imagenet]')
     if args.model not in ['mlp', 'scn'] and args.conv_layer:
-        parser.error('--layer_number can only be set when model_type=[mlp, scn]')
+        train_conv_layer = args.conv_layer
+    else:
+        train_conv_layer = 1
 
     train_data = args.train_set
     train_model = args.model
     train_batchsize = args.batchsize
     train_epoch = args.epoch
     train_opt = args.opt
-    train_conv_layer = args.conv_layer
     train_learn_rate = args.learn_rate
     train_activation = args.activation
     train_device = args.device

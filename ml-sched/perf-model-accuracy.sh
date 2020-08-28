@@ -1,13 +1,14 @@
 #!/bin/bash
 
-MODEL_LIST="mobilenet resnet densenet mlp scn"
+MODEL_LIST="mobilenet"
 BATCHSIZE_LIST="50"
-TRAINSET_LIST="imagenet"
+TRAINSET_LIST="cifar10"
 EPOCH_LIST="10"
 OPT_LIST="Adagrad"
 CONV_LAYER_NUM_LIST="8"
 LEARN_RATE_LIST="0.001"
 ACTIVATION_LIST="relu"
+DEVICE='/GPU:0'
 
 #MODEL_LIST="mobilenet resnet densenet mlp scn"
 #BATCHSIZE_LIST="32 50 64 100"
@@ -17,6 +18,7 @@ ACTIVATION_LIST="relu"
 #CONV_LAYER_NUM_LIST="1 2 4 8"
 #LEARN_RATE_LIST="0.01 0.001 0.0001 0.00001"
 #ACTIVATION_LIST="relu leaky_relu tanh sigmoid"
+#DEVICE='/GPU:0'
 
 REPEAT=2
 FOLDER="exp-accuracy-results"
@@ -52,7 +54,7 @@ do
                   echo "########################################" >> ./${FOLDER}/${CASE}-REPEAT${i}.txt
                   echo "================EXP ${i}================" >> ./${FOLDER}/${CASE}-REPEAT${i}.txt
                   echo "########################################" >> ./${FOLDER}/${CASE}-REPEAT${i}.txt
-                  python3 accuracy_profiler.py -m ${midx} -b ${bidx} -d ${tidx} -e ${eidx} -o ${oidx} -l ${lidx} -r ${ridx} -a ${aidx} >> ./${FOLDER}/${CASE}-REPEAT${i}.txt
+                  python3 accuracy_profiler.py -m ${midx} -b ${bidx} -t ${tidx} -e ${eidx} -o ${oidx} -l ${lidx} -r ${ridx} -a ${aidx} -d ${DEVICE} >> ./${FOLDER}/${CASE}-REPEAT${i}.txt
                 done
                 LEN=0
                 SUM=0
