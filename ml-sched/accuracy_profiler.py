@@ -32,7 +32,9 @@ def run_train_model(trainOp):
         config.allow_soft_placement = True
         config.gpu_options.allow_growth = True
 
-        image_list = sorted(os.listdir(train_image_raw_path))
+        if train_data == 'imagenet':
+            image_list = sorted(os.listdir(imagenet_train_img_path))
+
         with tf.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
             num_batch = Y_data.shape[0] // train_batchsize
@@ -42,8 +44,13 @@ def run_train_model(trainOp):
                     print('epoch {} / {}, step {} / {}'.format(e+1, train_epoch, i+1, num_batch))
                     batch_offset = i * train_batchsize
                     batch_end = (i+1) * train_batchsize
-                    batch_list = image_list[batch_offset:batch_end]
-                    X_mini_batch_feed = load_imagenet_raw(train_image_raw_path, batch_list, img_height, img_width)
+
+                    if train_data == 'imagenet':
+                        batch_list = image_list[batch_offset:batch_end]
+                        X_mini_batch_feed = load_imagenet_raw(imagenet_test_img_raw_path, batch_list, img_height, img_width)
+                    else:
+                        X_mini_batch_feed = X_data[batch_offset:batch_end, :, :, :]
+
                     Y_mini_batch_feed = Y_data[batch_offset:batch_end, :]
                     sess.run(trainOp, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
@@ -139,16 +146,16 @@ if __name__ == '__main__':
         input_data_channel = 3
         output_class = 1000
 
-        train_image_raw_path = cfg_path_yml.imagenet_t50k_img_raw_path
-        train_label_path = cfg_path_yml.imagenet_t50k_img_label_path
+        imagenet_train_img_path = cfg_path_yml.imagenet_t50k_img_raw_path
+        imagenet_train_label_path = cfg_path_yml.imagenet_t50k_img_label_path
 
-        test_image_raw_path = cfg_path_yml.imagenet_t1k_img_raw_path
-        test_image_bin_path = cfg_path_yml.imagenet_t1k_img_bin_path
-        test_label_path = cfg_path_yml.imagenet_t1k_label_path
+        imagenet_test_img_raw_path = cfg_path_yml.imagenet_t1k_img_raw_path
+        imagenet_test_img_bin_path = cfg_path_yml.imagenet_t1k_img_bin_path
+        imagenet_test_label_path = cfg_path_yml.imagenet_t1k_label_path
 
-        Y_data = load_imagenet_labels_onehot(train_label_path, num_classes)
-        X_data_eval = load_imagenet_bin(test_image_bin_path, num_channels, img_width, img_height)
-        Y_data_eval = load_imagenet_labels_onehot(test_label_path, num_classes)
+        Y_data = load_imagenet_labels_onehot(imagenet_train_label_path, num_classes)
+        X_data_eval = load_imagenet_bin(imagenet_test_img_bin_path, num_channels, img_width, img_height)
+        Y_data_eval = load_imagenet_labels_onehot(imagenet_test_label_path, num_classes)
 
     elif train_data == 'cifar10':
         print('train the model on cifar10')
