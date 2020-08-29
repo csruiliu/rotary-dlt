@@ -159,37 +159,32 @@ class resnet(object):
 
             return logit
 
-    def train(self, logits, input_labels):
+    def train(self, logits, train_labels):
         if self.batch_padding:
-            batch_labels = input_labels[0:self.batch_size, :]
+            batch_labels = train_labels[0:self.batch_size, :]
         else:
-            batch_labels = input_labels
+            batch_labels = train_labels
 
-        with tf.name_scope('loss_'+self.net_name):
-            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=batch_labels, logits=logits)
-            cross_entropy_cost = tf.reduce_mean(cross_entropy)
-
-        with tf.name_scope(self.opt + '_' + self.net_name):
-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope=self.net_name + '_instance')
-            with tf.control_dependencies(update_ops):
-                if self.opt == 'Adam':
-                    self.train_op = tf.train.AdamOptimizer(self.learning_rate).minimize(cross_entropy_cost)
-                elif self.opt == 'SGD':
-                    self.train_op = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(cross_entropy_cost)
-                elif self.opt == 'Adagrad':
-                    self.train_op = tf.train.AdagradOptimizer(self.learning_rate).minimize(cross_entropy_cost)
-                elif self.opt == 'Momentum':
-                    self.train_op = tf.train.MomentumOptimizer(self.learning_rate, 0.9).minimize(cross_entropy_cost)
+        cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=batch_labels, logits=logits)
+        cross_entropy_cost = tf.reduce_mean(cross_entropy)
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope=self.net_name + '_instance')
+        with tf.control_dependencies(update_ops):
+            if self.opt == 'Adam':
+                self.train_op = tf.train.AdamOptimizer(self.learning_rate).minimize(cross_entropy_cost)
+            elif self.opt == 'SGD':
+                self.train_op = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(cross_entropy_cost)
+            elif self.opt == 'Adagrad':
+                self.train_op = tf.train.AdagradOptimizer(self.learning_rate).minimize(cross_entropy_cost)
+            elif self.opt == 'Momentum':
+                self.train_op = tf.train.MomentumOptimizer(self.learning_rate, 0.9).minimize(cross_entropy_cost)
 
         return self.train_op
 
     def evaluate(self, logits, eval_labels):
-        with tf.name_scope('eval_' + self.net_name):
-            pred = tf.nn.softmax(logits)
-            correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(eval_labels, 1))
-            self.eval_op = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+        prediction = tf.equal(tf.argmax(logits, -1), tf.argmax(eval_labels, -1))
+        self.train_op = tf.reduce_mean(tf.cast(prediction, tf.float32))
 
-        return self.eval_op
+        return self.train_op
 
     def get_residual_layer(self):
         if self.residual_layer == 18:
