@@ -8,7 +8,7 @@ import tensorflow as tf
 def activation_function(logit, act_name):
     new_logit = None
     if act_name == 'relu':
-        new_logit = tf.nn.relu6(logit, 'relu6')
+        new_logit = tf.nn.relu(logit, 'relu')
     elif act_name == 'leaky_relu':
         new_logit = tf.nn.leaky_relu(logit, 'leaky_relu')
     elif act_name == 'tanh':

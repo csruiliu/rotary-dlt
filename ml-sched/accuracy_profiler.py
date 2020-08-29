@@ -11,13 +11,13 @@ from utils_img_func import *
 def build_model():
     with tf.device(train_device):
         model_name_abbr = np.random.choice(rand_seed, 1, replace=False).tolist()
-        dm = ModelImporter(train_model, str(model_name_abbr.pop()), train_conv_layer, img_height, img_width, num_channels,
+        dm = ModelImporter(train_model, str(model_name_abbr.pop()), train_layer, img_height, img_width, num_channels,
                            num_classes, train_batchsize, train_opt, train_learn_rate, train_activation, False)
         model_entity = dm.get_model_entity()
-        model_logit = model_entity.build(features)
+        model_logit = model_entity.build(input_features=features, is_training=True)
         conv_layer_num, pool_layer_num, total_layer_num = model_entity.get_layer_info()
 
-        model_name_output = '{}-{}-{}-{}-{}-{}-{}-{}-{}-{}-{}'.format(input_data_size, input_data_channel, output_class,
+        model_name_output = '{}-{}-{}-{}-{}-{}-{}-{}-{}-{}-{}'.format(input_data_size, num_channels, num_classes,
                                                                       train_batchsize, conv_layer_num, pool_layer_num,
                                                                       total_layer_num, train_learn_rate, train_opt,
                                                                       train_activation, train_epoch)
@@ -65,7 +65,7 @@ def run_eval_model(evalOp, model_info):
         config.gpu_options.allow_growth = True
         with tf.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
-            acc_arg = sess.run(evalOp, feed_dict={features: X_data_eval, labels: Y_data_eval})
+            acc_arg = sess.run(evalOp, feed_dict={features: X_data[0:1000,:,:,:], labels: Y_data[0:1000]})
 
     print("{{\"model_name\": \"{}\", \"model_accuracy\": {}}}".format(model_info, acc_arg))
 
@@ -107,20 +107,22 @@ if __name__ == '__main__':
                         choices=['relu', 'sigmoid', 'tanh', 'leaky_relu'],
                         help='activation, for example, relu, sigmoid, tanh, leaky_relu')
 
-    parser.add_argument('-l', '--conv_layer', action='store', type=int,
-                        help='number of training conv layer, for example, 1, 2, 3')
+    parser.add_argument('-l', '--layer', action='store', type=int,
+                        help='the number of layer decides a model, for example, the layer is 50 for resnet-50')
 
     parser.add_argument('-d', '--device', action='store', type=str, default='/GPU:0', choices=['/GPU:0', '/GPU:1'],
                         help='select a device to run device')
 
     args = parser.parse_args()
-    if args.model not in ['mlp', 'scn'] and args.conv_layer:
-        train_conv_layer = args.conv_layer
-    else:
-        train_conv_layer = 1
+
+    #if args.model not in ['mlp', 'scn'] and args.conv_layer:
+    #    train_conv_layer = args.conv_layer
+    #else:
+    #    train_conv_layer = 1
 
     train_data = args.train_set
     train_model = args.model
+    train_layer = args.layer
     train_batchsize = args.batchsize
     train_epoch = args.epoch
     train_opt = args.opt
@@ -142,8 +144,6 @@ if __name__ == '__main__':
         num_channels = cfg_para_yml.num_channels_rgb
         num_classes = cfg_para_yml.num_class_imagenet
         input_data_size = 224
-        input_data_channel = 3
-        output_class = 1000
 
         imagenet_train_img_path = cfg_path_yml.imagenet_t50k_img_raw_path
         imagenet_train_label_path = cfg_path_yml.imagenet_t50k_img_label_path
@@ -163,8 +163,6 @@ if __name__ == '__main__':
         num_channels = cfg_para_yml.num_channels_rgb
         num_classes = cfg_para_yml.num_class_cifar10
         input_data_size = 32
-        input_data_channel = 3
-        output_class = 10
 
         cifar10_path = cfg_path_yml.cifar_10_path
         X_data, Y_data = load_cifar_train(cifar10_path, rand_seed)
@@ -177,8 +175,6 @@ if __name__ == '__main__':
         num_channels = cfg_para_yml.num_channels_bw
         num_classes = cfg_para_yml.num_class_mnist
         input_data_size = 28
-        input_data_channel = 1
-        output_class = 10
 
         mnist_train_img_path = cfg_path_yml.mnist_train_img_path
         mnist_train_label_path = cfg_path_yml.mnist_train_label_path

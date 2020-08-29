@@ -1,13 +1,13 @@
 import tensorflow as tf
+import tensorflow.contrib as tf_contrib
 from utils_model_func import activation_function
 
 
-# ResNet-50
 class resnet(object):
     def __init__(self, net_name, num_layer, input_h, input_w, num_channel, num_classes, batch_size, opt,
                  learning_rate=0.0001, activation='relu', batch_padding=False):
         self.net_name = net_name
-        self.num_layer = num_layer
+        self.residual_layer = num_layer
         self.img_h = input_h
         self.img_w = input_w
         self.channel_num = num_channel
@@ -17,157 +17,156 @@ class resnet(object):
         self.learning_rate = learning_rate
         self.activation = activation
         self.batch_padding = batch_padding
+
+        self.residual_layer_list = list()
         self.model_logit = None
         self.train_op = None
         self.eval_op = None
+
         self.num_conv_layer = 0
         self.num_pool_layer = 0
         self.num_total_layer = 0
 
-    def add_layer_num(self, layer_type, layer_num):
-        if layer_type == 'pool':
-            self.num_pool_layer += layer_num
-            self.num_total_layer += layer_num
-        elif layer_type == 'conv':
-            self.num_conv_layer += layer_num
-            self.num_total_layer += layer_num
-        elif layer_type == 'total':
-            self.num_total_layer += layer_num
+        self.weight_init = tf_contrib.layers.variance_scaling_initializer()
+        self.weight_regularizer = tf_contrib.layers.l2_regularizer(0.0001)
 
-    def weight_variable(self, w_name, shape):
+    def conv_layer(self, x_input, filters, kernel=4, stride=2, padding='SAME', use_bias=True, scope='conv_0'):
+        with tf.variable_scope(scope):
+            layer = tf.layers.conv2d(inputs=x_input, filters=filters, kernel_size=kernel,
+                                     kernel_initializer=self.weight_init, strides=stride, use_bias=use_bias,
+                                     padding=padding)
+            self.add_layer_num('conv', 1)
+            self.add_layer_num('total', 1)
+            return layer
+
+    def fully_conneted_layer(self, x_input, units, use_bias=True, scope='fully_0'):
+        with tf.variable_scope(scope):
+            layer = tf.layers.flatten(x_input)
+            layer = tf.layers.dense(layer, units=units, kernel_initializer=self.weight_init,
+                                    kernel_regularizer=self.weight_regularizer, use_bias=use_bias)
+            self.add_layer_num('total', 2)
+            return layer
+
+    def relu_layer(self, x_input):
+        self.add_layer_num('total', 1)
+        return tf.nn.relu(x_input)
+
+    def global_avg_pooling(self, x_input):
+        self.add_layer_num('total', 1)
+        gap = tf.reduce_mean(x_input, axis=[1, 2], keepdims=True)
+        return gap
+
+    def batch_norm_layer(self, x_input, is_training=True, scope='batch_norm'):
+        self.add_layer_num('total', 1)
+        return tf_contrib.layers.batch_norm(x_input, decay=0.9, epsilon=1e-05, center=True, scale=True,
+                                            updates_collections=None, is_training=is_training, scope=scope)
+
+    @staticmethod
+    def weight_variable(w_name, shape):
         init_w = tf.truncated_normal_initializer(stddev=0.1)
         return tf.get_variable(name=w_name, dtype=tf.float32, shape=shape, initializer=init_w)
 
-    def identity_block(self, X_input, kernel_size, in_filter, out_filters, stage, block, training):
-        f1, f2, f3 = out_filters
-        with tf.variable_scope('resnet_' + stage + '_' + block):
-            X_shortcut = X_input
+    def residual_block(self, x_init, filters, is_training=True, use_bias=True, downsample=False, scope='resblock'):
+        with tf.variable_scope(scope):
+            x = self.batch_norm_layer(x_init, is_training, scope='batch_norm_0')
+            x = self.relu_layer(x)
 
-            W_conv1 = self.weight_variable('w_conv1', [1, 1, in_filter, f1])
-            X = tf.nn.conv2d(X_input, W_conv1, strides=[1, 1, 1, 1], padding='SAME')
-            self.add_layer_num('conv', 1)
-            X = tf.layers.batch_normalization(X, axis=3, training=training)
-            self.add_layer_num('total', 1)
-            X = activation_function(X, self.activation)
+            if downsample:
+                x = self.conv_layer(x, filters, kernel=3, stride=2, use_bias=use_bias, scope='conv_0')
+                x_init = self.conv_layer(x_init, filters, kernel=1, stride=2, use_bias=use_bias, scope='conv_init')
+            else:
+                x = self.conv_layer(x, filters, kernel=3, stride=1, use_bias=use_bias, scope='conv_0')
 
-            W_conv2 = self.weight_variable('w_conv2', [kernel_size, kernel_size, f1, f2])
-            X = tf.nn.conv2d(X, W_conv2, strides=[1, 1, 1, 1], padding='SAME')
-            self.add_layer_num('conv', 1)
-            X = tf.layers.batch_normalization(X, axis=3, training=training)
-            self.add_layer_num('total', 1)
-            X = activation_function(X, self.activation)
+            x = self.batch_norm_layer(x, is_training, scope='batch_norm_1')
+            x = self.relu_layer(x)
+            x = self.conv_layer(x, filters, kernel=3, stride=1, use_bias=use_bias, scope='conv_1')
 
-            W_conv3 = self.weight_variable('w_conv3', [1, 1, f2, f3])
-            X = tf.nn.conv2d(X, W_conv3, strides=[1, 1, 1, 1], padding='VALID')
-            self.add_layer_num('conv', 1)
-            X = tf.layers.batch_normalization(X, axis=3, training=training)
-            self.add_layer_num('total', 1)
+            return x + x_init
 
-            add = tf.add(X, X_shortcut)
-            add_result = activation_function(add, self.activation)
+    def bottle_residual_block(self, x_init, filters, is_training=True, use_bias=True, downsample=False,
+                              scope='bottle_resblock'):
+        with tf.variable_scope(scope):
+            x = self.batch_norm_layer(x_init, is_training, scope='batch_norm_1x1_front')
+            shortcut = tf.nn.relu(x)
 
-        return add_result
+            x = self.conv_layer(shortcut, filters, kernel=1, stride=1, use_bias=use_bias, scope='conv_1x1_front')
+            x = self.batch_norm_layer(x, is_training, scope='batch_norm_3x3')
+            x = self.relu_layer(x)
 
-    def conv_block(self, X_input, kernel_size, in_filter, out_filters, stage, block, training, stride):
-        f1, f2, f3 = out_filters
-        with tf.variable_scope('resnet' + stage + '_' + block):
-            x_shortcut = X_input
+            if downsample:
+                x = self.conv_layer(x, filters, kernel=3, stride=2, use_bias=use_bias, scope='conv_0')
+                shortcut = self.conv_layer(shortcut, filters*4, kernel=1, stride=2, use_bias=use_bias, scope='conv_init')
+            else:
+                x = self.conv_layer(x, filters, kernel=3, stride=1, use_bias=use_bias, scope='conv_0')
+                shortcut = self.conv_layer(shortcut, filters*4, kernel=1, stride=1, use_bias=use_bias, scope='conv_init')
 
-            W_conv1 = self.weight_variable('w_conv1',[1, 1, in_filter, f1])
-            
-            X = tf.nn.conv2d(X_input, W_conv1, strides=[1, stride, stride, 1], padding='VALID')
-            self.add_layer_num('conv', 1)
-            X = tf.layers.batch_normalization(X, axis=3, training=training)
-            self.add_layer_num('total', 1)
-            X = activation_function(X, self.activation)
+            x = self.batch_norm_layer(x, is_training, scope='batch_norm_1x1_back')
+            x = self.relu_layer(x)
+            x = self.conv_layer(x, filters*4, kernel=1, stride=1, use_bias=use_bias, scope='conv_1x1_back')
 
-            W_conv2 = self.weight_variable('w_conv2',[kernel_size, kernel_size, f1, f2])
-            X = tf.nn.conv2d(X, W_conv2, strides=[1, 1, 1, 1], padding='SAME')
-            self.add_layer_num('conv', 1)
-            X = tf.layers.batch_normalization(X, axis=3, training=training)
-            self.add_layer_num('total', 1)
-            X = activation_function(X, self.activation)
+            return x + shortcut
 
-            W_conv3 = self.weight_variable('w_conv3', [1, 1, f2, f3])
-            X = tf.nn.conv2d(X, W_conv3, strides=[1, 1, 1, 1], padding='VALID')
-            self.add_layer_num('conv', 1)
-            X = tf.layers.batch_normalization(X, axis=3, training=training)
-            self.add_layer_num('total', 1)
-
-            W_shortcut = self.weight_variable('w_shortcut', [1, 1, in_filter, f3])
-            x_shortcut = tf.nn.conv2d(x_shortcut, W_shortcut, strides=[1, stride, stride, 1], padding='VALID')
-            self.add_layer_num('conv', 1)
-
-            add = tf.add(x_shortcut, X)
-            add_result = activation_function(add, self.activation)
-
-        return add_result
-
-    def build(self, input):
-        training = True
-        keep_prob = 0.5
+    def build(self, input_features, is_training):
         if self.batch_padding:
-            input = input[0:self.batch_size, :, :, :]
+            train_input = input_features[0:self.batch_size, :, :, :]
+        else:
+            train_input = input_features
 
         with tf.variable_scope(self.net_name + '_instance'):
-            x = tf.pad(input, tf.constant([[0, 0], [3, 3, ], [3, 3], [0, 0]]), "CONSTANT")
-            w_conv1 = self.weight_variable('w_conv1', [7, 7, 3, 64])
-            x = tf.nn.conv2d(x, w_conv1, strides=[1, 2, 2, 1], padding='VALID')
-            self.add_layer_num('conv', 1)
-            x = tf.layers.batch_normalization(x, axis=3, training=training)
-            self.add_layer_num('total', 1)
-            x = activation_function(x, self.activation)
-            x = tf.nn.max_pool(x, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID')
-            self.add_layer_num('pool', 1)
+            if self.residual_layer < 50:
+                residual_block = self.residual_block
+            else:
+                residual_block = self.bottle_residual_block
 
-            #stage 64
-            x = self.conv_block(x, 3, 64, [64, 64, 256], stage='stage64', block='conv_block', training=training, stride=1)
-            x = self.identity_block(x, 3, 256, [64, 64, 256], stage='stage64', block='identity_block1', training=training)
-            x = self.identity_block(x, 3, 256, [64, 64, 256], stage='stage64', block='identity_block2', training=training)
+            self.get_residual_layer()
+            ch = 32
 
-            #stage 128
-            x = self.conv_block(x, 3, 256, [128, 128, 512], stage='stage128', block='conv_block', training=training, stride=2)
-            x = self.identity_block(x, 3, 512, [128, 128, 512], stage='stage128', block='identity_block1', training=training)
-            x = self.identity_block(x, 3, 512, [128, 128, 512], stage='stage128', block='identity_block2', training=training)
-            x = self.identity_block(x, 3, 512, [128, 128, 512], stage='stage128', block='identity_block3', training=training)
+            ########################################################################################################
 
-            #stage 256
-            x = self.conv_block(x, 3, 512, [256, 256, 1024], stage='stage256', block='conv_block', training=training, stride=2)
-            x = self.identity_block(x, 3, 1024, [256, 256, 1024], stage='stage256', block='identity_block1', training=training)
-            x = self.identity_block(x, 3, 1024, [256, 256, 1024], stage='stage256', block='identity_block2', training=training)
-            x = self.identity_block(x, 3, 1024, [256, 256, 1024], stage='stage256', block='identity_block3', training=training)
-            x = self.identity_block(x, 3, 1024, [256, 256, 1024], stage='stage256', block='identity_block4', training=training)
-            x = self.identity_block(x, 3, 1024, [256, 256, 1024], stage='stage256', block='identity_block5', training=training)
+            x = self.conv_layer(train_input, filters=ch, kernel=3, stride=1, scope='conv')
 
-            #stage 512
-            x = self.conv_block(x, 3, 1024, [512, 512, 2048], stage='stage512', block='conv_block', training=training, stride=2)
-            x = self.identity_block(x, 3, 2048, [512, 512, 2048], stage='stage512', block='identity_block1', training=training)
-            x = self.identity_block(x, 3, 2048, [512, 512, 2048], stage='stage512', block='identity_block2', training=training)
+            for i in range(self.residual_layer_list[0]):
+                x = residual_block(x, filters=ch, is_training=is_training, downsample=False, scope='resblock0_'+str(i))
 
-            avg_pool_size = int(self.img_h // 32)
+            ########################################################################################################
 
-            x = tf.nn.avg_pool(x, [1, avg_pool_size, avg_pool_size, 1], strides=[1, 1, 1, 1], padding='VALID')
-            self.add_layer_num('pool', 1)
+            x = residual_block(x, filters=ch*2, is_training=is_training, downsample=True, scope='resblock1_0')
 
-            flatten = tf.layers.flatten(x)
-            self.add_layer_num('total', 1)
-            x = tf.layers.dense(flatten, units=50, activation=tf.nn.relu)
-            self.add_layer_num('total', 1)
+            for i in range(1, self.residual_layer_list[1]):
+                x = residual_block(x, filters=ch*2, is_training=is_training, downsample=False, scope='resblock1_'+str(i))
 
-            with tf.name_scope('dropout'):
-                x = tf.nn.dropout(x, keep_prob)
+            ########################################################################################################
 
-            self.model_logit = tf.layers.dense(x, units=self.num_classes, activation=tf.nn.softmax)
-            self.add_layer_num('total', 1)
+            x = residual_block(x, filters=ch*4, is_training=is_training, downsample=True, scope='resblock2_0')
 
-        return self.model_logit
+            for i in range(1, self.residual_layer_list[2]):
+                x = residual_block(x, filters=ch*4, is_training=is_training, downsample=False, scope='resblock2_'+str(i))
 
-    def train(self, logits, labels):
-        if self.batch_padding == True:
-            labels = labels[0:self.batch_size, :]
+            ########################################################################################################
+
+            x = residual_block(x, filters=ch*8, is_training=is_training, downsample=True, scope='resblock_3_0')
+
+            for i in range(1, self.residual_layer_list[3]):
+                x = residual_block(x, filters=ch * 8, is_training=is_training, downsample=False, scope='resblock_3_'+str(i))
+
+            ########################################################################################################
+
+            x = self.batch_norm_layer(x, is_training, scope='batch_norm')
+            x = self.relu_layer(x)
+
+            x = self.global_avg_pooling(x)
+            logit = self.fully_conneted_layer(x, units=self.num_classes, scope='logit')
+
+            return logit
+
+    def train(self, logits, input_labels):
+        if self.batch_padding:
+            batch_labels = input_labels[0:self.batch_size, :]
+        else:
+            batch_labels = input_labels
 
         with tf.name_scope('loss_'+self.net_name):
-            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
+            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=batch_labels, logits=logits)
             cross_entropy_cost = tf.reduce_mean(cross_entropy)
 
         with tf.name_scope(self.opt + '_' + self.net_name):
@@ -184,13 +183,37 @@ class resnet(object):
 
         return self.train_op
 
-    def evaluate(self, logits, labels):
+    def evaluate(self, logits, eval_labels):
         with tf.name_scope('eval_' + self.net_name):
             pred = tf.nn.softmax(logits)
-            correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(labels, 1))
+            correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(eval_labels, 1))
             self.eval_op = tf.reduce_mean(tf.cast(correct_prediction, "float"))
 
         return self.eval_op
+
+    def get_residual_layer(self):
+        if self.residual_layer == 18:
+            self.residual_layer_list = [2, 2, 2, 2]
+        elif self.residual_layer == 34:
+            self.residual_layer_list = [3, 4, 6, 3]
+        elif self.residual_layer == 50:
+            self.residual_layer_list = [3, 4, 6, 3]
+        elif self.residual_layer == 101:
+            self.residual_layer_list = [3, 4, 23, 3]
+        elif self.residual_layer == 152:
+            self.residual_layer_list = [3, 8, 36, 3]
+        else:
+            raise ValueError('[ResNet] residual layer is invalid')
+
+    def add_layer_num(self, layer_type, layer_num):
+        if layer_type == 'pool':
+            self.num_pool_layer += layer_num
+            self.num_total_layer += layer_num
+        elif layer_type == 'conv':
+            self.num_conv_layer += layer_num
+            self.num_total_layer += layer_num
+        elif layer_type == 'total':
+            self.num_total_layer += layer_num
 
     def get_layer_info(self):
         return self.num_conv_layer, self.num_pool_layer, self.num_total_layer
@@ -199,4 +222,5 @@ class resnet(object):
         print('=====================================================================')
         print('number of conv layer: {}, number of pooling layer: {}, total layer: {}'.format(self.num_conv_layer, self.num_pool_layer, self.num_total_layer))
         print('=====================================================================')
+
 
