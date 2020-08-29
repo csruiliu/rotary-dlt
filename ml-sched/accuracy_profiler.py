@@ -26,7 +26,7 @@ def build_model():
     return train_step, eval_step, model_name_output
 
 
-def run_train_model(trainOp):
+def run_train_model(trainOp, evalOp):
     with tf.device(train_device):
         config = tf.ConfigProto()
         config.allow_soft_placement = True
@@ -54,8 +54,10 @@ def run_train_model(trainOp):
                     Y_mini_batch_feed = Y_data[batch_offset:batch_end, :]
                     sess.run(trainOp, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
-    print('Finish training model')
+            acc_arg = sess.run(evalOp, feed_dict={features: X_data[0:1000, :, :, :], labels: Y_data[0:1000]})
 
+    print('Finish training model')
+    print('accuracy:', acc_arg)
 
 def run_eval_model(evalOp, model_info):
     print('start evaluating model')
@@ -64,8 +66,8 @@ def run_eval_model(evalOp, model_info):
         config.allow_soft_placement = True
         config.gpu_options.allow_growth = True
         with tf.Session(config=config) as sess:
-            sess.run(tf.global_variables_initializer())
-            acc_arg = sess.run(evalOp, feed_dict={features: X_data[0:1000,:,:,:], labels: Y_data[0:1000]})
+            #sess.run(tf.global_variables_initializer())
+            acc_arg = sess.run(evalOp, feed_dict={features: X_data[0:1000, :, :, :], labels: Y_data[0:1000]})
 
     print("{{\"model_name\": \"{}\", \"model_accuracy\": {}}}".format(model_info, acc_arg))
 
@@ -190,5 +192,5 @@ if __name__ == '__main__':
     labels = tf.placeholder(tf.int64, [None, num_classes])
     train_op, eval_op, train_model_name = build_model()
 
-    run_train_model(train_op)
-    run_eval_model(eval_op, train_model_name)
+    run_train_model(train_op, eval_op)
+    #run_eval_model(eval_op, train_model_name)
