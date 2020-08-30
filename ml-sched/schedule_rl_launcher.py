@@ -6,7 +6,7 @@ import os
 import config_path as cfg_path_yml
 import config_parameter as cfg_para_yml
 from model_importer import ModelImporter
-from utils_img_func import load_imagenet_labels_onehot, load_cifar_test, load_imagenet_raw
+from utils_img_func import *
 
 
 class MLSchLauncher:
@@ -51,8 +51,8 @@ class MLSchLauncher:
             _ckpt_path = cfg_path_yml.ckpt_save_path
 
             if train_dataset == 'imagenet':
-                _image_path_raw = cfg_path_yml.imagenet_t1k_img_path
-                _image_path_bin = cfg_path_yml.imagenet_t1k_bin_path
+                _image_path_raw = cfg_path_yml.imagenet_t10k_img_raw_path
+                _image_path_bin = cfg_path_yml.imagenet_t10k_label_path
                 _label_path = cfg_path_yml.imagenet_t1k_label_path
                 _img_width = cfg_para_yml.img_width_imagenet
                 _img_height = cfg_para_yml.img_height_imagenet
@@ -67,7 +67,7 @@ class MLSchLauncher:
                 _img_height = cfg_para_yml.img_height_cifar10
                 _num_channels = cfg_para_yml.num_channels_rgb
                 _num_classes = cfg_para_yml.num_class_cifar10
-                train_label = load_cifar_test(_image_path, 10000)
+                train_label = load_cifar10_test(_image_path)
 
             else:
                 raise NameError('dataset cannot be found')
