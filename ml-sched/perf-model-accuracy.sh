@@ -4,7 +4,7 @@ MODEL_LIST="resnet"
 BATCHSIZE_LIST="32 50 64 100"
 TRAINSET_LIST="cifar10"
 EPOCH_LIST="1 5 10 20"
-OPT_LIST="Adam SGD Adagrad Momentum"
+OPT_LIST="Momentum"
 LAYER_NUM_LIST="18 34 50 101 152"
 LEARN_RATE_LIST="0.1 0.01 0.001 0.0001 0.00001"
 ACTIVATION_LIST="relu"
@@ -41,7 +41,7 @@ do
       do
         for oidx in ${OPT_LIST}
         do
-          for lidx in ${CONV_LAYER_NUM_LIST}
+          for lidx in ${LAYER_NUM_LIST}
           do
             for ridx in ${LEARN_RATE_LIST}
             do
