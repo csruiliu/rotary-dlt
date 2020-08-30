@@ -1,7 +1,8 @@
 import numpy as np
 import pickle
 import cv2
-
+from keras.datasets import cifar10
+from keras.utils import to_categorical
 
 #####################################
 # read mnist training data
@@ -41,9 +42,40 @@ def load_mnist_label_onehot(path, rd_seed):
 
 
 ########################################################
+# load cifar-10 training data and test data
+########################################################
+def normalize(x_train, x_test):
+    mean = np.mean(x_train, axis=(0, 1, 2, 3))
+    std = np.std(x_train, axis=(0, 1, 2, 3))
+
+    x_train = (x_train - mean) / std
+    x_test = (x_test - mean) / std
+
+    return x_train, x_test
+
+
+def load_cifar10():
+    (train_data, train_labels), (test_data, test_labels) = cifar10.load_data()
+    # train_data = train_data / 255.0
+    # test_data = test_data / 255.0
+
+    train_data, test_data = normalize(train_data, test_data)
+
+    train_labels = to_categorical(train_labels, 10)
+    test_labels = to_categorical(test_labels, 10)
+
+    seed = 777
+    np.random.seed(seed)
+    np.random.shuffle(train_data)
+    np.random.seed(seed)
+    np.random.shuffle(train_labels)
+
+    return train_data, train_labels, test_data, test_labels
+
+########################################################
 # read cifar-10 data, batch 1-5 training data
 ########################################################
-def load_cifar_train(path, rd_seed):
+def bak_load_cifar_train(path, rd_seed):
     cifar_data_train = []
     cifar_label_train = []
     cifar_label_train_onehot = np.zeros((50000, 10))
@@ -61,7 +93,7 @@ def load_cifar_train(path, rd_seed):
 
         cifar_label_train = cifar_label_train + label_data
 
-    cifar_train = cifar_data_train.reshape(50000, 3, 32, 32).transpose(0, 2, 3, 1).astype('uint8')
+    cifar_train = cifar_data_train.reshape(50000, 3, 32, 32).transpose(0, 2, 3, 1).astype('float32')
 
     for cl in range(50000):
         cifar_label_train_onehot[cl, cifar_label_train[cl]] = 1
@@ -70,7 +102,7 @@ def load_cifar_train(path, rd_seed):
     np.random.shuffle(cifar_train)
     np.random.shuffle(cifar_label_train_onehot)
 
-    return cifar_train, cifar_label_train_onehot
+    return cifar_train / 255, cifar_label_train_onehot
 
 
 ########################################################
@@ -130,3 +162,9 @@ def load_imagenet_bin(path, num_channels, img_w, img_h):
     img_num = int(image_arr.size / img_w / img_h / num_channels)
     images = image_arr.reshape((img_num, img_w, img_h, num_channels))
     return images
+
+
+if __name__ == "__main__":
+    path = '/home/ruiliu/Development/dataset/cifar-10'
+    train, test = load_cifar_train(path, 10000)
+    print(test)

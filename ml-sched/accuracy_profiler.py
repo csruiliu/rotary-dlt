@@ -1,43 +1,11 @@
 import tensorflow as tf
 import argparse
 import os
-from keras.datasets import cifar10
-from keras.utils import to_categorical
 
 import config_path as cfg_path_yml
 import config_parameter as cfg_para_yml
 from model_importer import ModelImporter
 from utils_img_func import *
-
-
-def normalize(X_train, X_test):
-
-    mean = np.mean(X_train, axis=(0, 1, 2, 3))
-    std = np.std(X_train, axis=(0, 1, 2, 3))
-
-    X_train = (X_train - mean) / std
-    X_test = (X_test - mean) / std
-
-    return X_train, X_test
-
-
-def load_cifar10():
-    (train_data, train_labels), (test_data, test_labels) = cifar10.load_data()
-    # train_data = train_data / 255.0
-    # test_data = test_data / 255.0
-
-    train_data, test_data = normalize(train_data, test_data)
-
-    train_labels = to_categorical(train_labels, 10)
-    test_labels = to_categorical(test_labels, 10)
-
-    seed = 777
-    np.random.seed(seed)
-    np.random.shuffle(train_data)
-    np.random.seed(seed)
-    np.random.shuffle(train_labels)
-
-    return train_data, train_labels, test_data, test_labels
 
 
 def build_model():
@@ -58,7 +26,7 @@ def build_model():
     return train_step, eval_step, model_name_output
 
 
-def run_train_model(trainOp, evalOp):
+def train_eval_model(trainOp, evalOp, model_info):
     with tf.device(train_device):
         config = tf.ConfigProto()
         config.allow_soft_placement = True
@@ -88,10 +56,10 @@ def run_train_model(trainOp, evalOp):
 
             acc_arg = sess.run(evalOp, feed_dict={features: X_data_eval, labels: Y_data_eval})
 
-    print('Finish training model')
-    print('accuracy:', acc_arg)
+    print("{{\"model_name\": \"{}\", \"model_accuracy\": {}}}".format(model_info, acc_arg))
 
 
+'''
 def run_eval_model(evalOp, model_info):
     print('start evaluating model')
     with tf.device(train_device):
@@ -103,7 +71,7 @@ def run_eval_model(evalOp, model_info):
             acc_arg = sess.run(evalOp, feed_dict={features: X_data[0:1000, :, :, :], labels: Y_data[0:1000]})
 
     print("{{\"model_name\": \"{}\", \"model_accuracy\": {}}}".format(model_info, acc_arg))
-
+'''
 
 if __name__ == '__main__':
 
@@ -226,5 +194,4 @@ if __name__ == '__main__':
     labels = tf.placeholder(tf.int64, [None, num_classes])
     train_op, eval_op, train_model_name = build_model()
 
-    run_train_model(train_op, eval_op)
-    #run_eval_model(eval_op, train_model_name)
+    train_eval_model(train_op, eval_op, train_model_name)
