@@ -46,9 +46,9 @@ class resnet(object):
             self.add_layer_num('total', 2)
             return layer
 
-    def relu_layer(self, x_input):
+    def activation_layer(self, x_input, act_func):
         self.add_layer_num('total', 1)
-        return tf.nn.relu(x_input)
+        return activation_function(x_input, act_func)
 
     def global_avg_pooling(self, x_input):
         self.add_layer_num('pool', 1)
@@ -68,7 +68,8 @@ class resnet(object):
     def residual_block(self, x_init, filters, is_training=True, use_bias=True, downsample=False, scope='resblock'):
         with tf.variable_scope(scope):
             x = self.batch_norm_layer(x_init, is_training, scope='batch_norm_0')
-            x = self.relu_layer(x)
+            x = self.activation_layer(x, self.activation)
+            # x = self.relu_layer(x)
 
             if downsample:
                 x = self.conv_layer(x, filters, kernel=3, stride=2, use_bias=use_bias, scope='conv_0')
@@ -77,7 +78,8 @@ class resnet(object):
                 x = self.conv_layer(x, filters, kernel=3, stride=1, use_bias=use_bias, scope='conv_0')
 
             x = self.batch_norm_layer(x, is_training, scope='batch_norm_1')
-            x = self.relu_layer(x)
+            x = self.activation_layer(x, self.activation)
+            # x = self.relu_layer(x)
             x = self.conv_layer(x, filters, kernel=3, stride=1, use_bias=use_bias, scope='conv_1')
 
             return x + x_init
@@ -90,7 +92,8 @@ class resnet(object):
 
             x = self.conv_layer(shortcut, filters, kernel=1, stride=1, use_bias=use_bias, scope='conv_1x1_front')
             x = self.batch_norm_layer(x, is_training, scope='batch_norm_3x3')
-            x = self.relu_layer(x)
+            x = self.activation_layer(x, self.activation)
+            # x = self.relu_layer(x)
 
             if downsample:
                 x = self.conv_layer(x, filters, kernel=3, stride=2, use_bias=use_bias, scope='conv_0')
@@ -100,7 +103,8 @@ class resnet(object):
                 shortcut = self.conv_layer(shortcut, filters*4, kernel=1, stride=1, use_bias=use_bias, scope='conv_init')
 
             x = self.batch_norm_layer(x, is_training, scope='batch_norm_1x1_back')
-            x = self.relu_layer(x)
+            x = self.activation_layer(x, self.activation)
+            # x = self.relu_layer(x)
             x = self.conv_layer(x, filters*4, kernel=1, stride=1, use_bias=use_bias, scope='conv_1x1_back')
 
             return x + shortcut
@@ -151,12 +155,13 @@ class resnet(object):
             ########################################################################################################
 
             x = self.batch_norm_layer(x, is_training, scope='batch_norm')
-            x = self.relu_layer(x)
+            x = self.activation_layer(x, self.activation)
+            # x = self.relu_layer(x)
 
             x = self.global_avg_pooling(x)
-            logit = self.fully_conneted_layer(x, units=self.num_classes, scope='logit')
+            self.model_logit = self.fully_conneted_layer(x, units=self.num_classes, scope='logit')
 
-            return logit
+            return self.model_logit
 
     def train(self, logits, train_labels):
         if self.batch_padding:
