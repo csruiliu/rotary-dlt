@@ -123,6 +123,34 @@ class densenet(object):
 
             return self.model_logit
 
+    def train(self, logits, train_labels):
+        if self.batch_padding:
+            batch_labels = train_labels[0:self.batch_size, :]
+        else:
+            batch_labels = train_labels
+
+        cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=batch_labels, logits=logits)
+        cross_entropy_cost = tf.reduce_mean(cross_entropy)
+        reg_loss = tf.losses.get_regularization_loss()
+        train_loss = cross_entropy_cost + reg_loss
+
+        if self.opt == 'Adam':
+            self.train_op = tf.train.AdamOptimizer(self.learning_rate).minimize(train_loss)
+        elif self.opt == 'SGD':
+            self.train_op = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(train_loss)
+        elif self.opt == 'Adagrad':
+            self.train_op = tf.train.AdagradOptimizer(self.learning_rate).minimize(train_loss)
+        elif self.opt == 'Momentum':
+            self.train_op = tf.train.MomentumOptimizer(self.learning_rate, 0.9).minimize(train_loss)
+
+        return self.train_op
+
+    def evaluate(self, logits, eval_labels):
+        prediction = tf.equal(tf.argmax(logits, -1), tf.argmax(eval_labels, -1))
+        self.eval_op = tf.reduce_mean(tf.cast(prediction, tf.float32))
+
+        return self.eval_op
+
     def get_residual_layer(self):
         if self.residual_layer == 121:
             self.residual_layer_list = [6, 12, 24, 16]
