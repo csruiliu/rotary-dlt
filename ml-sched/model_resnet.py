@@ -36,7 +36,6 @@ class resnet(object):
                                      kernel_initializer=self.weight_init, strides=stride, use_bias=use_bias,
                                      padding=padding)
             self.add_layer_num('conv', 1)
-            self.add_layer_num('total', 1)
             return layer
 
     def fully_conneted_layer(self, x_input, units, use_bias=True, scope='fully_0'):
@@ -52,7 +51,7 @@ class resnet(object):
         return tf.nn.relu(x_input)
 
     def global_avg_pooling(self, x_input):
-        self.add_layer_num('total', 1)
+        self.add_layer_num('pool', 1)
         gap = tf.reduce_mean(x_input, axis=[1, 2], keepdims=True)
         return gap
 
