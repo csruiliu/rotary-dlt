@@ -54,7 +54,7 @@ def train_eval_model(trainOp, evalOp, model_info):
                     Y_mini_batch_feed = Y_data[batch_offset:batch_end]
                     sess.run(trainOp, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
-            acc_arg = sess.run(evalOp, feed_dict={features: X_data_eval, labels: Y_data_eval})
+            acc_arg = sess.run(evalOp, feed_dict={features: X_data_eval[0:1000], labels: Y_data_eval[0:1000]})
 
     print("{{\"model_name\": \"{}\", \"model_accuracy\": {}}}".format(model_info, acc_arg))
 
@@ -168,9 +168,9 @@ if __name__ == '__main__':
         input_data_size = 32
 
         cifar10_path = cfg_path_yml.cifar_10_path
-        X_data, Y_data, X_data_eval, Y_data_eval = load_cifar10()
-        #X_data, Y_data = load_cifar_train(cifar10_path, rand_seed)
-        #X_data_eval, Y_data_eval = load_cifar_test(cifar10_path, rand_seed)
+        X_data, Y_data, X_data_eval, Y_data_eval = load_cifar10_keras()
+        # X_data, Y_data = load_cifar10_train(cifar10_path)
+        # X_data_eval, Y_data_eval = load_cifar10_test(cifar10_path)
 
     elif train_data == 'mnist':
         print('train the model on mnist')

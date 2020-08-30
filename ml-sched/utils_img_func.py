@@ -17,8 +17,8 @@ def load_mnist_image(path, rd_seed):
         buf = bytestream.read(mnist_imgWidth * mnist_imgHeight * num_images)
         img_raw = np.frombuffer(buf, dtype=np.uint8).astype(np.float32) / 255.0
         img = img_raw.reshape(num_images, mnist_imgHeight, mnist_imgWidth, mnist_numChannels)
-        np.random.seed(rd_seed)
-        np.random.shuffle(img)
+    np.random.seed(rd_seed)
+    np.random.shuffle(img)
     return img
 
 
@@ -54,7 +54,7 @@ def normalize(x_train, x_test):
     return x_train, x_test
 
 
-def load_cifar10():
+def load_cifar10_keras():
     (train_data, train_labels), (test_data, test_labels) = cifar10.load_data()
     # train_data = train_data / 255.0
     # test_data = test_data / 255.0
@@ -72,59 +72,55 @@ def load_cifar10():
 
     return train_data, train_labels, test_data, test_labels
 
+
 ########################################################
 # read cifar-10 data, batch 1-5 training data
 ########################################################
-def bak_load_cifar_train(path, rd_seed):
-    cifar_data_train = []
-    cifar_label_train = []
+def load_cifar10_train(path):
+
+    cifar_train_data = None
+    cifar_train_filenames = []
+    cifar_train_labels = []
     cifar_label_train_onehot = np.zeros((50000, 10))
 
     for i in range(1, 6):
         with open(path + '/data_batch_' + str(i), 'rb') as fo:
             data_batch = pickle.load(fo, encoding='bytes')
-            train_data = data_batch[b'data']
-            label_data = data_batch[b'labels']
+            if i == 1:
+                cifar_train_data = data_batch[b'data']
+            else:
+                cifar_train_data = np.vstack((cifar_train_data, data_batch[b'data']))
+            cifar_train_filenames += data_batch[b'filenames']
+            cifar_train_labels += data_batch[b'labels']
 
-        if cifar_data_train == []:
-            cifar_data_train = train_data
-        else:
-            cifar_data_train = np.concatenate((cifar_data_train, train_data))
-
-        cifar_label_train = cifar_label_train + label_data
-
-    cifar_train = cifar_data_train.reshape(50000, 3, 32, 32).transpose(0, 2, 3, 1).astype('float32')
+    cifar_train_data = cifar_train_data.reshape((len(cifar_train_data), 3, 32, 32))
+    cifar_train_data = cifar_train_data.transpose(0, 2, 3, 1).astype(np.float32)
+    cifar_train_labels = np.array(cifar_train_labels)
 
     for cl in range(50000):
-        cifar_label_train_onehot[cl, cifar_label_train[cl]] = 1
+        cifar_label_train_onehot[cl, cifar_train_labels[cl]] = 1
 
-    np.random.seed(rd_seed)
-    np.random.shuffle(cifar_train)
-    np.random.shuffle(cifar_label_train_onehot)
-
-    return cifar_train / 255, cifar_label_train_onehot
+    return cifar_train_data, cifar_label_train_onehot
 
 
 ########################################################
 # read cifar-10 data, testing data
 ########################################################
-def load_cifar_test(path, rd_seed):
+def load_cifar10_test(path):
     with open(path + '/test_batch', 'rb') as fo:
         test_batch = pickle.load(fo, encoding='bytes')
         test_data = test_batch[b'data']
-        label_data = test_batch[b'labels']
+        test_label = test_batch[b'labels']
 
-    cifar_data_test = test_data.reshape(10000, 3, 32, 32).transpose(0, 2, 3, 1).astype('uint8')
+    cifar_test_data = test_data.reshape((len(test_data), 3, 32, 32))
+    cifar_test_data = cifar_test_data.transpose(0, 2, 3, 1).astype(np.float32)
+
     cifar_label_test_onehot = np.zeros((10000, 10))
 
     for cl in range(10000):
-        cifar_label_test_onehot[cl, label_data[cl]] = 1
+        cifar_label_test_onehot[cl, test_label[cl]] = 1
 
-    np.random.seed(rd_seed)
-    np.random.shuffle(cifar_data_test)
-    np.random.shuffle(cifar_label_test_onehot)
-
-    return cifar_data_test, cifar_label_test_onehot
+    return cifar_test_data, cifar_label_test_onehot
 
 
 ########################################################
@@ -162,9 +158,3 @@ def load_imagenet_bin(path, num_channels, img_w, img_h):
     img_num = int(image_arr.size / img_w / img_h / num_channels)
     images = image_arr.reshape((img_num, img_w, img_h, num_channels))
     return images
-
-
-if __name__ == "__main__":
-    path = '/home/ruiliu/Development/dataset/cifar-10'
-    train, test = load_cifar_train(path, 10000)
-    print(test)
