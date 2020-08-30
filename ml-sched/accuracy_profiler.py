@@ -1,11 +1,43 @@
 import tensorflow as tf
 import argparse
 import os
+from keras.datasets import cifar10
+from keras.utils import to_categorical
 
 import config_path as cfg_path_yml
 import config_parameter as cfg_para_yml
 from model_importer import ModelImporter
 from utils_img_func import *
+
+
+def normalize(X_train, X_test):
+
+    mean = np.mean(X_train, axis=(0, 1, 2, 3))
+    std = np.std(X_train, axis=(0, 1, 2, 3))
+
+    X_train = (X_train - mean) / std
+    X_test = (X_test - mean) / std
+
+    return X_train, X_test
+
+
+def load_cifar10():
+    (train_data, train_labels), (test_data, test_labels) = cifar10.load_data()
+    # train_data = train_data / 255.0
+    # test_data = test_data / 255.0
+
+    train_data, test_data = normalize(train_data, test_data)
+
+    train_labels = to_categorical(train_labels, 10)
+    test_labels = to_categorical(test_labels, 10)
+
+    seed = 777
+    np.random.seed(seed)
+    np.random.shuffle(train_data)
+    np.random.seed(seed)
+    np.random.shuffle(train_labels)
+
+    return train_data, train_labels, test_data, test_labels
 
 
 def build_model():
@@ -49,15 +81,16 @@ def run_train_model(trainOp, evalOp):
                         batch_list = image_list[batch_offset:batch_end]
                         X_mini_batch_feed = load_imagenet_raw(imagenet_test_img_raw_path, batch_list, img_height, img_width)
                     else:
-                        X_mini_batch_feed = X_data[batch_offset:batch_end, :, :, :]
+                        X_mini_batch_feed = X_data[batch_offset:batch_end]
 
-                    Y_mini_batch_feed = Y_data[batch_offset:batch_end, :]
+                    Y_mini_batch_feed = Y_data[batch_offset:batch_end]
                     sess.run(trainOp, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
-            acc_arg = sess.run(evalOp, feed_dict={features: X_data[0:1000, :, :, :], labels: Y_data[0:1000]})
+            acc_arg = sess.run(evalOp, feed_dict={features: X_data_eval, labels: Y_data_eval})
 
     print('Finish training model')
     print('accuracy:', acc_arg)
+
 
 def run_eval_model(evalOp, model_info):
     print('start evaluating model')
@@ -167,8 +200,9 @@ if __name__ == '__main__':
         input_data_size = 32
 
         cifar10_path = cfg_path_yml.cifar_10_path
-        X_data, Y_data = load_cifar_train(cifar10_path, rand_seed)
-        X_data_eval, Y_data_eval = load_cifar_test(cifar10_path, rand_seed)
+        X_data, Y_data, X_data_eval, Y_data_eval = load_cifar10()
+        #X_data, Y_data = load_cifar_train(cifar10_path, rand_seed)
+        #X_data_eval, Y_data_eval = load_cifar_test(cifar10_path, rand_seed)
 
     elif train_data == 'mnist':
         print('train the model on mnist')
