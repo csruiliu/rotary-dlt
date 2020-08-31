@@ -36,13 +36,14 @@ placement_schedule:
   # time period of each slot (unit: seconds)
   slot_time_period: 2
   # training dataset
-  train_dataset: imagenet
+  train_dataset: cifar10
   # total available model type
   model_type_set:
     - mobilenet
     - resnet
     - densenet
     - mlp
+    - scn
   batch_size_set:
     - 32
     - 50

@@ -5,9 +5,9 @@ import tensorflow as tf
 import config_parameter as cfg_para_yml
 import config_path as cfg_path_yml
 
-from schedule_environment import MLSchEnv
-from schedule_engine import MLSchEngine
-from schedule_launcher import MLSchLauncher
+from schedule_rl_environment import MLSchEnv
+from schedule_rl_engine import MLSchEngine
+from schedule_rl_launcher import MLSchLauncher
 from multidevices_time_estimator import MultiDeviceTimeEstimator
 from accuracy_estimator import AccuracyEstimator
 
