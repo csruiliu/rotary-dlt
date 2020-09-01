@@ -1,6 +1,5 @@
 import tensorflow as tf
 import tensorflow.contrib as tc
-from tensorflow.keras.layers import GlobalAveragePooling2D
 from utils_model_func import activation_function
 
 
@@ -28,13 +27,12 @@ class densenet(object):
 
         self.num_conv_layer = 0
         self.num_pool_layer = 0
-        self.num_total_layer = 0
+        self.num_residual_layer = 0
 
         self.weight_init = tc.layers.variance_scaling_initializer()
         self.weight_regularizer = tc.layers.l2_regularizer(0.0001)
 
     def activation_layer(self, x_input, act_func):
-        self.add_layer_num('total', 1)
         return activation_function(x_input, act_func)
 
     def avg_pooling_layer(self, x_input, pool_size, scope='avgpool'):
@@ -45,12 +43,17 @@ class densenet(object):
         self.add_layer_num('pool', 1)
         return tf.layers.max_pooling2d(x_input, pool_size=pool_size, strides=2, padding='same', name=scope)
 
+    def global_avg_pooling(self, x_input):
+        self.add_layer_num('pool', 1)
+        gap = tf.reduce_mean(x_input, axis=[1, 2], keepdims=True)
+        return gap
+
     def conv_layer(self, x_input, filters, kernel=4, stride=2, padding='SAME', use_bias=True, scope='conv_0'):
+        self.add_layer_num('conv', 1)
         with tf.variable_scope(scope):
             layer = tf.layers.conv2d(inputs=x_input, filters=filters, kernel_size=kernel,
                                      kernel_initializer=self.weight_init, strides=stride, use_bias=use_bias,
                                      padding=padding)
-            self.add_layer_num('conv', 1)
             return layer
 
     def fully_conneted_layer(self, x_input, units, use_bias=True, scope='fully_0'):
@@ -58,16 +61,9 @@ class densenet(object):
             layer = tf.layers.flatten(x_input)
             layer = tf.layers.dense(layer, units=units, kernel_initializer=self.weight_init,
                                     kernel_regularizer=self.weight_regularizer, use_bias=use_bias)
-            self.add_layer_num('total', 2)
             return layer
 
-    def global_avg_pooling(self, x_input):
-        self.add_layer_num('pool', 1)
-        gap = tf.reduce_mean(x_input, axis=[1, 2], keepdims=True)
-        return gap
-
     def batch_norm_layer(self, x_input, is_training=True, scope='batch_norm'):
-        self.add_layer_num('total', 1)
         return tc.layers.batch_norm(x_input, decay=0.9, epsilon=1e-05, center=True, scale=True,
                                     updates_collections=None, is_training=is_training, scope=scope)
 
@@ -86,9 +82,11 @@ class densenet(object):
     def dense_block(self, x_init, dn_layers, is_training=True, use_bias=True, scope='denseblock'):
         with tf.variable_scope(scope):
             block = self.batch_norm_layer(x_init, is_training, scope='batch_norm_0')
-            block_input = tf.concat(values=[input, block], axis=3)
+            self.add_layer_num('residual', 1)
+            block_input = tf.concat(values=[x_init, block], axis=3)
             for i in range(dn_layers - 1):
                 block = self.bottle_dense_block(block_input, is_training, use_bias, scope='bottle_denseblock_' + str(i))
+                self.add_layer_num('residual', 1)
                 block_input = tf.concat([block_input, block], axis=3)
 
             return block
@@ -166,17 +164,16 @@ class densenet(object):
     def add_layer_num(self, layer_type, layer_num):
         if layer_type == 'pool':
             self.num_pool_layer += layer_num
-            self.num_total_layer += layer_num
         elif layer_type == 'conv':
             self.num_conv_layer += layer_num
-            self.num_total_layer += layer_num
-        elif layer_type == 'total':
-            self.num_total_layer += layer_num
+        elif layer_type == 'residual':
+            self.num_residual_layer += layer_num
 
     def get_layer_info(self):
-        return self.num_conv_layer, self.num_pool_layer, self.num_total_layer
+        return self.num_conv_layer, self.num_pool_layer, self.num_residual_layer
 
     def print_model_info(self):
         print('=====================================================================')
-        print('number of conv layer: {}, number of pooling layer: {}, total layer: {}'.format(self.num_conv_layer, self.num_pool_layer, self.num_total_layer))
+        print('number of conv layer: {}, number of pooling layer: {}, number of residual layer: {}'
+              .format(self.num_conv_layer, self.num_pool_layer, self.num_residual_layer))
         print('=====================================================================')
