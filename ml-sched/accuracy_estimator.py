@@ -146,18 +146,6 @@ if __name__ == "__main__":
 
     input_model_epoch = int(input_model_list[10])
 
-    conv_model_list_json = import_accuracy_dataset()
-
-    model_info_list, model_accuracy_list, model_epoch_list = generate_conv_model_dataset(conv_model_list_json)
-    model_similarity_list = compute_model_similarity(input_model_dict, model_info_list)
-    print(model_similarity_list)
-    similarity_model_idx_list = rank_model_similarity(model_info_list, model_similarity_list)
-
-    # return the nearest models info according to similarity
-    # neighbor_model_info_list = [model_info_list[i] for i in similarity_model_idx_list]
-    neighbor_model_accuracy_list = [model_accuracy_list[i] for i in similarity_model_idx_list]
-    neighbor_model_epoch_list = [model_epoch_list[i] for i in similarity_model_idx_list]
-    estimated_accuracy = estimate_model_accuracy(input_model_epoch, neighbor_model_epoch_list, neighbor_model_accuracy_list)
-
-    print(estimated_accuracy)
+    AE = AccuracyEstimator(1)
+    AE.import_accuracy_dataset('/home/ruiliu/Development/mtml-tf/ml-sched/accuracy_dataset.json')
 '''
