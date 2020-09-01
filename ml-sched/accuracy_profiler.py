@@ -15,14 +15,15 @@ def build_model():
                            num_classes, train_batchsize, train_opt, train_learn_rate, train_activation, False)
         model_entity = dm.get_model_entity()
         model_logit = model_entity.build(input_features=features, is_training=True)
-        conv_layer_num, pool_layer_num, total_layer_num = model_entity.get_layer_info()
+        conv_layer_num, pool_layer_num, residual_layer_num = model_entity.get_layer_info()
 
         model_name_output = '{}-{}-{}-{}-{}-{}-{}-{}-{}-{}-{}'.format(input_data_size, num_channels, num_classes,
                                                                       train_batchsize, conv_layer_num, pool_layer_num,
-                                                                      total_layer_num, train_learn_rate, train_opt,
+                                                                      residual_layer_num, train_learn_rate, train_opt,
                                                                       train_activation, train_epoch)
         train_step = model_entity.train(model_logit, labels)
         eval_step = model_entity.evaluate(model_logit, labels)
+
     return train_step, eval_step, model_name_output
 
 

@@ -25,7 +25,7 @@ class resnet(object):
 
         self.num_conv_layer = 0
         self.num_pool_layer = 0
-        self.num_total_layer = 0
+        self.num_residual_layer = 0
 
         self.weight_init = tf_contrib.layers.variance_scaling_initializer()
         self.weight_regularizer = tf_contrib.layers.l2_regularizer(0.0001)
@@ -43,11 +43,10 @@ class resnet(object):
             layer = tf.layers.flatten(x_input)
             layer = tf.layers.dense(layer, units=units, kernel_initializer=self.weight_init,
                                     kernel_regularizer=self.weight_regularizer, use_bias=use_bias)
-            self.add_layer_num('total', 2)
             return layer
 
-    def activation_layer(self, x_input, act_func):
-        self.add_layer_num('total', 1)
+    @staticmethod
+    def activation_layer(x_input, act_func):
         return activation_function(x_input, act_func)
 
     def global_avg_pooling(self, x_input):
@@ -55,8 +54,8 @@ class resnet(object):
         gap = tf.reduce_mean(x_input, axis=[1, 2], keepdims=True)
         return gap
 
-    def batch_norm_layer(self, x_input, is_training=True, scope='batch_norm'):
-        self.add_layer_num('total', 1)
+    @staticmethod
+    def batch_norm_layer(x_input, is_training=True, scope='batch_norm'):
         return tf_contrib.layers.batch_norm(x_input, decay=0.9, epsilon=1e-05, center=True, scale=True,
                                             updates_collections=None, is_training=is_training, scope=scope)
 
@@ -82,6 +81,7 @@ class resnet(object):
             # x = self.relu_layer(x)
             x = self.conv_layer(x, filters, kernel=3, stride=1, use_bias=use_bias, scope='conv_1')
 
+            self.add_layer_num('residual', 1)
             return x + x_init
 
     def bottle_residual_block(self, x_init, filters, is_training=True, use_bias=True, downsample=False,
@@ -107,6 +107,7 @@ class resnet(object):
             # x = self.relu_layer(x)
             x = self.conv_layer(x, filters*4, kernel=1, stride=1, use_bias=use_bias, scope='conv_1x1_back')
 
+            self.add_layer_num('residual', 1)
             return x + shortcut
 
     def build(self, input_features, is_training):
@@ -208,19 +209,20 @@ class resnet(object):
     def add_layer_num(self, layer_type, layer_num):
         if layer_type == 'pool':
             self.num_pool_layer += layer_num
-            self.num_total_layer += layer_num
         elif layer_type == 'conv':
             self.num_conv_layer += layer_num
-            self.num_total_layer += layer_num
-        elif layer_type == 'total':
-            self.num_total_layer += layer_num
+        elif layer_type == 'residual':
+            self.num_residual_layer += layer_num
+        else:
+            raise ValueError('[ResNet] cannot recognize the layer')
 
     def get_layer_info(self):
-        return self.num_conv_layer, self.num_pool_layer, self.num_total_layer
+        return self.num_conv_layer, self.num_pool_layer, self.num_residual_layer
 
     def print_model_info(self):
         print('=====================================================================')
-        print('number of conv layer: {}, number of pooling layer: {}, total layer: {}'.format(self.num_conv_layer, self.num_pool_layer, self.num_total_layer))
+        print('number of conv layer: {0}, number of pooling layer: {1}, number of residual layer: {2}'
+              .format(self.num_conv_layer, self.num_pool_layer, self.num_residual_layer))
         print('=====================================================================')
 
 

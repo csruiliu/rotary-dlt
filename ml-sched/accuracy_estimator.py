@@ -68,7 +68,7 @@ class AccuracyEstimator:
             conv_model_info_dict['batch_size'] = int(conv_model_info_list[3])
             conv_model_info_dict['conv_layer_num'] = int(conv_model_info_list[4])
             conv_model_info_dict['pooling_layer_num'] = int(conv_model_info_list[5])
-            conv_model_info_dict['total_layer_num'] = int(conv_model_info_list[6])
+            conv_model_info_dict['residual_layer_num'] = int(conv_model_info_list[6])
             conv_model_info_dict['learning_rate'] = float(conv_model_info_list[7])
             conv_model_info_dict['optimizer'] = conv_model_info_list[8]
             conv_model_info_dict['activation'] = conv_model_info_list[9]
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     input_model_dict['batch_size'] = int(input_model_list[3])
     input_model_dict['conv_layer_num'] = int(input_model_list[4])
     input_model_dict['pooling_layer_num'] = int(input_model_list[5])
-    input_model_dict['total_layer_num'] = int(input_model_list[6])
+    input_model_dict['residual_layer_num'] = int(input_model_list[6])
     input_model_dict['learning_rate'] = float(input_model_list[7])
     input_model_dict['optimizer'] = input_model_list[8]
     input_model_dict['activation'] = input_model_list[9]
