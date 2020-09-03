@@ -55,7 +55,7 @@ def train_eval_model(trainOp, evalOp, model_info):
                     Y_mini_batch_feed = Y_data[batch_offset:batch_end]
                     sess.run(trainOp, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
-            acc_arg = sess.run(evalOp, feed_dict={features: X_data_eval[0:1000], labels: Y_data_eval[0:1000]})
+            acc_arg = sess.run(evalOp, feed_dict={features: X_data_eval, labels: Y_data_eval})
 
     print("{{\"model_name\": \"{}\", \"model_accuracy\": {}}}".format(model_info, acc_arg))
 
