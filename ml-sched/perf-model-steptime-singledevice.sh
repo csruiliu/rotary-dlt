@@ -3,12 +3,12 @@
 DEVICE_LIST="cpu"
 MODEL_LIST="mobilenet resnet densenet mlp scn"
 LAYER_NUM="1 2 3 4 5"
-MODEL_NUM="1 2 4 8 16"
+MODEL_NUM="1"
 BATCHSIZE_LIST="32 50 64 100"
 LEARNRATE_LIST="0.0001"
 OPT_LIST="Adam"
 ACTIVATION_LIST="relu"
-TRAINSET_LIST="cifar10 imagenet"
+TRAINSET_LIST="cifar10"
 
 REPEAT=2
 FOLDER="exp-results"
