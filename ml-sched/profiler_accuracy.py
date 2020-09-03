@@ -114,7 +114,7 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--layer', action='store', type=int,
                         help='the number of layer decides a model, for example, the layer is 50 for resnet-50')
 
-    parser.add_argument('-d', '--device', action='store', type=str, default='/GPU:0', choices=['/GPU:0', '/GPU:1'],
+    parser.add_argument('-d', '--device', action='store', type=str, default='gpu:0', choices=['gpu:0', 'gpu:1'],
                         help='select a device to run device')
 
     args = parser.parse_args()

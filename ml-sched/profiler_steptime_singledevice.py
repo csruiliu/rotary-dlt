@@ -108,11 +108,11 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--model_num', required=True, action='store', type=int,
                         help='the number of training model on the device')
 
-    parser.add_argument('-b', '--batch_size', required=True, action='store', type=int,
-                        help='batch size, for example: 32, 50, 100]')
-
     parser.add_argument('-e', '--epoch', required=True, action='store', type=int,
                         help='training epoch, for example, 1, 5, 10')
+
+    parser.add_argument('-b', '--batch_size', required=True, action='store', type=int,
+                        help='batch size, for example: 32, 50, 100]')
 
     parser.add_argument('-o', '--opt', required=True, action='store', choices=['SGD', 'Adam', 'Adagrad', 'Momentum'],
                         help='training opt [Adam, SGD, Adagrad, Momentum]')
@@ -130,7 +130,8 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--layer', action='store', type=int,
                         help='the number of layer decides a model, for example, the layer is 50 for resnet-50')
 
-    parser.add_argument('-d', '--device', action='store', type=str, default='/GPU:0', choices=['/GPU:0', '/GPU:1'],
+    parser.add_argument('-d', '--device', action='store', type=str, default='gpu:0',
+                        choices=['cpu:0', 'gpu:0', 'gpu:1'],
                         help='select a device to run device')
 
     args = parser.parse_args()
