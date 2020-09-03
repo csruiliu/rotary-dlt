@@ -46,6 +46,13 @@ def run_single_job(model_type, model_instance, layer_num, batch_size, optimizer,
         model_logit = model_entity.build(features, is_training=True)
         train_ops = model_entity.train(model_logit, labels)
 
+        num_conv_layer, num_pool_layer, num_residual_layer = model_entity.get_layer_info()
+
+        model_arch_info = num_conv_layer + '-' + num_pool_layer + '-' + num_residual_layer
+
+
+
+
         if use_raw_image:
             image_list = sorted(os.listdir(_image_path_raw))
 
@@ -89,8 +96,10 @@ def run_single_job(model_type, model_instance, layer_num, batch_size, optimizer,
                     print("step time:", dur_time)
                     step_time += dur_time
                     step_count += 1
-
-        print('{} job average step time [{}]: {}'.format(assign_device, timer(), step_time / step_count * 1000))
+        if assign_device.startswith('/cpu'):
+            print('CPU job average step time [{0}]: {1}'.format(timer(), step_time / step_count * 1000))
+        elif assign_device.startswith('/gpu'):
+            print('GPU job average step time [{0}]: {1}'.format(timer(), step_time / step_count * 1000))
 
 
 def consumer_gpu(queue, assign_device):
