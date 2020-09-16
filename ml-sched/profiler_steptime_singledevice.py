@@ -146,6 +146,8 @@ if __name__ == '__main__':
     train_activation = args.activation
 
     train_device = args.device
+    train_pack = args.pack
+    print(train_pack)
     train_model_layer = args.layer
     train_dataset = args.train_dataset
 
