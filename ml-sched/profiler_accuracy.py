@@ -121,9 +121,9 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.model in ['resnet'] and args.conv_layer not in [18, 34, 50, 101, 152]:
+    if args.model in ['resnet'] and args.layer not in [18, 34, 50, 101, 152]:
         raise ValueError('number of layers are not supported in ResNet')
-    elif args.model in ['densenet'] and args.conv_layer not in [121, 169, 201, 264]:
+    elif args.model in ['densenet'] and args.layer not in [121, 169, 201, 264]:
         raise ValueError('number of layers are not supported in DenseNet')
     else:
         train_layer = args.layer
