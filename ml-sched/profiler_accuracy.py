@@ -67,7 +67,7 @@ def train_eval_model(trainOp, evalOp, model_info):
                 acc_batch = sess.run(evalOp, feed_dict={features: feature_eval_batch, labels: label_eval_batch})
                 acc_sum += acc_batch
 
-            acc_arg = acc_sum / num_batch
+            acc_arg = acc_sum / num_eval_batch
 
     print("{{\"model_name\": \"{}\", \"model_accuracy\": {}}}".format(model_info, acc_arg))
 
