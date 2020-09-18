@@ -56,25 +56,21 @@ def train_eval_model(trainOp, evalOp, model_info):
                     Y_mini_batch_feed = Y_data_train[batch_offset:batch_end]
                     sess.run(trainOp, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
-            X_data_eval = load_imagenet_raw(imagenet_test_img_path, image_list_eval, img_height, img_width)
-            acc_arg = sess.run(evalOp, feed_dict={features: X_data_eval, labels: Y_data_eval})
+            acc_sum = 0
+            num_eval_batch = Y_data_eval.shape[0] // 50
+            for n in range(num_eval_batch):
+                batch_offset = n * train_batchsize
+                batch_end = (n + 1) * train_batchsize
+                batch_eval_list = image_list_eval[batch_offset:batch_end]
+                feature_eval_batch = load_imagenet_raw(imagenet_test_img_path, batch_eval_list, img_height, img_width)
+                label_eval_batch = Y_data_eval[batch_offset:batch_end]
+                acc_batch = sess.run(evalOp, feed_dict={features: feature_eval_batch, labels: label_eval_batch})
+                acc_sum += acc_batch
+
+            acc_arg = acc_sum / num_batch
 
     print("{{\"model_name\": \"{}\", \"model_accuracy\": {}}}".format(model_info, acc_arg))
 
-
-'''
-def run_eval_model(evalOp, model_info):
-    print('start evaluating model')
-    with tf.device(train_device):
-        config = tf.ConfigProto()
-        config.allow_soft_placement = True
-        config.gpu_options.allow_growth = True
-        with tf.Session(config=config) as sess:
-            #sess.run(tf.global_variables_initializer())
-            acc_arg = sess.run(evalOp, feed_dict={features: X_data[0:1000, :, :, :], labels: Y_data[0:1000]})
-
-    print("{{\"model_name\": \"{}\", \"model_accuracy\": {}}}".format(model_info, acc_arg))
-'''
 
 if __name__ == '__main__':
 
@@ -153,7 +149,7 @@ if __name__ == '__main__':
         input_data_size = 224
 
         imagenet_train_img_path = cfg_path_yml.imagenet_t50k_img_raw_path
-        imagenet_train_label_path = cfg_path_yml.imagenet_t50k_img_label_path
+        imagenet_train_label_path = cfg_path_yml.imagenet_t50k_label_path
         imagenet_test_img_path = cfg_path_yml.imagenet_t1k_img_raw_path
         imagenet_test_label_path = cfg_path_yml.imagenet_t1k_label_path
 

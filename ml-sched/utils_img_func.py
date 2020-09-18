@@ -1,8 +1,10 @@
 import numpy as np
 import pickle
 import cv2
+import os
 from keras.datasets import cifar10
 from keras.utils import to_categorical
+
 
 #####################################
 # read mnist training data
@@ -158,3 +160,24 @@ def load_imagenet_bin(path, num_channels, img_w, img_h):
     img_num = int(image_arr.size / img_w / img_h / num_channels)
     images = image_arr.reshape((img_num, img_w, img_h, num_channels))
     return images
+
+
+########################################################
+# convert imagenet raw images to bin
+########################################################
+def convert_imagenet_bin(path):
+    img_w = 224
+    img_h = 224
+    img_list = []
+    img_filename_list = sorted(os.listdir(path))
+    for filename in img_filename_list:
+        img = cv2.imread(os.path.join(path, filename))
+        if img is not None:
+            img_resize = cv2.resize(img, dsize=(img_w, img_h))
+            img_expand = np.expand_dims(img_resize, axis=0)
+            img_list.append(img_expand)
+    img_data = np.concatenate(img_list, axis=0)
+    output_file = open("imagenet1k.bin", "wb")
+    binary_format = bytearray(img_data)
+    output_file.write(binary_format)
+    output_file.close()
