@@ -52,10 +52,20 @@ placement_schedule:
     - 128
   optimizer_set:
     - Adam
+    - SGD
+    - Adagrad
+    - Momentum
   learning_rate_set:
     - 0.01
+    - 0.001
+    - 0.0001
+    - 0.00001
+    - 0.000001
   activation_set:
     - relu
+    - sigmoid
+    - tanh
+    - leaky_relu
   # highest_accuracy, lowest_accuracy, average_accuracy
   reward_function: average_accuracy
 
