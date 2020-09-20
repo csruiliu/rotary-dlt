@@ -43,7 +43,6 @@ placement_schedule:
     - resnet
     - densenet
     - mlp
-    - scn
   batch_size_set:
     - 32
     - 50

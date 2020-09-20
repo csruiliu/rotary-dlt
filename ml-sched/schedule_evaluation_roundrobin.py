@@ -54,6 +54,11 @@ def run_job(job_info, assign_device):
         train_ops, _, model_name = build_model(job_info, features, labels)
         model_ckpt_save_path = _ckpt_save_path + '/' + model_name
 
+        if not os.path.exists(model_ckpt_save_path):
+            os.makedirs(model_ckpt_save_path)
+
+        checkpoint_file = os.path.join(model_ckpt_save_path, "checkpoint")
+
         train_batchsize = job_info['batch_size']
 
         saver = tf.train.Saver()
@@ -66,8 +71,8 @@ def run_job(job_info, assign_device):
             train_data_list = sorted(os.listdir(_imagenet_train_data_path))
 
         with tf.Session(config=config) as sess:
-            if tf.train.checkpoint_exists(model_ckpt_save_path):
-                saver.restore(sess, model_ckpt_save_path)
+            if tf.train.checkpoint_exists(checkpoint_file):
+                saver.restore(sess, checkpoint_file)
             else:
                 sess.run(tf.global_variables_initializer())
 
@@ -93,7 +98,7 @@ def run_job(job_info, assign_device):
                     end_time = timer()
                     dur_time = end_time - start_time
                     if dur_time > _sch_slot_time_period:
-                        saver.save(sess, model_ckpt_save_path)
+                        saver.save(sess, checkpoint_file)
                         return
 
 
@@ -102,6 +107,7 @@ def evaluate_job(job_info):
     labels = tf.placeholder(tf.int64, [None, _img_num_class])
     _, eval_ops, model_name = build_model(job_info, features, labels)
     model_ckpt_save_path = _ckpt_save_path + '/' + model_name
+    checkpoint_file = os.path.join(model_ckpt_save_path, "checkpoint")
 
     train_batchsize = job_info['batch_size']
 
@@ -113,7 +119,7 @@ def evaluate_job(job_info):
 
     with tf.Session(config=config) as sess:
         if tf.train.checkpoint_exists(model_ckpt_save_path):
-            saver.restore(sess, model_ckpt_save_path)
+            saver.restore(sess, checkpoint_file)
         else:
             raise AttributeError('cannot found the pretrained model')
 
