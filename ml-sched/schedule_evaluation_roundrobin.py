@@ -66,7 +66,7 @@ def run_job(job_info, assign_device):
             train_data_list = sorted(os.listdir(_imagenet_train_data_path))
 
         with tf.Session(config=config) as sess:
-            if os.path.exists(model_ckpt_save_path):
+            if tf.train.checkpoint_exists(model_ckpt_save_path):
                 saver.restore(sess, model_ckpt_save_path)
             else:
                 sess.run(tf.global_variables_initializer())
@@ -112,7 +112,7 @@ def evaluate_job(job_info):
     config.gpu_options.allow_growth = True
 
     with tf.Session(config=config) as sess:
-        if os.path.exists(model_ckpt_save_path):
+        if tf.train.checkpoint_exists(model_ckpt_save_path):
             saver.restore(sess, model_ckpt_save_path)
         else:
             raise AttributeError('cannot found the pretrained model')
