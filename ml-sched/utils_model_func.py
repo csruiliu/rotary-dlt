@@ -10,7 +10,7 @@ def activation_function(logit, act_name):
     if act_name == 'relu':
         new_logit = tf.nn.relu(logit, 'relu')
     elif act_name == 'leaky_relu':
-        new_logit = tf.nn.leaky_relu(logit, 'leaky_relu')
+        new_logit = tf.nn.leaky_relu(logit, alpha=0.2, name='leaky_relu')
     elif act_name == 'tanh':
         new_logit = tf.math.tanh(logit, 'tanh')
     elif act_name == 'sigmoid':
