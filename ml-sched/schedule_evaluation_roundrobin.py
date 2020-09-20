@@ -118,10 +118,10 @@ def evaluate_job(job_info):
     config.gpu_options.allow_growth = True
 
     with tf.Session(config=config) as sess:
-        if tf.train.checkpoint_exists(model_ckpt_save_path):
+        if tf.train.checkpoint_exists(checkpoint_file):
             saver.restore(sess, checkpoint_file)
         else:
-            raise AttributeError('cannot found the pretrained model')
+            sess.run(tf.global_variables_initializer())
 
         if train_data == 'imagenet':
             acc_sum = 0
