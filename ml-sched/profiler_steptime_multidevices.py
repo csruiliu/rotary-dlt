@@ -226,3 +226,6 @@ if __name__ == "__main__":
 
     device_proc_cpu = mp.Process(target=consumer_cpu, args=(training_cpu_queue, '/cpu:0'))
     device_proc_cpu.start()
+
+    for device_proc_gpu in proc_gpu_list:
+        device_proc_gpu.start()

@@ -185,10 +185,10 @@ if __name__ == '__main__':
         mnist_test_img_path = cfg_path_yml.mnist_test_10k_img_path
         mnist_test_label_path = cfg_path_yml.mnist_test_10k_label_path
 
-        X_data = load_mnist_image(mnist_train_img_path, rand_seed)
-        Y_data = load_mnist_label_onehot(mnist_train_label_path, rand_seed)
-        X_data_eval = load_mnist_image(mnist_test_img_path, rand_seed)
-        Y_data_eval = load_mnist_label_onehot(mnist_test_label_path, rand_seed)
+        X_data = load_mnist_image(mnist_train_img_path)
+        Y_data = load_mnist_label_onehot(mnist_train_label_path)
+        X_data_eval = load_mnist_image(mnist_test_img_path)
+        Y_data_eval = load_mnist_label_onehot(mnist_test_label_path)
 
     features = tf.placeholder(tf.float32, [None, img_width, img_height, num_channels])
     labels = tf.placeholder(tf.int64, [None, num_classes])

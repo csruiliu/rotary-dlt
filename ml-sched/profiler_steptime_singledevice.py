@@ -166,7 +166,7 @@ if __name__ == '__main__':
         num_classes = cfg_para_yml.num_class_imagenet
 
         imagenet_train_img_path = cfg_path_yml.imagenet_t50k_img_raw_path
-        imagenet_train_label_path = cfg_path_yml.imagenet_t50k_img_label_path
+        imagenet_train_label_path = cfg_path_yml.imagenet_t50k_label_path
 
         train_label = load_imagenet_labels_onehot(imagenet_train_label_path, num_classes)
 
@@ -192,7 +192,7 @@ if __name__ == '__main__':
         mnist_train_img_path = cfg_path_yml.mnist_train_img_path
         mnist_train_label_path = cfg_path_yml.mnist_train_label_path
 
-        train_feature = load_mnist_image(mnist_train_img_path, rand_seed)
-        train_label = load_mnist_label_onehot(mnist_train_label_path, rand_seed)
+        train_feature = load_mnist_image(mnist_train_img_path)
+        train_label = load_mnist_label_onehot(mnist_train_label_path)
 
     build_train_model()

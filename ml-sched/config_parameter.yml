@@ -34,7 +34,7 @@ placement_schedule:
   # total number of time slots for a workload
   time_slots_num: 15
   # time period of each slot (unit: seconds)
-  slot_time_period: 2
+  slot_time_period: 5
   # training dataset
   train_dataset: cifar10
   # total available model type
