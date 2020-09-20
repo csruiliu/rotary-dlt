@@ -157,7 +157,8 @@ if __name__ == "__main__":
     _sch_train_dataset = cfg_para_yml.train_dataset
 
     _sch_workload = generate_workload(_sch_job_num, _sch_model_type_set, _sch_batch_size_set, _sch_optimizer_set,
-                                      _sch_learning_rate_set, _sch_activation_set, _sch_train_dataset)
+                                      _sch_learning_rate_set, _sch_activation_set, _sch_train_dataset, True)
+
     _sch_workload_use = _sch_workload.copy()
 
     ##################################################
@@ -172,7 +173,7 @@ if __name__ == "__main__":
         _imagenet_train_data_path = cfg_path_yml.imagenet_t10k_img_raw_path
         _imagenet_train_label_path = cfg_path_yml.imagenet_t10k_label_path
         _imagenet_eval_data_path = cfg_path_yml.imagenet_t1k_img_raw_path
-        _imagenet_eval_label_path = cfg_path_yml.imagenet_t1k_label_path
+        _imagenet_eval_label_path = cfg_path_yml.imagenet_t1k_label_path 
 
         train_label = load_imagenet_labels_onehot(_imagenet_train_label_path, _num_classes)
         eval_label = load_imagenet_labels_onehot(_imagenet_eval_label_path, _num_classes)

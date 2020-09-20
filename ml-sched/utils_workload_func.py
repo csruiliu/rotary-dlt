@@ -2,7 +2,10 @@ import numpy as np
 
 
 def generate_workload(job_num, model_type_set, batch_size_set, optimizer_set, learn_rate_set,
-                      activation_set, train_data):
+                      activation_set, train_data, use_seed=False):
+
+    if use_seed:
+        np.random.seed(10000)
 
     sampled_model_type_list = np.random.choice(model_type_set, job_num, replace=True)
     sampled_batch_size_list = np.random.choice(batch_size_set, job_num, replace=True)
