@@ -26,70 +26,114 @@ def schedule_job_roundrobin():
     return sch_list
 
 
+def build_model(job_info, ph_features, ph_labels):
+    train_model = ModelImporter(job_info['model_type'], str(job_info['job_id']), job_info['model_layer_num'],
+                                _img_height, _img_width, _img_channels, _img_num_class, job_info['batch_size'],
+                                job_info['optimizer'], job_info['learning_rate'], job_info['activation'], False)
+
+    model_entity = train_model.get_model_entity()
+    model_logit = model_entity.build(ph_features, is_training=True)
+    model_train_op = model_entity.train(model_logit, ph_labels)
+    model_eval_op = model_entity.evaluate(model_logit, ph_labels)
+
+    model_name = '{0}-{1}-{2}-{3}-{4}-{5}-{6}-{7}'.format(job_info['job_id'], job_info['model_type'],
+                                                          job_info['model_layer_num'], job_info['batch_size'],
+                                                          job_info['optimizer'], job_info['learning_rate'],
+                                                          job_info['activation'], job_info['train_dataset'])
+
+    return model_train_op, model_eval_op, model_name
+
+
 def run_job(job_info, assign_device):
     start_time = timer()
+
     with tf.device(assign_device):
         features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _img_channels])
         labels = tf.placeholder(tf.int64, [None, _img_num_class])
 
-        train_batchsize = job_info['batch_size']
-
-        train_model = ModelImporter(job_info['model_type'], str(job_info['job_id']), job_info['model_layer_num'],
-                                    _img_height, _img_width, _img_channels, _img_num_class, train_batchsize,
-                                    job_info['optimizer'], job_info['learning_rate'], job_info['activation'], False)
-
-        model_entity = train_model.get_model_entity()
-        model_logit = model_entity.build(features, is_training=True)
-        train_ops = model_entity.train(model_logit, labels)
-
-        model_name = '{0}-{1}-{2}-{3}-{4}-{5}-{6}-{7}'.format(job_info['job_id'], job_info['model_type'],
-                                                              job_info['model_layer_num'], train_batchsize,
-                                                              job_info['optimizer'], job_info['learning_rate'],
-                                                              job_info['activation'], job_info['train_dataset'])
-
+        train_ops, _, model_name = build_model(job_info, features, labels)
         model_ckpt_save_path = _ckpt_save_path + '/' + model_name
+
+        train_batchsize = job_info['batch_size']
 
         saver = tf.train.Saver()
 
-        with tf.device(assign_device):
-            config = tf.ConfigProto()
-            config.allow_soft_placement = True
-            config.gpu_options.allow_growth = True
+        config = tf.ConfigProto()
+        config.allow_soft_placement = True
+        config.gpu_options.allow_growth = True
 
-            if _sch_train_dataset == 'imagenet':
-                train_data_list = sorted(os.listdir(_imagenet_train_data_path))
+        if _sch_train_dataset == 'imagenet':
+            train_data_list = sorted(os.listdir(_imagenet_train_data_path))
 
-            with tf.Session(config=config) as sess:
-                if os.path.exists(model_ckpt_save_path):
-                    saver.restore(sess, model_ckpt_save_path)
-                else:
-                    sess.run(tf.global_variables_initializer())
+        with tf.Session(config=config) as sess:
+            if os.path.exists(model_ckpt_save_path):
+                saver.restore(sess, model_ckpt_save_path)
+            else:
+                sess.run(tf.global_variables_initializer())
 
-                num_batch = train_label.shape[0] // train_batchsize
+            num_batch = train_label.shape[0] // train_batchsize
 
-                while True:
-                    for i in range(num_batch):
-                        print('step {} / {}'.format(i + 1, num_batch))
-                        batch_offset = i * train_batchsize
-                        batch_end = (i + 1) * train_batchsize
+            while True:
+                for i in range(num_batch):
+                    print('step {} / {}'.format(i + 1, num_batch))
+                    batch_offset = i * train_batchsize
+                    batch_end = (i + 1) * train_batchsize
 
-                        if train_data == 'imagenet':
-                            batch_list = train_data_list[batch_offset:batch_end]
-                            train_data_batch = load_imagenet_raw(_imagenet_train_data_path, batch_list, _img_height,
-                                                                 _img_width)
-                        else:
-                            train_data_batch = train_data[batch_offset:batch_end]
+                    if train_data == 'imagenet':
+                        batch_list = train_data_list[batch_offset:batch_end]
+                        train_data_batch = load_imagenet_raw(_imagenet_train_data_path, batch_list, _img_height,
+                                                             _img_width)
+                    else:
+                        train_data_batch = train_data[batch_offset:batch_end]
 
-                        train_label_batch = train_label[batch_offset:batch_end]
+                    train_label_batch = train_label[batch_offset:batch_end]
 
-                        sess.run(train_ops, feed_dict={features: train_data_batch, labels: train_label_batch})
+                    sess.run(train_ops, feed_dict={features: train_data_batch, labels: train_label_batch})
 
-                        end_time = timer()
-                        dur_time = end_time - start_time
-                        if dur_time > _sch_slot_time_period:
-                            saver.save(sess, model_ckpt_save_path)
+                    end_time = timer()
+                    dur_time = end_time - start_time
+                    if dur_time > _sch_slot_time_period:
+                        saver.save(sess, model_ckpt_save_path)
+                        return
 
-                            return
+
+def evaluate_job(job_info):
+    features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _img_channels])
+    labels = tf.placeholder(tf.int64, [None, _img_num_class])
+    _, eval_ops, model_name = build_model(job_info, features, labels)
+    model_ckpt_save_path = _ckpt_save_path + '/' + model_name
+
+    train_batchsize = job_info['batch_size']
+
+    saver = tf.train.Saver()
+
+    config = tf.ConfigProto()
+    config.allow_soft_placement = True
+    config.gpu_options.allow_growth = True
+
+    with tf.Session(config=config) as sess:
+        if os.path.exists(model_ckpt_save_path):
+            saver.restore(sess, model_ckpt_save_path)
+        else:
+            raise AttributeError('cannot found the pretrained model')
+
+        if train_data == 'imagenet':
+            acc_sum = 0
+            num_eval_batch = train_label.shape[0] // 50
+            for n in range(num_eval_batch):
+                batch_offset = n * train_batchsize
+                batch_end = (n + 1) * train_batchsize
+                batch_eval_list = eval_data[batch_offset:batch_end]
+                feature_eval_batch = load_imagenet_raw(_imagenet_eval_data_path, batch_eval_list, _img_height, _img_width)
+                label_eval_batch = eval_label[batch_offset:batch_end]
+                acc_batch = sess.run(eval_ops, feed_dict={features: feature_eval_batch, labels: label_eval_batch})
+                acc_sum += acc_batch
+
+            acc_arg = acc_sum / num_eval_batch
+        else:
+            acc_arg = sess.run(eval_ops, feed_dict={features: eval_data, labels: eval_label})
+
+    print('job id: {}, accuracy: {}'.format(job_info['job_id'], acc_arg))
 
 
 if __name__ == "__main__":
@@ -120,11 +164,11 @@ if __name__ == "__main__":
         _img_channels = cfg_para_yml.num_channels_rgb
         _imagenet_train_data_path = cfg_path_yml.imagenet_t10k_img_raw_path
         _imagenet_train_label_path = cfg_path_yml.imagenet_t10k_label_path
-        _imagenet_test_data_path = cfg_path_yml.imagenet_t1k_img_raw_path
-        _imagenet_test_label_path = cfg_path_yml.imagenet_t1k_label_path
+        _imagenet_eval_data_path = cfg_path_yml.imagenet_t1k_img_raw_path
+        _imagenet_eval_label_path = cfg_path_yml.imagenet_t1k_label_path
 
         train_label = load_imagenet_labels_onehot(_imagenet_train_label_path, _num_classes)
-        eval_label = load_imagenet_labels_onehot(_imagenet_test_label_path, _num_classes)
+        eval_label = load_imagenet_labels_onehot(_imagenet_eval_label_path, _num_classes)
 
     elif _sch_train_dataset == 'cifar10':
         _img_width = cfg_para_yml.img_width_cifar10
@@ -134,7 +178,7 @@ if __name__ == "__main__":
         _img_path = cfg_path_yml.cifar_10_path
 
         cifar10_path = cfg_path_yml.cifar_10_path
-        train_data, train_label, test_data, test_label = load_cifar10_keras()
+        train_data, train_label, eval_data, eval_label = load_cifar10_keras()
 
     elif _sch_train_dataset == 'mnist':
         _img_width = cfg_para_yml.img_width_mnist
