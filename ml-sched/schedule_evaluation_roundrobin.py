@@ -57,7 +57,7 @@ def run_job(job_info, assign_device):
         if not os.path.exists(model_ckpt_save_path):
             os.makedirs(model_ckpt_save_path)
 
-        checkpoint_file = os.path.join(model_ckpt_save_path, 'model_ckpt')
+        checkpoint_file = model_ckpt_save_path + '/' + 'model_ckpt'
 
         train_batchsize = job_info['batch_size']
 
@@ -71,7 +71,7 @@ def run_job(job_info, assign_device):
             train_data_list = sorted(os.listdir(_imagenet_train_data_path))
 
         with tf.Session(config=config) as sess:
-            if tf.train.checkpoint_exists(checkpoint_file):
+            if os.path.isfile(checkpoint_file + '.meta'):
                 saver.restore(sess, checkpoint_file)
             else:
                 sess.run(tf.global_variables_initializer())
@@ -118,7 +118,7 @@ def evaluate_job(job_info):
     config.gpu_options.allow_growth = True
 
     with tf.Session(config=config) as sess:
-        if tf.train.checkpoint_exists(checkpoint_file):
+        if os.path.isfile(checkpoint_file + '.meta'):
             saver.restore(sess, checkpoint_file)
         else:
             sess.run(tf.global_variables_initializer())
