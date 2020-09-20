@@ -34,7 +34,7 @@ def run_job(job_info, assign_device):
 
         train_batchsize = job_info['batch_size']
 
-        train_model = ModelImporter(job_info['model_type'], job_info['job_id'], job_info['model_layer_num'],
+        train_model = ModelImporter(job_info['model_type'], str(job_info['job_id']), job_info['model_layer_num'],
                                     _img_height, _img_width, _img_channels, _img_num_class, train_batchsize,
                                     job_info['optimizer'], job_info['learning_rate'], job_info['activation'], False)
 
