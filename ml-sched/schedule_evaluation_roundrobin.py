@@ -48,20 +48,19 @@ def run_job(job_info, assign_device):
     start_time = timer()
 
     with tf.device(assign_device):
-        features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _img_channels])
-        labels = tf.placeholder(tf.int64, [None, _img_num_class])
+        graph = tf.Graph()
+        with graph.as_default():
+            features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _img_channels])
+            labels = tf.placeholder(tf.int64, [None, _img_num_class])
+            train_ops, _, model_name = build_model(job_info, features, labels)
+            saver = tf.train.Saver()
 
-        train_ops, _, model_name = build_model(job_info, features, labels)
         model_ckpt_save_path = _ckpt_save_path + '/' + model_name
-
         if not os.path.exists(model_ckpt_save_path):
             os.makedirs(model_ckpt_save_path)
 
         checkpoint_file = model_ckpt_save_path + '/' + 'model_ckpt'
-
         train_batchsize = job_info['batch_size']
-
-        saver = tf.train.Saver()
 
         config = tf.ConfigProto()
         config.allow_soft_placement = True
@@ -70,7 +69,7 @@ def run_job(job_info, assign_device):
         if _sch_train_dataset == 'imagenet':
             train_data_list = sorted(os.listdir(_imagenet_train_data_path))
 
-        with tf.Session(config=config) as sess:
+        with tf.Session(graph=graph, config=config) as sess:
             if os.path.isfile(checkpoint_file + '.meta'):
                 saver.restore(sess, checkpoint_file)
             else:
@@ -103,21 +102,22 @@ def run_job(job_info, assign_device):
 
 
 def evaluate_job(job_info):
-    features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _img_channels])
-    labels = tf.placeholder(tf.int64, [None, _img_num_class])
-    _, eval_ops, model_name = build_model(job_info, features, labels)
+    graph = tf.Graph()
+    with graph.as_default():
+        features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _img_channels])
+        labels = tf.placeholder(tf.int64, [None, _img_num_class])
+        _, eval_ops, model_name = build_model(job_info, features, labels)
+        saver = tf.train.Saver()
+
     model_ckpt_save_path = _ckpt_save_path + '/' + model_name
     checkpoint_file = os.path.join(model_ckpt_save_path, 'model_ckpt')
-
     train_batchsize = job_info['batch_size']
-
-    saver = tf.train.Saver()
 
     config = tf.ConfigProto()
     config.allow_soft_placement = True
     config.gpu_options.allow_growth = True
 
-    with tf.Session(config=config) as sess:
+    with tf.Session(graph=graph, config=config) as sess:
         if os.path.isfile(checkpoint_file + '.meta'):
             saver.restore(sess, checkpoint_file)
         else:
@@ -135,11 +135,12 @@ def evaluate_job(job_info):
                 acc_batch = sess.run(eval_ops, feed_dict={features: feature_eval_batch, labels: label_eval_batch})
                 acc_sum += acc_batch
 
-            acc_arg = acc_sum / num_eval_batch
+            acc_avg = acc_sum / num_eval_batch
         else:
-            acc_arg = sess.run(eval_ops, feed_dict={features: eval_data, labels: eval_label})
+            acc_avg = sess.run(eval_ops, feed_dict={features: eval_data, labels: eval_label})
 
-    print('job id: {}, accuracy: {}'.format(job_info['job_id'], acc_arg))
+    #print('job id: {}, accuracy: {}'.format(job_info['job_id'], acc_avg))
+    return acc_avg
 
 
 if __name__ == "__main__":
@@ -244,5 +245,11 @@ if __name__ == "__main__":
 
         time_slot_count += 1
 
+    workload_acc_sum = 0
+
     for jidx in _sch_workload:
-        evaluate_job(jidx)
+        workload_acc_sum += evaluate_job(jidx)
+
+    workload_acc_avg = workload_acc_sum / _sch_job_num
+
+    print('workload average accuracy: {}'.format(workload_acc_avg))
