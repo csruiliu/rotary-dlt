@@ -15,7 +15,7 @@ local_path:
   profile_path: /home/ruiliu/Development/mtml-tf/profile-result
   multidevices_time_dataset_path: /home/ruiliu/Development/mtml-tf/ml-sched/multidevices_time_dataset.json
   accuracy_dataset_path: /home/ruiliu/Development/mtml-tf/ml-sched/accuracy_dataset.json
-  ckpt_save_path: /home/ruiliu/Development/mtml-tf/ml-sched/model_ckpt/
+  ckpt_save_path: /home/ruiliu/Development/mtml-tf/ml-sched/model_ckpt
 
 roscoe_path:
   dataset_imagenet_t50k_img_raw: /tank/local/ruiliu/dataset/imagenet50k
@@ -34,7 +34,7 @@ roscoe_path:
   profile_path: /tank/local/ruiliu/mtml-tf/profile-result
   multidevices_time_dataset_path: /tank/local/ruiliu/mtml-tf/ml-sched/multidevices_time_dataset.json
   accuracy_dataset_path: /tank/local/ruiliu/mtml-tf/ml-sched/accuracy_dataset.json
-  ckpt_save_path: /tank/local/ruiliu/mtml-tf/ml-sched/model_ckpt/
+  ckpt_save_path: /tank/local/ruiliu/mtml-tf/ml-sched/model_ckpt
 
 hp_path:
   dataset_imagenet_t50k_img_raw: /home/user/Development/dataset/imagenet50k
@@ -53,7 +53,7 @@ hp_path:
   profile_path: /home/user/Development/mtml-tf/profile-result
   multidevices_time_dataset_path: /home/user/Development/mtml-tf/ml-sched/multidevices_time_dataset.json
   accuracy_dataset_path: /home/user/Development/mtml-tf/ml-sched/accuracy_dataset.json
-  ckpt_save_path: /home/user/Development/mtml-tf/ml-sched/model_ckpt/
+  ckpt_save_path: /home/user/Development/mtml-tf/ml-sched/model_ckpt
 
 
 

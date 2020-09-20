@@ -57,7 +57,7 @@ def run_job(job_info, assign_device):
         if not os.path.exists(model_ckpt_save_path):
             os.makedirs(model_ckpt_save_path)
 
-        checkpoint_file = os.path.join(model_ckpt_save_path, "checkpoint")
+        checkpoint_file = os.path.join(model_ckpt_save_path, 'model_ckpt')
 
         train_batchsize = job_info['batch_size']
 
@@ -107,7 +107,7 @@ def evaluate_job(job_info):
     labels = tf.placeholder(tf.int64, [None, _img_num_class])
     _, eval_ops, model_name = build_model(job_info, features, labels)
     model_ckpt_save_path = _ckpt_save_path + '/' + model_name
-    checkpoint_file = os.path.join(model_ckpt_save_path, "checkpoint")
+    checkpoint_file = os.path.join(model_ckpt_save_path, 'model_ckpt')
 
     train_batchsize = job_info['batch_size']
 
