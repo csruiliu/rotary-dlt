@@ -237,3 +237,6 @@ if __name__ == "__main__":
         device_proc_cpu.join()
 
         time_slot_count += 1
+
+    for jidx in _sch_workload:
+        evaluate_job(jidx)
