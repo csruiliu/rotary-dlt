@@ -1,8 +1,8 @@
 #!/bin/sh
 
 JOB_LIST="50 100 150 200"
-
-for jidx in ${JOB_LIST}
+TIME_SLOT="24 48 72 96"
+for tidx in ${TIME_SLOT}
 do
-  python3 schedule_evaluation_roundrobin.py -n ${jidx} >> ./EXP-JOB${jidx}.txt
+  python3 schedule_evaluation_roundrobin.py -n ${tidx} >> ./EXP-TIME${tidx}.txt
 done
