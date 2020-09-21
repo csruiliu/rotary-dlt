@@ -224,7 +224,7 @@ if __name__ == "__main__":
     _sch_device_num = _sch_gpu_device_num + _sch_cpu_device_num
     _sch_time_slots_num = cfg_para_yml.sch_time_slots_num
     _sch_slot_time_period = cfg_para_yml.sch_slot_time_period
-    _ckpt_save_path = cfg_path_yml.ckpt_save_path
+    _ckpt_save_path = cfg_path_yml.ckpt_save_path + '/workload_' + str(_sch_job_num)
 
     ##################################################
     # Round Robin Schedule
