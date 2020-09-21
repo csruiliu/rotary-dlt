@@ -16,4 +16,4 @@ SYSTEM_IDLE=`echo ${NEXT_SYS_IDLE} ${LAST_SYS_IDLE} | awk '{print $1-$2}'`
 TOTAL_TIME=`echo ${NEXT_TOTAL_CPU_T} ${LAST_TOTAL_CPU_T} | awk '{print $1-$2}'`
 CPU_USAGE=`echo ${SYSTEM_IDLE} ${TOTAL_TIME} | awk '{printf "%.2f", 100-$1/$2*100}'`
 
-echo "CPU Usage:${CPU_USAGE}%"$time >> /home/youcong/cpu.log
+echo "CPU Usage:${CPU_USAGE}%"$time >> ./cpu-utilization.log

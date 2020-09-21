@@ -2,6 +2,7 @@ import tensorflow as tf
 from multiprocessing import Process
 from timeit import default_timer as timer
 import os
+import argparse
 
 from model_importer import ModelImporter
 import config_parameter as cfg_para_yml
@@ -48,12 +49,12 @@ def run_job(job_info, assign_device):
     start_time = timer()
 
     with tf.device(assign_device):
-        graph = tf.Graph()
-        with graph.as_default():
-            features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _img_channels])
-            labels = tf.placeholder(tf.int64, [None, _img_num_class])
-            train_ops, _, model_name = build_model(job_info, features, labels)
-            saver = tf.train.Saver()
+        #graph = tf.Graph()
+        #with graph.as_default():
+        features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _img_channels])
+        labels = tf.placeholder(tf.int64, [None, _img_num_class])
+        train_ops, _, model_name = build_model(job_info, features, labels)
+        saver = tf.train.Saver()
 
         model_ckpt_save_path = _ckpt_save_path + '/' + model_name
         if not os.path.exists(model_ckpt_save_path):
@@ -69,7 +70,7 @@ def run_job(job_info, assign_device):
         if _sch_train_dataset == 'imagenet':
             train_data_list = sorted(os.listdir(_imagenet_train_data_path))
 
-        with tf.Session(graph=graph, config=config) as sess:
+        with tf.Session(config=config) as sess:
             if os.path.isfile(checkpoint_file + '.meta'):
                 saver.restore(sess, checkpoint_file)
             else:
@@ -148,7 +149,14 @@ if __name__ == "__main__":
     # Generate Workload
     ##################################################
 
-    _sch_job_num = cfg_para_yml.sch_job_num
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-n', '--job_num', required=True, action='store', type=int,
+                        help='model type [resnet, mobilenet, mlp, densenet, scn]')
+    args = parser.parse_args()
+    _sch_job_num = args.job_num
+
+    #_sch_job_num = cfg_para_yml.sch_job_num
     _sch_model_type_set = cfg_para_yml.sch_model_type_set
     _sch_batch_size_set = cfg_para_yml.sch_batch_size_set
     _sch_optimizer_set = cfg_para_yml.sch_optimizer_set
