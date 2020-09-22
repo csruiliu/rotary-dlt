@@ -145,20 +145,33 @@ def evaluate_job(job_info):
 
 
 if __name__ == "__main__":
+
     ##################################################
-    # Generate Workload
+    # Key Parameters for evaluation
     ##################################################
 
     parser = argparse.ArgumentParser()
 
-    #parser.add_argument('-n', '--job_num', required=True, action='store', type=int,
-    #                    help='model type [resnet, mobilenet, mlp, densenet, scn]')
-    parser.add_argument('-t', '--time_slot', required=True, action='store', type=int,
-                        help='model type [resnet, mobilenet, mlp, densenet, scn]')
-
+    parser.add_argument('-j', '--job_num', action='store', type=int,
+                        help='the number of jobs in a workload')
+    parser.add_argument('-t', '--time_slot', action='store', type=int,
+                        help='the number of time slots')
     args = parser.parse_args()
 
-    _sch_job_num = cfg_para_yml.sch_job_num
+    if args.job_num is not None:
+        _sch_job_num = args.job_num
+    else:
+        _sch_job_num = cfg_para_yml.sch_job_num
+
+    if args.time_slot is not None:
+        _sch_time_slots_num = args.time_slot
+    else:
+        _sch_time_slots_num = cfg_para_yml.sch_time_slots_num
+
+    ##################################################
+    # Generate Workload
+    ##################################################
+
     _sch_model_type_set = cfg_para_yml.sch_model_type_set
     _sch_batch_size_set = cfg_para_yml.sch_batch_size_set
     _sch_optimizer_set = cfg_para_yml.sch_optimizer_set
@@ -224,8 +237,6 @@ if __name__ == "__main__":
     _sch_gpu_device_num = cfg_para_yml.sch_gpu_num
     _sch_cpu_device_num = cfg_para_yml.sch_cpu_num
     _sch_device_num = _sch_gpu_device_num + _sch_cpu_device_num
-    _sch_time_slots_num = args.time_slot
-    #_sch_time_slots_num = cfg_para_yml.sch_time_slots_num
     _sch_slot_time_period = cfg_para_yml.sch_slot_time_period
     _ckpt_save_path = cfg_path_yml.ckpt_save_path + '/timeslot_' + str(_sch_time_slots_num)
 
