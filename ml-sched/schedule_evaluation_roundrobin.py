@@ -3,6 +3,8 @@ from multiprocessing import Process
 from timeit import default_timer as timer
 import os
 import argparse
+import numpy as np
+np.set_printoptions(suppress=True)
 
 from model_importer import ModelImporter
 import config_parameter as cfg_para_yml
@@ -37,10 +39,10 @@ def build_model(job_info, ph_features, ph_labels):
     model_train_op = model_entity.train(model_logit, ph_labels)
     model_eval_op = model_entity.evaluate(model_logit, ph_labels)
 
-    model_name = '{0}-{1}-{2}-{3}-{4}-{5}-{6}-{7}'.format(job_info['job_id'], job_info['model_type'],
-                                                          job_info['model_layer_num'], job_info['batch_size'],
-                                                          job_info['optimizer'], job_info['learning_rate'],
-                                                          job_info['activation'], job_info['train_dataset'])
+    model_name = '{}_{}_{}_{}_{}_{}_{}_{}'.format(job_info['job_id'], job_info['model_type'],
+                                                  job_info['model_layer_num'], job_info['batch_size'],
+                                                  job_info['optimizer'], job_info['learning_rate'],
+                                                  job_info['activation'], job_info['train_dataset'])
 
     return model_train_op, model_eval_op, model_name
 
@@ -136,12 +138,11 @@ def evaluate_job(job_info):
                 acc_batch = sess.run(eval_ops, feed_dict={features: feature_eval_batch, labels: label_eval_batch})
                 acc_sum += acc_batch
 
-            acc_avg = acc_sum / num_eval_batch
+            model_acc_avg = acc_sum / num_eval_batch
         else:
-            acc_avg = sess.run(eval_ops, feed_dict={features: eval_data, labels: eval_label})
+            model_acc_avg = sess.run(eval_ops, feed_dict={features: eval_data, labels: eval_label})
 
-    #print('job id: {}, accuracy: {}'.format(job_info['job_id'], acc_avg))
-    return acc_avg
+    return model_acc_avg, model_name
 
 
 if __name__ == "__main__":
@@ -183,7 +184,7 @@ if __name__ == "__main__":
                                       _sch_learning_rate_set, _sch_activation_set, _sch_train_dataset, True)
 
     _sch_workload_use = _sch_workload.copy()
-
+    
     ##################################################
     # Prepare Training Dataset
     ##################################################
@@ -268,11 +269,18 @@ if __name__ == "__main__":
 
         time_slot_count += 1
 
-    workload_acc_sum = 0
+    sch_job_attainment_list = list()
+    sch_job_name_list = list()
 
     for jidx in _sch_workload:
-        workload_acc_sum += evaluate_job(jidx)
+        job_accuracy, job_name = evaluate_job(jidx)
+        sch_job_attainment_list.append(job_accuracy)
+        sch_job_name_list.append(job_name)
 
-    workload_acc_avg = workload_acc_sum / _sch_job_num
+    workload_acc_avg = sum(sch_job_attainment_list) / _sch_job_num
 
-    print('workload average accuracy: {}'.format(workload_acc_avg))
+    print('#########################################################')
+    print('jobs attainment in the workload:')
+    for job_idx, job_info in _sch_workload:
+        print('**Job Result**: {}_{}'.format(job_info, sch_job_attainment_list[job_idx]))
+    print('**Workload Result**: {}'.format(workload_acc_avg))
