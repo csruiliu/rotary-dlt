@@ -27,20 +27,20 @@ def schedule_job_roundrobin():
     return sch_list
 
 
-def build_model(job_info, ph_features, ph_labels):
-    train_model = ModelImporter(job_info['model_type'], str(job_info['job_id']), job_info['model_layer_num'],
-                                _img_height, _img_width, _img_channels, _img_num_class, job_info['batch_size'],
-                                job_info['optimizer'], job_info['learning_rate'], job_info['activation'], False)
+def build_model(job_data, ph_features, ph_labels):
+    train_model = ModelImporter(job_data['model_type'], str(job_data['job_id']), job_data['model_layer_num'],
+                                _img_height, _img_width, _img_channels, _img_num_class, job_data['batch_size'],
+                                job_data['optimizer'], job_data['learning_rate'], job_data['activation'], False)
 
     model_entity = train_model.get_model_entity()
     model_logit = model_entity.build(ph_features, is_training=True)
     model_train_op = model_entity.train(model_logit, ph_labels)
     model_eval_op = model_entity.evaluate(model_logit, ph_labels)
 
-    model_name = '{}_{}_{}_{}_{}_{}_{}_{}'.format(job_info['job_id'], job_info['model_type'],
-                                                  job_info['model_layer_num'], job_info['batch_size'],
-                                                  job_info['optimizer'], job_info['learning_rate'],
-                                                  job_info['activation'], job_info['train_dataset'])
+    model_name = '{}_{}_{}_{}_{}_{}_{}_{}'.format(job_data['job_id'], job_data['model_type'],
+                                                  job_data['model_layer_num'], job_data['batch_size'],
+                                                  job_data['optimizer'], job_data['learning_rate'],
+                                                  job_data['activation'], job_data['train_dataset'])
 
     return model_train_op, model_eval_op, model_name
 
@@ -84,7 +84,7 @@ def run_job(job_info, assign_device):
                     batch_offset = i * train_batchsize
                     batch_end = (i + 1) * train_batchsize
 
-                    if train_data == 'imagenet':
+                    if _sch_train_dataset == 'imagenet':
                         batch_list = train_data_list[batch_offset:batch_end]
                         train_data_batch = load_imagenet_raw(_imagenet_train_data_path, batch_list, _img_height,
                                                              _img_width)
@@ -124,7 +124,7 @@ def evaluate_job(job_info):
         else:
             sess.run(tf.global_variables_initializer())
 
-        if train_data == 'imagenet':
+        if _sch_train_dataset == 'imagenet':
             acc_sum = 0
             num_eval_batch = train_label.shape[0] // 50
             for n in range(num_eval_batch):
@@ -279,6 +279,6 @@ if __name__ == "__main__":
 
     print('#########################################################')
     print('jobs attainment in the workload:')
-    for job_idx, job_info in _sch_workload:
-        print('**Job Result**: {}_{}'.format(job_info, sch_job_attainment_list[job_idx]))
+    for job_idx, job_value in enumerate(_sch_workload):
+        print('**Job Result**: {}_{}'.format(job_value, sch_job_attainment_list[job_idx]))
     print('**Workload Result**: {}'.format(workload_acc_avg))
