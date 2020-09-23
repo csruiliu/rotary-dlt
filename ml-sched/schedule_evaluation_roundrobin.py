@@ -3,8 +3,6 @@ from multiprocessing import Process
 from timeit import default_timer as timer
 import os
 import argparse
-import numpy as np
-np.set_printoptions(suppress=True)
 
 from model_importer import ModelImporter
 import config_parameter as cfg_para_yml
