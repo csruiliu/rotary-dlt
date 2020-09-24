@@ -287,6 +287,7 @@ if __name__ == "__main__":
 
     print('#########################################################')
     print('jobs attainment in the workload:')
-    for job_idx, job_value in enumerate(_sch_workload):
-        print('**Job Result**: {}_{}_{}'.format(job_value, sch_job_attainment_list[job_idx], sch_job_progress_list[job_idx]))
+    for job_idx, _ in enumerate(_sch_workload):
+        print('**Job Result**: {}_{}_{}'.format(sch_job_name_list[job_idx], sch_job_attainment_list[job_idx],
+                                                sch_job_progress_list[job_idx]))
     print('**Workload Result**: {}'.format(workload_acc_avg))
