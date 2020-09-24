@@ -101,7 +101,7 @@ def run_job(job_info, job_progress_dict, assign_device):
                     if dur_time > _sch_slot_time_period:
                         job_progress_dict[model_name] += total_step
                         saver.save(sess, checkpoint_file)
-                        return total_step
+                        return
 
 
 def evaluate_job(job_info):
@@ -278,7 +278,10 @@ if __name__ == "__main__":
         job_accuracy, job_name = evaluate_job(jidx)
         sch_job_attainment_list.append(job_accuracy)
         sch_job_name_list.append(job_name)
-        sch_job_progress_list.append(_sch_job_progress_dict[job_name])
+        if job_name in _sch_job_progress_dict:
+            sch_job_progress_list.append(_sch_job_progress_dict[job_name])
+        else:
+            sch_job_progress_list.append(0)
 
     workload_acc_avg = sum(sch_job_attainment_list) / _sch_job_num
 
