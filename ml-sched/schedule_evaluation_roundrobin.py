@@ -1,5 +1,5 @@
 import tensorflow as tf
-from multiprocessing import Process
+from multiprocessing import Process, Manager
 from timeit import default_timer as timer
 import os
 import argparse
@@ -45,19 +45,17 @@ def build_model(job_data, ph_features, ph_labels):
     return model_train_op, model_eval_op, model_name
 
 
-def run_job(job_info, assign_device):
+def run_job(job_info, job_progress_dict, assign_device):
     start_time = timer()
 
     with tf.device(assign_device):
-        #graph = tf.Graph()
-        #with graph.as_default():
         features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _img_channels])
         labels = tf.placeholder(tf.int64, [None, _img_num_class])
         train_ops, _, model_name = build_model(job_info, features, labels)
         saver = tf.train.Saver()
 
-        if model_name not in _sch_job_progress_dict:
-            _sch_job_progress_dict[model_name] = 0
+        if model_name not in job_progress_dict:
+            job_progress_dict[model_name] = 0
 
         model_ckpt_save_path = _ckpt_save_path + '/' + model_name
         if not os.path.exists(model_ckpt_save_path):
@@ -101,9 +99,9 @@ def run_job(job_info, assign_device):
                     end_time = timer()
                     dur_time = end_time - start_time
                     if dur_time > _sch_slot_time_period:
-                        _sch_job_progress_dict[model_name] += total_step
+                        job_progress_dict[model_name] += total_step
                         saver.save(sess, checkpoint_file)
-                        return
+                        return total_step
 
 
 def evaluate_job(job_info):
@@ -185,7 +183,7 @@ if __name__ == "__main__":
                                       _sch_learning_rate_set, _sch_activation_set, _sch_train_dataset, True)
     _sch_workload_use = _sch_workload.copy()
     # record the progress of each job during a specific schedule
-    _sch_job_progress_dict = dict()
+    _sch_job_progress_dict = Manager.dict()
 
     ##################################################
     # Prepare Training Dataset
@@ -256,10 +254,10 @@ if __name__ == "__main__":
         proc_gpu_list = list()
         for gn in range(_sch_gpu_device_num):
             assign_gpu = '/gpu:' + str(gn)
-            device_proc_gpu = Process(target=run_job, args=(job_list[gn], assign_gpu))
+            device_proc_gpu = Process(target=run_job, args=(job_list[gn], _sch_job_progress_dict, assign_gpu))
             proc_gpu_list.append(device_proc_gpu)
 
-        device_proc_cpu = Process(target=run_job, args=(job_list[_sch_device_num-1], '/cpu:0'))
+        device_proc_cpu = Process(target=run_job, args=(job_list[_sch_device_num-1], _sch_job_progress_dict, '/cpu:0'))
 
         for device_proc_gpu in proc_gpu_list:
             device_proc_gpu.start()
