@@ -30,11 +30,11 @@ placement_schedule:
   # number of cpu devices for workload schedule
   cpu_device_num: 1
   # total number of jobs in a workload
-  job_num: 10
+  job_num: 100
   # total number of time slots for a workload
-  time_slots_num: 15
+  time_slots_num: 48
   # time period of each slot (unit: seconds)
-  slot_time_period: 5
+  slot_time_period: 180
   # training dataset
   train_dataset: cifar10
   # total available model type
