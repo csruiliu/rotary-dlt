@@ -56,6 +56,9 @@ def run_job(job_info, assign_device):
         train_ops, _, model_name = build_model(job_info, features, labels)
         saver = tf.train.Saver()
 
+        if model_name not in _sch_job_progress_dict:
+            _sch_job_progress_dict[model_name] = 0
+
         model_ckpt_save_path = _ckpt_save_path + '/' + model_name
         if not os.path.exists(model_ckpt_save_path):
             os.makedirs(model_ckpt_save_path)
@@ -77,7 +80,7 @@ def run_job(job_info, assign_device):
                 sess.run(tf.global_variables_initializer())
 
             num_batch = train_label.shape[0] // train_batchsize
-
+            total_step = 0
             while True:
                 for i in range(num_batch):
                     print('step {} / {}'.format(i + 1, num_batch))
@@ -94,10 +97,11 @@ def run_job(job_info, assign_device):
                     train_label_batch = train_label[batch_offset:batch_end]
 
                     sess.run(train_ops, feed_dict={features: train_data_batch, labels: train_label_batch})
-
+                    total_step += 1
                     end_time = timer()
                     dur_time = end_time - start_time
                     if dur_time > _sch_slot_time_period:
+                        _sch_job_progress_dict[model_name] += total_step
                         saver.save(sess, checkpoint_file)
                         return
 
@@ -144,11 +148,10 @@ def evaluate_job(job_info):
 
 
 if __name__ == "__main__":
-
     ##################################################
     # Key Parameters for evaluation
     ##################################################
-
+    
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-j', '--job_num', action='store', type=int,
@@ -180,9 +183,10 @@ if __name__ == "__main__":
 
     _sch_workload = generate_workload(_sch_job_num, _sch_model_type_set, _sch_batch_size_set, _sch_optimizer_set,
                                       _sch_learning_rate_set, _sch_activation_set, _sch_train_dataset, True)
-
     _sch_workload_use = _sch_workload.copy()
-    
+    # record the progress of each job during a specific schedule
+    _sch_job_progress_dict = dict()
+
     ##################################################
     # Prepare Training Dataset
     ##################################################
@@ -242,6 +246,7 @@ if __name__ == "__main__":
     ##################################################
     # Round Robin Schedule
     ##################################################
+
     proc_gpu_list = list()
 
     time_slot_count = 0
@@ -269,16 +274,18 @@ if __name__ == "__main__":
 
     sch_job_attainment_list = list()
     sch_job_name_list = list()
+    sch_job_progress_list = list()
 
     for jidx in _sch_workload:
         job_accuracy, job_name = evaluate_job(jidx)
         sch_job_attainment_list.append(job_accuracy)
         sch_job_name_list.append(job_name)
+        sch_job_progress_list.append(_sch_job_progress_dict[job_name])
 
     workload_acc_avg = sum(sch_job_attainment_list) / _sch_job_num
 
     print('#########################################################')
     print('jobs attainment in the workload:')
     for job_idx, job_value in enumerate(_sch_workload):
-        print('**Job Result**: {}_{}'.format(job_value, sch_job_attainment_list[job_idx]))
+        print('**Job Result**: {}_{}_{}'.format(job_value, sch_job_attainment_list[job_idx], sch_job_progress_list[job_idx]))
     print('**Workload Result**: {}'.format(workload_acc_avg))
