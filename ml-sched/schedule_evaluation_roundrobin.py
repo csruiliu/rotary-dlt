@@ -81,7 +81,7 @@ def run_job(job_info, job_progress_dict, assign_device):
             total_step = 0
             while True:
                 for i in range(num_batch):
-                    print('step {} / {}'.format(i + 1, num_batch))
+                    #print('step {} / {}'.format(i + 1, num_batch))
                     batch_offset = i * train_batchsize
                     batch_end = (i + 1) * train_batchsize
 
