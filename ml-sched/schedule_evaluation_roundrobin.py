@@ -183,7 +183,7 @@ if __name__ == "__main__":
                                       _sch_learning_rate_set, _sch_activation_set, _sch_train_dataset, True)
     _sch_workload_use = _sch_workload.copy()
     # record the progress of each job during a specific schedule
-    _sch_job_progress_dict = Manager.dict()
+    _sch_job_progress_dict = Manager().dict()
 
     ##################################################
     # Prepare Training Dataset
