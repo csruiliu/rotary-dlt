@@ -14,8 +14,8 @@ from utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_
 def produce_job_roundrobin():
     cur_job = _sch_workload_use.pop()
     if len(_sch_workload_use) == 0:
-        for idx, value in enumerate(_sch_workload):
-            _sch_workload_use.append(value)
+        _is_cover_workload = True
+        return
     return cur_job
 
 
@@ -24,6 +24,15 @@ def schedule_job_roundrobin():
     for i in range(_sch_device_num):
         job = produce_job_roundrobin()
         sch_list.append(job)
+    return sch_list
+
+
+def schedule_job_tetrisched():
+    sch_list = list()
+    selected_jobs = sorted(_job_accuracy_increment_dict.items(), key=lambda item: item[1], reverse=True)[:_sch_device_num]
+    for sjob in selected_jobs:
+        sjob_id = int(sjob[0].split('_')[0])
+        sch_list.append(_sch_workload[sjob_id])
     return sch_list
 
 
@@ -101,7 +110,7 @@ def run_job(job_info, job_progress_dict, assign_device):
                         return
 
 
-def evaluate_job(job_info):
+def evaluate_job(job_info, job_accuracy_increment_dict, job_current_accuracy_dict):
     graph = tf.Graph()
     with graph.as_default():
         features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _img_channels])
@@ -139,6 +148,9 @@ def evaluate_job(job_info):
         else:
             model_acc_avg = sess.run(eval_ops, feed_dict={features: eval_data, labels: eval_label})
 
+    job_accuracy_increment_dict[model_name] = model_acc_avg - job_current_accuracy_dict[model_name]
+    job_current_accuracy_dict[model_name] = model_acc_avg
+
     return model_acc_avg, model_name
 
 
@@ -149,6 +161,8 @@ def init_shared_dict():
                                                       job['optimizer'], job['learning_rate'],
                                                       job['activation'], job['train_dataset'])
         _sch_job_progress_dict[model_name] = 0
+        _job_accuracy_increment_dict[model_name] = 0
+        _job_current_accuracy_dict[model_name] = 0
 
 
 if __name__ == "__main__":
@@ -196,6 +210,9 @@ if __name__ == "__main__":
     # record the progress of each job during a specific schedule
     _sch_job_progress_dict = Manager().dict()
 
+    # record the progress of each job during a specific schedule
+    _job_accuracy_increment_dict = Manager().dict()
+    _job_current_accuracy_dict = Manager().dict()
     init_shared_dict()
 
     ##################################################
@@ -255,29 +272,35 @@ if __name__ == "__main__":
     _ckpt_save_path = cfg_path_yml.ckpt_save_path + '/workload_' + str(_sch_job_num) + '_timeslot_' + str(_sch_time_slots_num)
 
     ##################################################
-    # round-robin schedule
+    # TetriSched with Greedy Mechanism
     ##################################################
+
+    _is_cover_workload = False
 
     time_slot_count = 0
     while time_slot_count < _sch_time_slots_num:
         print('current time slot {}'.format(time_slot_count))
-        job_list = schedule_job_roundrobin()
+        if _is_cover_workload:
+            job_list = schedule_job_roundrobin()
+        else:
+            job_list = schedule_job_tetrisched()
         proc_gpu_list = list()
+
+        # Run Job in TetriSched
         for gn in range(_sch_gpu_device_num):
             assign_gpu = '/gpu:' + str(gn)
-            device_proc_gpu = Process(target=run_job, args=(job_list[gn], _sch_job_progress_dict, assign_gpu))
-            proc_gpu_list.append(device_proc_gpu)
+            proc_gpu = Process(target=run_job, args=(job_list[gn], _sch_job_progress_dict, assign_gpu))
+            proc_gpu_list.append(proc_gpu)
+        proc_cpu = Process(target=run_job, args=(job_list[_sch_device_num - 1], _sch_job_progress_dict, '/cpu:0'))
 
-        device_proc_cpu = Process(target=run_job, args=(job_list[_sch_device_num-1], _sch_job_progress_dict, '/cpu:0'))
+        for proc_gpu in proc_gpu_list:
+            proc_gpu.start()
+        proc_cpu.start()
 
-        for device_proc_gpu in proc_gpu_list:
-            device_proc_gpu.start()
-
-        device_proc_cpu.start()
-
-        for device_proc_gpu in proc_gpu_list:
-            device_proc_gpu.join()
-        device_proc_cpu.join()
+        # Evaluate Job in TetriSched
+        if _is_cover_workload:
+            for cur_job in job_list:
+                evaluate_job(cur_job, _job_accuracy_increment_dict, _job_current_accuracy_dict)
 
         time_slot_count += 1
 
