@@ -1,7 +1,7 @@
 #!/bin/sh
 
-JOB_LIST="10 50 100 150 200"
-TIME_SLOT="48 72 96 120"
+JOB_LIST="20 40 60 80 100"
+TIME_SLOT="48 60 72 84 96"
 for jidx in ${JOB_LIST}
 do
   rm -rf __pycache__
