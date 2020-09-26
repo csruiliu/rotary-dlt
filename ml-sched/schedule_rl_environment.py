@@ -18,7 +18,7 @@ class MLSchEnv:
         self._action_spec = tensor_spec.BoundedTensorSpec(self._total_device_num, dtype=tf.int32, minimum=1,
                                                           maximum=self._workload_size, name='action')
         # observation: the accuracy and overhead of each job in the workload
-        self._observation_spec = tensor_spec.TensorSpec(self._workload_size, dtype = tf.float32)
+        self._observation_spec = tensor_spec.TensorSpec(self._workload_size, dtype=tf.float32)
         self._time_step_spec = ts.time_step_spec(self._observation_spec)
         self._reward_function = reward_function
         self._evaluation_function = reward_function + '_evaluation'
