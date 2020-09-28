@@ -281,12 +281,12 @@ if __name__ == "__main__":
     while time_slot_count < _sch_time_slots_num:
         print('current time slot {}'.format(time_slot_count))
         if _is_cover_workload:
-            job_list = schedule_job_roundrobin()
-        else:
             job_list = schedule_job_tetrisched()
-        proc_gpu_list = list()
+        else:
+            job_list = schedule_job_roundrobin()
 
         # Run Job in TetriSched
+        proc_gpu_list = list()
         for gn in range(_sch_gpu_device_num):
             assign_gpu = '/gpu:' + str(gn)
             proc_gpu = Process(target=run_job, args=(job_list[gn], _sch_job_progress_dict, assign_gpu))
