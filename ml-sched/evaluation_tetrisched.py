@@ -12,11 +12,11 @@ from utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_
 
 
 def produce_job_roundrobin():
-    cur_job = _sch_workload_use.pop()
     if len(_sch_workload_use) == 0:
         _is_cover_workload = True
-        return
-    return cur_job
+    else:
+        cur_job = _sch_workload_use.pop()
+        return cur_job
 
 
 def schedule_job_roundrobin():
