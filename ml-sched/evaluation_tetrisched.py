@@ -297,6 +297,10 @@ if __name__ == "__main__":
             proc_gpu.start()
         proc_cpu.start()
 
+        for proc_gpu in proc_gpu_list:
+            proc_gpu.join()
+        proc_cpu.join()
+
         # Evaluate Job in TetriSched
         if _is_cover_workload:
             for cur_job in job_list:
