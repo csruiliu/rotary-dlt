@@ -317,7 +317,7 @@ if __name__ == "__main__":
     sch_job_progress_list = list()
 
     for jidx in _sch_workload:
-        job_accuracy, job_name = evaluate_job(jidx)
+        job_accuracy, job_name = evaluate_job(jidx, _job_accuracy_increment_dict, _job_current_accuracy_dict)
         sch_job_attainment_list.append(job_accuracy)
         sch_job_name_list.append(job_name)
         sch_job_progress_list.append(_sch_job_progress_dict[job_name])
