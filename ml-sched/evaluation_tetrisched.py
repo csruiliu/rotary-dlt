@@ -111,7 +111,7 @@ def run_job(job_info, job_progress_dict, assign_device):
                         return
 
 
-def evaluate_job(job_info, job_accuracy_increment_dict, job_current_accuracy_dict):
+def evaluate_job(job_info):
     graph = tf.Graph()
     with graph.as_default():
         features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _img_channels])
@@ -149,10 +149,50 @@ def evaluate_job(job_info, job_accuracy_increment_dict, job_current_accuracy_dic
         else:
             model_acc_avg = sess.run(eval_ops, feed_dict={features: eval_data, labels: eval_label})
 
+    return model_acc_avg, model_name
+
+
+def evaluate_job_during_run(job_info, job_accuracy_increment_dict, job_current_accuracy_dict, assign_device):
+    with tf.device(assign_device):
+        graph = tf.Graph()
+        with graph.as_default():
+            features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _img_channels])
+            labels = tf.placeholder(tf.int64, [None, _img_num_class])
+            _, eval_ops, model_name = build_model(job_info, features, labels)
+            saver = tf.train.Saver()
+
+        model_ckpt_save_path = _ckpt_save_path + '/' + model_name
+        checkpoint_file = os.path.join(model_ckpt_save_path, 'model_ckpt')
+        train_batchsize = job_info['batch_size']
+
+        config = tf.ConfigProto()
+        config.allow_soft_placement = True
+        config.gpu_options.allow_growth = True
+
+        with tf.Session(graph=graph, config=config) as sess:
+            if os.path.isfile(checkpoint_file + '.meta'):
+                saver.restore(sess, checkpoint_file)
+            else:
+                sess.run(tf.global_variables_initializer())
+
+            if _sch_train_dataset == 'imagenet':
+                acc_sum = 0
+                num_eval_batch = train_label.shape[0] // 50
+                for n in range(num_eval_batch):
+                    batch_offset = n * train_batchsize
+                    batch_end = (n + 1) * train_batchsize
+                    batch_eval_list = eval_data[batch_offset:batch_end]
+                    feature_eval_batch = load_imagenet_raw(_imagenet_eval_data_path, batch_eval_list, _img_height, _img_width)
+                    label_eval_batch = eval_label[batch_offset:batch_end]
+                    acc_batch = sess.run(eval_ops, feed_dict={features: feature_eval_batch, labels: label_eval_batch})
+                    acc_sum += acc_batch
+
+                model_acc_avg = acc_sum / num_eval_batch
+            else:
+                model_acc_avg = sess.run(eval_ops, feed_dict={features: eval_data, labels: eval_label})
+
     job_accuracy_increment_dict[model_name] = model_acc_avg - job_current_accuracy_dict[model_name]
     job_current_accuracy_dict[model_name] = model_acc_avg
-
-    return model_acc_avg, model_name
 
 
 def init_shared_dict():
@@ -304,8 +344,23 @@ if __name__ == "__main__":
 
         # Evaluate Job in TetriSched
         if _is_cover_workload:
-            for cur_job in job_list:
-                evaluate_job(cur_job, _job_accuracy_increment_dict, _job_current_accuracy_dict)
+            proc_gpu_eval_list = list()
+            for gn in range(_sch_gpu_device_num):
+                assign_gpu = '/gpu:' + str(gn)
+                proc_gpu = Process(target=evaluate_job_during_run, args=(job_list[gn], _job_accuracy_increment_dict,
+                                                                         _job_current_accuracy_dict, assign_gpu))
+                proc_gpu_list.append(proc_gpu)
+            proc_cpu_eval = Process(target=evaluate_job_during_run, args=(job_list[_sch_device_num - 1],
+                                                                          _job_accuracy_increment_dict,
+                                                                          _job_current_accuracy_dict, '/cpu:0'))
+
+            for proc_gpu_eval in proc_gpu_eval_list:
+                proc_gpu_eval.start()
+            proc_cpu_eval.start()
+
+            for proc_gpu_eval in proc_gpu_eval_list:
+                proc_gpu_eval.join()
+            proc_cpu_eval.join()
 
         time_slot_count += 1
 
@@ -318,7 +373,7 @@ if __name__ == "__main__":
     sch_job_progress_list = list()
 
     for jidx in _sch_workload:
-        job_accuracy, job_name = evaluate_job(jidx, _job_accuracy_increment_dict, _job_current_accuracy_dict)
+        job_accuracy, job_name = evaluate_job(jidx)
         sch_job_attainment_list.append(job_accuracy)
         sch_job_name_list.append(job_name)
         sch_job_progress_list.append(_sch_job_progress_dict[job_name])
