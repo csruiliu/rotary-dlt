@@ -9,7 +9,8 @@ from utils_img_func import load_imagenet_labels_onehot, load_cifar10_keras, load
 
 
 def profile_steptime(model_info_args):
-    hyperparameter_list = model_info_args.split('_')
+    model_info = model_info_args.replace('leaky_relu', 'leakyrelu')
+    hyperparameter_list = model_info.split('_')
     print(hyperparameter_list)
     job_id = hyperparameter_list[0]
     model_type = hyperparameter_list[1]
@@ -17,7 +18,11 @@ def profile_steptime(model_info_args):
     batch_size = int(hyperparameter_list[3])
     model_optimizer = hyperparameter_list[4]
     learning_rate = float(hyperparameter_list[5])
-    model_activation = hyperparameter_list[6]
+    if hyperparameter_list[6] == 'leakyrelu':
+        model_activation = 'leaky_relu'
+    else:
+        model_activation = hyperparameter_list[6]
+
     train_dataset = hyperparameter_list[7]
 
     img_width = 0

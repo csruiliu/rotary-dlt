@@ -3,7 +3,7 @@ from tf_agents.utils import common
 from tf_agents.networks import actor_distribution_network
 #from tf_agents.networks import lstm_encoding_network
 from tf_agents.agents.ppo import ppo_agent
-#from tf_agents.agents.reinforce import reinforce_agent
+from tf_agents.agents.reinforce import reinforce_agent
 from tf_agents.trajectories import trajectory
 from tf_agents.replay_buffers import tf_uniform_replay_buffer
 
@@ -26,13 +26,13 @@ class MLSchEngine:
         optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
         train_step_counter = tf.Variable(0)
 
-        self._rl_agent = ppo_agent.PPOAgent(self._mlsch_env.time_step_spec(), self._mlsch_env.action_spec(),
-                                            actor_net=actor_net, optimizer=optimizer, normalize_rewards=True,
-                                            train_step_counter=train_step_counter)
+        #self._rl_agent = ppo_agent.PPOAgent(self._mlsch_env.time_step_spec(), self._mlsch_env.action_spec(),
+        #                                    actor_net=actor_net, optimizer=optimizer, normalize_rewards=True,
+        #                                    train_step_counter=train_step_counter)
 
-        #self._rl_agent = reinforce_agent.ReinforceAgent(self._mlsch_env.time_step_spec(), self._mlsch_env.action_spec(),
-        #                                                actor_network=actor_net, optimizer=optimizer,
-        #                                                normalize_returns=True, train_step_counter=train_step_counter)
+        self._rl_agent = reinforce_agent.ReinforceAgent(self._mlsch_env.time_step_spec(), self._mlsch_env.action_spec(),
+                                                        actor_network=actor_net, optimizer=optimizer,
+                                                        normalize_returns=True, train_step_counter=train_step_counter)
 
         self._rl_agent.initialize()
         self._rl_agent.train = common.function(self._rl_agent.train)
@@ -76,6 +76,8 @@ class MLSchEngine:
                 episode_return_list.append(time_step.reward)
 
         # avg_reward = total_return / eval_num_episodes
+        print('episode_return_list', episode_return_list)
+        print('###############################')
         reward = getattr(utils_reward_func, self._mlsch_env.evaluation_function())(episode_return_list)
 
         return reward
@@ -88,7 +90,6 @@ class MLSchEngine:
             action_step = self._rl_agent.policy.action(time_step)
             sch_action_list.append(action_step.action.numpy())
             time_step = self._mlsch_env.step(action_step.action)
-
         return sch_action_list
 
     def benchmark_before_training(self, benchmark_num_episodes=10):

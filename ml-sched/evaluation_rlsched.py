@@ -1,5 +1,4 @@
 import tensorflow as tf
-tf.compat.v1.enable_v2_behavior()
 from multiprocessing import Process, Manager
 import argparse
 import os
@@ -15,13 +14,16 @@ import config_path as cfg_path_yml
 from utils_workload_func import generate_workload
 from utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras, load_mnist_image, load_mnist_label_onehot
 
+tf.compat.v1.enable_v2_behavior()
+
 
 def produce_job_roundrobin():
-    cur_job = _sch_workload_use.pop()
-    if len(_sch_workload_use) == 0:
-        _is_cover_workload = True
-        return
-    return cur_job
+    global _is_cover_workload
+    if len(_sch_workload_use) != 0:
+        cur_job = _sch_workload_use.pop()
+        if len(_sch_workload_use) == 0:
+            _is_cover_workload = True
+        return cur_job
 
 
 def schedule_job_roundrobin():
@@ -187,6 +189,8 @@ def init_shared_dict():
                                                       job['optimizer'], job['learning_rate'],
                                                       job['activation'], job['train_dataset'])
         _sch_job_progress_dict[model_name] = 0
+        _job_accuracy_increment_dict[model_name] = 0
+        _job_current_accuracy_dict[model_name] = 0
 
 
 if __name__ == "__main__":
@@ -195,10 +199,8 @@ if __name__ == "__main__":
     ##################################################
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-j', '--job_num', action='store', type=int,
-                        help='the number of jobs in a workload')
-    parser.add_argument('-t', '--time_slot', action='store', type=int,
-                        help='the number of time slots')
+    parser.add_argument('-j', '--job_num', action='store', type=int, help='the number of jobs in a workload')
+    parser.add_argument('-t', '--time_slot', action='store', type=int, help='the number of time slots')
     args = parser.parse_args()
 
     if args.job_num is not None:
@@ -232,6 +234,10 @@ if __name__ == "__main__":
 
     # record the progress of each job during a specific schedule
     _sch_job_progress_dict = Manager().dict()
+
+    # record the progress of each job during a specific schedule
+    _job_accuracy_increment_dict = Manager().dict()
+    _job_current_accuracy_dict = Manager().dict()
 
     init_shared_dict()
 
@@ -300,17 +306,18 @@ if __name__ == "__main__":
     _accuracy_dataset_path = cfg_path_yml.accuracy_dataset_path
 
     ##################################################
-    # RL-based schedule
+    # Reinforcement Learning Schedule
     ##################################################
 
     _is_cover_workload = False
-
     time_slot_count = 0
     while time_slot_count < _sch_time_slots_num:
         if _is_cover_workload:
-            job_list = schedule_job_roundrobin()
-        else:
+            print('starting the rl-based scheduling')
             job_list = schedule_job_rlsched()
+        else:
+            job_list = schedule_job_roundrobin()
+
 
         proc_gpu_list = list()
 
