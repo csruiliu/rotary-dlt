@@ -97,7 +97,7 @@ def profile_steptime(model_info_args):
         num_batch = train_label.shape[0] // batch_size
         for i in range(num_batch):
             start_time = timer()
-            print('step {} / {}'.format(i + 1, num_batch))
+            #print('step {} / {}'.format(i + 1, num_batch))
             batch_offset = i * batch_size
             batch_end = (i + 1) * batch_size
 
@@ -108,7 +108,7 @@ def profile_steptime(model_info_args):
 
             end_time = timer()
             dur_time = end_time - start_time
-            print("step time:", dur_time)
+            #print("step time:", dur_time)
             step_time += dur_time
             step_count += 1
 
@@ -136,7 +136,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     result_path = args.result_path
 
-    total_time = 0
+    train_time_list = list()
+    step_num_list = list()
 
     with open(result_path) as fp:
         line = fp.readline()
@@ -146,6 +147,11 @@ if __name__ == '__main__':
                 model_info, result_info = line_trim.split(',')
                 step = result_info.split('_')[1]
                 avg_time = profile_steptime(model_info)
-                total_time += avg_time * int(step)
+                train_time_list.append(avg_time)
+                step_num_list.append(step)
+                #total_time += avg_time * int(step)
             line = fp.readline()
-    print('total time: {}'.format(total_time))
+    #print('total time: {}'.format(total_time))
+    print(train_time_list)
+    print('#########################')
+    print(step_num_list)
