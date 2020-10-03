@@ -10,7 +10,7 @@ from utils_img_func import load_imagenet_labels_onehot, load_cifar10_keras, load
 
 def profile_steptime(model_info_args):
     model_info = model_info_args.replace('leaky_relu', 'leakyrelu')
-    hyperparameter_list = model_info.split(',')
+    hyperparameter_list = model_info.split('_')
     print(hyperparameter_list)
     job_id = hyperparameter_list[0]
     model_type = hyperparameter_list[1]
