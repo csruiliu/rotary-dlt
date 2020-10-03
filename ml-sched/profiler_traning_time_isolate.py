@@ -10,7 +10,7 @@ from utils_img_func import load_imagenet_labels_onehot, load_cifar10_keras, load
 
 def profile_steptime(model_info_args):
     model_info = model_info_args.replace('leaky_relu', 'leakyrelu')
-    hyperparameter_list = model_info.split('_')
+    hyperparameter_list = model_info.split(',')
     print(hyperparameter_list)
     job_id = hyperparameter_list[0]
     model_type = hyperparameter_list[1]
@@ -143,9 +143,9 @@ if __name__ == '__main__':
         while line:
             if line.startswith('**Job Result**: '):
                 line_trim = line.replace('**Job Result**: ', '')
-                model_info, accuracy, step = line_trim.split(',')
+                model_info, result_info = line_trim.split(',')
+                step = result_info.split('_')[1]
                 avg_time = profile_steptime(model_info)
                 total_time += avg_time * int(step)
             line = fp.readline()
-
     print('total time: {}'.format(total_time))
