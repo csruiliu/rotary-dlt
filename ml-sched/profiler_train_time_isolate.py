@@ -148,7 +148,9 @@ if __name__ == '__main__':
                 step = result_info.split('_')[1]
                 avg_time = profile_steptime(model_info)
                 train_time_list.append(avg_time)
+                print(train_time_list)
                 step_num_list.append(step)
+                print(step_num_list)
                 #total_time += avg_time * int(step)
             line = fp.readline()
     #print('total time: {}'.format(total_time))
