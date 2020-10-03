@@ -72,45 +72,46 @@ def profile_steptime(model_info_args):
         eval_data = load_mnist_image(mnist_test_img_path)
         eval_label = load_mnist_label_onehot(mnist_test_label_path)
 
-    features = tf.placeholder(tf.float32, [None, img_width, img_height, num_channels])
-    labels = tf.placeholder(tf.int64, [None, num_classes])
+    with tf.device(assign_device):
+        features = tf.placeholder(tf.float32, [None, img_width, img_height, num_channels])
+        labels = tf.placeholder(tf.int64, [None, num_classes])
 
-    dm = ModelImporter(model_type, job_id, model_layer, img_height, img_width, num_channels,
-                       num_classes, batch_size, model_optimizer, learning_rate, model_activation, False)
-    model_entity = dm.get_model_entity()
-    model_logit = model_entity.build(input_features=features, is_training=True)
+        dm = ModelImporter(model_type, job_id, model_layer, img_height, img_width, num_channels,
+                           num_classes, batch_size, model_optimizer, learning_rate, model_activation, False)
+        model_entity = dm.get_model_entity()
+        model_logit = model_entity.build(input_features=features, is_training=True)
 
-    train_step = model_entity.train(model_logit, labels)
+        train_step = model_entity.train(model_logit, labels)
 
-    #########################################################################
-    # Traing the model
-    #########################################################################
+        #########################################################################
+        # Traing the model
+        #########################################################################
 
-    config = tf.ConfigProto()
-    config.allow_soft_placement = True
-    config.gpu_options.allow_growth = True
+        config = tf.ConfigProto()
+        config.allow_soft_placement = True
+        config.gpu_options.allow_growth = True
 
-    step_time = 0
-    step_count = 0
-    with tf.Session(config=config) as sess:
-        sess.run(tf.global_variables_initializer())
-        num_batch = train_label.shape[0] // batch_size
-        for i in range(num_batch):
-            start_time = timer()
-            #print('step {} / {}'.format(i + 1, num_batch))
-            batch_offset = i * batch_size
-            batch_end = (i + 1) * batch_size
+        step_time = 0
+        step_count = 0
+        with tf.Session(config=config) as sess:
+            sess.run(tf.global_variables_initializer())
+            num_batch = train_label.shape[0] // batch_size
+            for i in range(num_batch):
+                start_time = timer()
+                #print('step {} / {}'.format(i + 1, num_batch))
+                batch_offset = i * batch_size
+                batch_end = (i + 1) * batch_size
 
-            X_mini_batch_feed = train_data[batch_offset:batch_end]
-            Y_mini_batch_feed = train_label[batch_offset:batch_end]
+                X_mini_batch_feed = train_data[batch_offset:batch_end]
+                Y_mini_batch_feed = train_label[batch_offset:batch_end]
 
-            sess.run(train_step, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                sess.run(train_step, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
 
-            end_time = timer()
-            dur_time = end_time - start_time
-            #print("step time:", dur_time)
-            step_time += dur_time
-            step_count += 1
+                end_time = timer()
+                dur_time = end_time - start_time
+                #print("step time:", dur_time)
+                step_time += dur_time
+                step_count += 1
 
     avg_step_time = step_time / step_count * 1000
 
@@ -132,9 +133,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-p', '--result_path', required=True, action='store', help='the path of a result file')
+    parser.add_argument('-d', '--running_device', required=True, action='store', help='identify the running device')
 
     args = parser.parse_args()
     result_path = args.result_path
+    assign_device = args.running_device
 
     train_time_list = list()
     step_num_list = list()
