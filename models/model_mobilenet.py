@@ -1,6 +1,5 @@
 import tensorflow as tf
 import tensorflow.contrib as tc
-from utils_model_func import activation_function
 
 
 # MobileNetV2
@@ -27,16 +26,34 @@ class mobilenet(object):
         self.num_pool_layer = 0
         self.num_residual_layer = 0
 
+    @staticmethod
+    def activation_layer(x_input, act_func):
+        new_logit = None
+        if act_func == 'relu':
+            new_logit = tf.nn.relu(x_input, 'relu')
+        elif act_func == 'leaky_relu':
+            new_logit = tf.nn.leaky_relu(x_input, alpha=0.2, name='leaky_relu')
+        elif act_func == 'tanh':
+            new_logit = tf.math.tanh(x_input, 'tanh')
+        elif act_func == 'sigmoid':
+            new_logit = tf.math.sigmoid(x_input, 'sigmoid')
+        elif act_func == 'elu':
+            new_logit = tf.nn.elu(x_input, 'elu')
+        elif act_func == 'selu':
+            new_logit = tf.nn.selu(x_input, 'selu')
+
+        return new_logit
+
     def _res_block(self, input, expansion_ratio, output_dim, stride, is_train, block_name, bias=False, shortcut=True):
         with tf.variable_scope(block_name):
             bottleneck_dim = round(expansion_ratio * input.get_shape().as_list()[-1])
             net = self._conv_1x1(input, bottleneck_dim, name='pw', bias=bias)
             net = self._batch_norm(net, train=is_train, name='pw_bn')
-            net = activation_function(net, self.activation)
+            net = self.activation_layer(net, self.activation)
 
             net = self._dwise_conv(net, strides=[1, stride, stride, 1], name='dw', bias=bias)
             net = self._batch_norm(net, train=is_train, name='dw_bn')
-            net = activation_function(net, self.activation)
+            net = self.activation_layer(net, self.activation)
 
             net = self._conv_1x1(net, output_dim, name='pw_linear', bias=bias)
             net = self._batch_norm(net, train=is_train, name='pw_linear_bn')
@@ -58,14 +75,14 @@ class mobilenet(object):
         with tf.variable_scope(block_name):
             block = self._conv2d(x_init, out_dim, kernel_size, kernel_size, strides_size, strides_size)
             block = self._batch_norm(block, train=is_train, name='bn')
-            block = activation_function(block, self.activation)
+            block = self.activation_layer(block, self.activation)
         return block
 
     def _pwise_block(self, x_init, output_dim, is_train, block_name, bias=False):
         with tf.variable_scope(block_name):
             out = self._conv_1x1(x_init, output_dim, bias=bias, name='pwb')
             out = self._batch_norm(out, train=is_train, name='bn')
-            block = activation_function(out, self.activation)
+            block = self.activation_layer(out, self.activation)
         return block
 
     def _conv2d(self, x_init, output_dim, kernel_height, kernel_width, strides_h, strides_w, stddev=0.02, bias=False, name='conv2d'):
@@ -149,32 +166,31 @@ class mobilenet(object):
 
         return self.model_logit
 
-    def train(self, logits, labels):
-        if self.batch_padding == True:
-            labels = labels[0:self.batch_size, :]
+    def train(self, logits, train_labels):
+        if self.batch_padding:
+            batch_labels = train_labels[0:self.batch_size]
+        else:
+            batch_labels = train_labels
 
-        with tf.name_scope('loss_'+self.net_name):
-            cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=logits)
-            cross_entropy_cost = tf.reduce_mean(cross_entropy)
+        cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=batch_labels, logits=logits)
+        cross_entropy_cost = tf.reduce_mean(cross_entropy)
+        reg_loss = tf.losses.get_regularization_loss()
+        train_loss = cross_entropy_cost + reg_loss
 
-        with tf.name_scope('optimizer_'+self.net_name):
-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope=self.net_name+'_instance')
-            with tf.control_dependencies(update_ops):
-                if self.opt == 'Adam':
-                    self.train_op = tf.train.AdamOptimizer(self.learning_rate).minimize(cross_entropy_cost)
-                elif self.opt == 'SGD':
-                    self.train_op = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(cross_entropy_cost)
-                elif self.opt == 'Adagrad':
-                    self.train_op = tf.train.AdagradOptimizer(self.learning_rate).minimize(cross_entropy_cost)
-                elif self.opt == 'Momentum':
-                    self.train_op = tf.train.MomentumOptimizer(self.learning_rate, 0.9).minimize(cross_entropy_cost)
+        if self.opt == 'Adam':
+            self.train_op = tf.train.AdamOptimizer(self.learning_rate).minimize(train_loss)
+        elif self.opt == 'SGD':
+            self.train_op = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(train_loss)
+        elif self.opt == 'Adagrad':
+            self.train_op = tf.train.AdagradOptimizer(self.learning_rate).minimize(train_loss)
+        elif self.opt == 'Momentum':
+            self.train_op = tf.train.MomentumOptimizer(self.learning_rate, 0.9).minimize(train_loss)
+
         return self.train_op
 
-    def evaluate(self, logits, labels):
-        with tf.name_scope('eval_' + self.net_name):
-            pred = tf.nn.softmax(logits)
-            correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(labels, 1))
-            self.eval_op = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+    def evaluate(self, logits, eval_labels):
+        prediction = tf.equal(tf.argmax(logits, -1), tf.argmax(eval_labels, -1))
+        self.eval_op = tf.reduce_mean(tf.cast(prediction, tf.float32))
 
         return self.eval_op
 
