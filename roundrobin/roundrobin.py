@@ -1,14 +1,16 @@
 import tensorflow as tf
 from multiprocessing import Process, Manager
 from timeit import default_timer as timer
-import os
 import argparse
+import os
+import sys
+sys.path.append(os.path.abspath(".."))
 
-from model_importer import ModelImporter
-import config_parameter as cfg_para_yml
-import config_path as cfg_path_yml
-from utils_workload_func import generate_workload
-from utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras, load_mnist_image, load_mnist_label_onehot
+from models.model_importer import ModelImporter
+import config.config_parameter as cfg_para
+import config.config_path as cfg_path
+from utils.utils_workload_func import generate_workload
+from utils.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras, load_mnist_image, load_mnist_label_onehot
 
 
 def produce_job_roundrobin():
@@ -155,7 +157,7 @@ if __name__ == "__main__":
     ##################################################
     # Key Parameters for evaluation
     ##################################################
-    
+
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-j', '--job_num', action='store', type=int,
@@ -167,23 +169,23 @@ if __name__ == "__main__":
     if args.job_num is not None:
         _sch_job_num = args.job_num
     else:
-        _sch_job_num = cfg_para_yml.sch_job_num
+        _sch_job_num = cfg_para.sch_job_num
 
     if args.time_slot is not None:
         _sch_time_slots_num = args.time_slot
     else:
-        _sch_time_slots_num = cfg_para_yml.sch_time_slots_num
+        _sch_time_slots_num = cfg_para.sch_time_slots_num
 
     ##################################################
     # Generate Workload
     ##################################################
 
-    _sch_model_type_set = cfg_para_yml.sch_model_type_set
-    _sch_batch_size_set = cfg_para_yml.sch_batch_size_set
-    _sch_optimizer_set = cfg_para_yml.sch_optimizer_set
-    _sch_learning_rate_set = cfg_para_yml.sch_learning_rate_set
-    _sch_activation_set = cfg_para_yml.sch_activation_set
-    _sch_train_dataset = cfg_para_yml.train_dataset
+    _sch_model_type_set = cfg_para.sch_model_type_set
+    _sch_batch_size_set = cfg_para.sch_batch_size_set
+    _sch_optimizer_set = cfg_para.sch_optimizer_set
+    _sch_learning_rate_set = cfg_para.sch_learning_rate_set
+    _sch_activation_set = cfg_para.sch_activation_set
+    _sch_train_dataset = cfg_para.train_dataset
 
     _sch_workload = generate_workload(_sch_job_num, _sch_model_type_set, _sch_batch_size_set, _sch_optimizer_set,
                                       _sch_learning_rate_set, _sch_activation_set, _sch_train_dataset, True)
@@ -203,38 +205,38 @@ if __name__ == "__main__":
     ##################################################
 
     if _sch_train_dataset == 'imagenet':
-        _img_width = cfg_para_yml.img_width_imagenet
-        _img_height = cfg_para_yml.img_height_imagenet
-        _num_classes = cfg_para_yml.num_class_imagenet
-        _img_channels = cfg_para_yml.num_channels_rgb
-        _imagenet_train_data_path = cfg_path_yml.imagenet_t10k_img_raw_path
-        _imagenet_train_label_path = cfg_path_yml.imagenet_t10k_label_path
-        _imagenet_eval_data_path = cfg_path_yml.imagenet_t1k_img_raw_path
-        _imagenet_eval_label_path = cfg_path_yml.imagenet_t1k_label_path 
+        _img_width = cfg_para.img_width_imagenet
+        _img_height = cfg_para.img_height_imagenet
+        _num_classes = cfg_para.num_class_imagenet
+        _img_channels = cfg_para.num_channels_rgb
+        _imagenet_train_data_path = cfg_path.imagenet_t10k_img_raw_path
+        _imagenet_train_label_path = cfg_path.imagenet_t10k_label_path
+        _imagenet_eval_data_path = cfg_path.imagenet_t1k_img_raw_path
+        _imagenet_eval_label_path = cfg_path.imagenet_t1k_label_path
 
         train_label = load_imagenet_labels_onehot(_imagenet_train_label_path, _num_classes)
         eval_label = load_imagenet_labels_onehot(_imagenet_eval_label_path, _num_classes)
 
     elif _sch_train_dataset == 'cifar10':
-        _img_width = cfg_para_yml.img_width_cifar10
-        _img_height = cfg_para_yml.img_height_cifar10
-        _img_num_class = cfg_para_yml.num_class_cifar10
-        _img_channels = cfg_para_yml.num_channels_rgb
-        _img_path = cfg_path_yml.cifar_10_path
+        _img_width = cfg_para.img_width_cifar10
+        _img_height = cfg_para.img_height_cifar10
+        _img_num_class = cfg_para.num_class_cifar10
+        _img_channels = cfg_para.num_channels_rgb
+        _img_path = cfg_path.cifar_10_path
 
-        cifar10_path = cfg_path_yml.cifar_10_path
+        cifar10_path = cfg_path.cifar_10_path
         train_data, train_label, eval_data, eval_label = load_cifar10_keras()
 
     elif _sch_train_dataset == 'mnist':
-        _img_width = cfg_para_yml.img_width_mnist
-        _img_height = cfg_para_yml.img_height_mnist
-        _img_num_class = cfg_para_yml.num_class_imagenet
-        _img_channels = cfg_para_yml.num_channels_bw
+        _img_width = cfg_para.img_width_mnist
+        _img_height = cfg_para.img_height_mnist
+        _img_num_class = cfg_para.num_class_imagenet
+        _img_channels = cfg_para.num_channels_bw
 
-        _mnist_train_img_path = cfg_path_yml.mnist_train_img_path
-        _mnist_train_label_path = cfg_path_yml.mnist_train_label_path
-        _mnist_test_img_path = cfg_path_yml.mnist_test_10k_img_path
-        _mnist_test_label_path = cfg_path_yml.mnist_test_10k_label_path
+        _mnist_train_img_path = cfg_path.mnist_train_img_path
+        _mnist_train_label_path = cfg_path.mnist_train_label_path
+        _mnist_test_img_path = cfg_path.mnist_test_10k_img_path
+        _mnist_test_label_path = cfg_path.mnist_test_10k_label_path
 
         train_data = load_mnist_image(_mnist_train_img_path)
         train_label = load_mnist_label_onehot(_mnist_train_label_path)
@@ -248,11 +250,11 @@ if __name__ == "__main__":
     # Schedule Parameter
     ##################################################
 
-    _sch_gpu_device_num = cfg_para_yml.sch_gpu_num
-    _sch_cpu_device_num = cfg_para_yml.sch_cpu_num
+    _sch_gpu_device_num = cfg_para.sch_gpu_num
+    _sch_cpu_device_num = cfg_para.sch_cpu_num
     _sch_device_num = _sch_gpu_device_num + _sch_cpu_device_num
-    _sch_slot_time_period = cfg_para_yml.sch_slot_time_period
-    _ckpt_save_path = cfg_path_yml.ckpt_save_path + '/workload_' + str(_sch_job_num) + '_timeslot_' + str(_sch_time_slots_num)
+    _sch_slot_time_period = cfg_para.sch_slot_time_period
+    _ckpt_save_path = cfg_path.ckpt_save_path + '/workload_' + str(_sch_job_num) + '_timeslot_' + str(_sch_time_slots_num)
 
     ##################################################
     # round-robin schedule
@@ -268,7 +270,8 @@ if __name__ == "__main__":
             device_proc_gpu = Process(target=run_job, args=(job_list[gn], _sch_job_progress_dict, assign_gpu))
             proc_gpu_list.append(device_proc_gpu)
 
-        device_proc_cpu = Process(target=run_job, args=(job_list[_sch_device_num-1], _sch_job_progress_dict, '/cpu:0'))
+        device_proc_cpu = Process(target=run_job,
+                                  args=(job_list[_sch_device_num - 1], _sch_job_progress_dict, '/cpu:0'))
 
         for device_proc_gpu in proc_gpu_list:
             device_proc_gpu.start()
