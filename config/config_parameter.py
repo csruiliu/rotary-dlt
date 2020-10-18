@@ -1,7 +1,11 @@
 import yaml
+import os
 
-with open("config_parameter.yml", 'r') as ymlfile:
+current_folder = os.path.abspath(os.path.dirname(__file__))
+
+with open(current_folder+'/config_path.yml', 'r') as ymlfile:
     cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
+
 
 ##########################################
 # Hyperparameters for input
@@ -20,6 +24,7 @@ num_class_mnist = hyperparams_input['num_class_mnist']
 num_channels_rgb = hyperparams_input['num_channel_rgb']
 num_channels_bw = hyperparams_input['num_channel_bw']
 
+
 ##########################################
 # Hyperparameters for measurement
 ##########################################
@@ -36,6 +41,7 @@ use_tb_timeline = hyperparams_measure_cfg['use_tb_timeline']
 same_input = hyperparams_measure_cfg['same_input']
 available_cpu_num = hyperparams_measure_cfg['available_cpu_num']
 available_gpu_num = hyperparams_measure_cfg['available_gpu_num']
+
 
 ##################################################
 # Hyperparameters placement schedule
@@ -54,7 +60,6 @@ sch_optimizer_set = placement_schedule_workload_cfg['optimizer_set']
 sch_learning_rate_set = placement_schedule_workload_cfg['learning_rate_set']
 sch_activation_set = placement_schedule_workload_cfg['activation_set']
 sch_reward_function = placement_schedule_workload_cfg['reward_function']
-#placement_proportion_rate = placement_schedule_workload_cfg['placement_proportion_rate']
 
 
 ##############################################################
@@ -75,6 +80,7 @@ gpu_optimizer = profile_exp_cpu_gpu['gpu_optimizer']
 gpu_learning_rate = profile_exp_cpu_gpu['gpu_learning_rate']
 gpu_activation = profile_exp_cpu_gpu['gpu_activation']
 
+
 ##########################################
 # Simple device placement
 ##########################################
@@ -83,6 +89,7 @@ simple_placement_cfg = cfg['simple_placement']
 simple_placement_init_res = simple_placement_cfg['init_resource_conf']
 simple_placement_up_rate = simple_placement_cfg['up_rate']
 simple_placement_discard_rate = simple_placement_cfg['discard_rate']
+
 
 ##########################################
 # Robin device placement
