@@ -96,54 +96,6 @@ profile_concur_cpugpu_workload:
     - Adam
 
 
-device_placement_workload:
-  # model: mobilenet, densenet, mlp, resnet, scn
-  workload_model_type:
-    - mobilenet
-    - densenet
-    - mlp
-    - resnet
-    - scn
-  workload_model_num:
-    - 3
-    - 3
-    - 2
-    - 3
-    - 2
-  # activation: sigmoid, leaky_relu, tanh, relu
-  activation:
-    - relu
-    - sigmoid
-    - tanh
-    - leaky_relu
-  # optimizers: Adam, SGD, Adagrad, Momentum
-  optimizer:
-    - Adam
-    - SGD
-    - Adagrad
-    - Momentum
-  num_model_layer:
-    - 1
-  # if batch size are not all same, make batch_padding True
-  batch_size:
-    - 5
-    - 10
-    - 20
-    - 32
-    - 50
-    - 64
-    - 80
-    - 100
-    - 128
-  learning_rate:
-    - 0.00001
-  total_epochs: 100
-
-
-robin_placement:
-  # time unit: second
-  time_limit: 1800
-
 
 simple_placement:
   init_resource_conf: 1

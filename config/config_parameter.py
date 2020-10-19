@@ -25,24 +25,6 @@ num_channels_rgb = hyperparams_input['num_channel_rgb']
 num_channels_bw = hyperparams_input['num_channel_bw']
 
 
-##########################################
-# Hyperparameters for measurement
-##########################################
-
-hyperparams_measure_cfg = cfg['hyperparams_measure']
-
-rand_seed = hyperparams_measure_cfg['random_seed']
-batch_padding = hyperparams_measure_cfg['batch_padding']
-record_marker = hyperparams_measure_cfg['record_marker']
-use_cpu = hyperparams_measure_cfg['use_cpu']
-use_raw_image = hyperparams_measure_cfg['use_raw_image']
-measure_step = hyperparams_measure_cfg['measure_step']
-use_tb_timeline = hyperparams_measure_cfg['use_tb_timeline']
-same_input = hyperparams_measure_cfg['same_input']
-available_cpu_num = hyperparams_measure_cfg['available_cpu_num']
-available_gpu_num = hyperparams_measure_cfg['available_gpu_num']
-
-
 ##################################################
 # Hyperparameters placement schedule
 ##################################################
@@ -80,21 +62,4 @@ gpu_optimizer = profile_exp_cpu_gpu['gpu_optimizer']
 gpu_learning_rate = profile_exp_cpu_gpu['gpu_learning_rate']
 gpu_activation = profile_exp_cpu_gpu['gpu_activation']
 
-
-##########################################
-# Simple device placement
-##########################################
-
-simple_placement_cfg = cfg['simple_placement']
-simple_placement_init_res = simple_placement_cfg['init_resource_conf']
-simple_placement_up_rate = simple_placement_cfg['up_rate']
-simple_placement_discard_rate = simple_placement_cfg['discard_rate']
-
-
-##########################################
-# Robin device placement
-##########################################
-
-robin_device_placement = cfg['robin_placement']
-robin_time_limit = robin_device_placement['time_limit']
 
