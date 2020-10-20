@@ -9,7 +9,7 @@ sys.path.append(os.path.abspath(".."))
 from models.model_importer import ModelImporter
 import config.config_parameter as cfg_para
 import config.config_path as cfg_path
-from utils.utils_workload_func import generate_workload
+from utils.utils_workload_func import generate_workload_slo
 from utils.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras, load_mnist_image, load_mnist_label_onehot
 
 
@@ -169,7 +169,7 @@ if __name__ == "__main__":
     if args.job_num is not None:
         _sch_job_num = args.job_num
     else:
-        _sch_job_num = cfg_para.sch_job_num
+        _sch_job_num = cfg_para.slo_job_num
 
     if args.time_slot is not None:
         _sch_time_slots_num = args.time_slot
@@ -180,15 +180,15 @@ if __name__ == "__main__":
     # Generate Workload
     ##################################################
 
-    _sch_model_type_set = cfg_para.sch_model_type_set
-    _sch_batch_size_set = cfg_para.sch_batch_size_set
-    _sch_optimizer_set = cfg_para.sch_optimizer_set
-    _sch_learning_rate_set = cfg_para.sch_learning_rate_set
-    _sch_activation_set = cfg_para.sch_activation_set
+    _sch_model_type_set = cfg_para.slo_model_type_set
+    _sch_batch_size_set = cfg_para.slo_batch_size_set
+    _sch_optimizer_set = cfg_para.slo_optimizer_set
+    _sch_learning_rate_set = cfg_para.slo_learning_rate_set
+    _sch_activation_set = cfg_para.slo_activation_set
     _sch_train_dataset = cfg_para.train_dataset
 
-    _sch_workload = generate_workload(_sch_job_num, _sch_model_type_set, _sch_batch_size_set, _sch_optimizer_set,
-                                      _sch_learning_rate_set, _sch_activation_set, _sch_train_dataset, True)
+    _sch_workload = generate_workload_slo(_sch_job_num, _sch_model_type_set, _sch_batch_size_set, _sch_optimizer_set,
+                                          _sch_learning_rate_set, _sch_activation_set, _sch_train_dataset, True)
     _sch_workload_use = _sch_workload.copy()
 
     ##################################################

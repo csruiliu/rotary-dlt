@@ -1,18 +1,20 @@
 import tensorflow as tf
 from multiprocessing import Process, Manager
 import argparse
-import os
 from timeit import default_timer as timer
+import os
+import sys
+sys.path.append(os.path.abspath(".."))
 
 from schedule_rl_environment import MLSchEnv
 from schedule_rl_engine import MLSchEngine
 from estimator_model_accuracy import AccuracyEstimator
 from estimator_model_steptime_multidevices import MultiDeviceTimeEstimator
-from model_importer import ModelImporter
-import config_parameter as cfg_para_yml
-import config_path as cfg_path_yml
-from utils_workload_func import generate_workload
-from utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras, load_mnist_image, load_mnist_label_onehot
+from models.model_importer import ModelImporter
+import config.config_parameter as cfg_para_yml
+import config.config_path as cfg_path_yml
+from utils.utils_workload_func import generate_workload_slo
+from utils.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras, load_mnist_image, load_mnist_label_onehot
 
 tf.compat.v1.enable_v2_behavior()
 
@@ -206,7 +208,7 @@ if __name__ == "__main__":
     if args.job_num is not None:
         _sch_job_num = args.job_num
     else:
-        _sch_job_num = cfg_para_yml.sch_job_num
+        _sch_job_num = cfg_para_yml.slo_job_num
 
     if args.time_slot is not None:
         _sch_time_slots_num = args.time_slot
@@ -217,15 +219,15 @@ if __name__ == "__main__":
     # Generate Workload
     ##################################################
 
-    _sch_model_type_set = cfg_para_yml.sch_model_type_set
-    _sch_batch_size_set = cfg_para_yml.sch_batch_size_set
-    _sch_optimizer_set = cfg_para_yml.sch_optimizer_set
-    _sch_learning_rate_set = cfg_para_yml.sch_learning_rate_set
-    _sch_activation_set = cfg_para_yml.sch_activation_set
+    _sch_model_type_set = cfg_para_yml.slo_model_type_set
+    _sch_batch_size_set = cfg_para_yml.slo_batch_size_set
+    _sch_optimizer_set = cfg_para_yml.slo_optimizer_set
+    _sch_learning_rate_set = cfg_para_yml.slo_learning_rate_set
+    _sch_activation_set = cfg_para_yml.slo_activation_set
     _sch_train_dataset = cfg_para_yml.train_dataset
 
-    _sch_workload = generate_workload(_sch_job_num, _sch_model_type_set, _sch_batch_size_set, _sch_optimizer_set,
-                                      _sch_learning_rate_set, _sch_activation_set, _sch_train_dataset, True)
+    _sch_workload = generate_workload_slo(_sch_job_num, _sch_model_type_set, _sch_batch_size_set, _sch_optimizer_set,
+                                          _sch_learning_rate_set, _sch_activation_set, _sch_train_dataset, True)
     _sch_workload_use = _sch_workload.copy()
 
     ##################################################
@@ -298,7 +300,7 @@ if __name__ == "__main__":
     _ckpt_save_path = cfg_path_yml.ckpt_save_path + '/workload_' + str(_sch_job_num) + '_timeslot_' + str(_sch_time_slots_num)
 
     # reward function
-    _sch_reward_function = cfg_para_yml.sch_reward_function
+    _sch_reward_function = cfg_para_yml.slo_reward_function
     print("Reward Function: {}".format(_sch_reward_function))
 
     # Get path parameters from config
@@ -318,10 +320,8 @@ if __name__ == "__main__":
         else:
             job_list = schedule_job_roundrobin()
 
-
         proc_gpu_list = list()
 
-        # Run Job in TetriSched
         for gn in range(_sch_gpu_device_num):
             assign_gpu = '/gpu:' + str(gn)
             proc_gpu = Process(target=run_job, args=(job_list[gn], _sch_job_progress_dict, assign_gpu))
@@ -333,10 +333,6 @@ if __name__ == "__main__":
         proc_cpu.start()
 
         time_slot_count += 1
-
-    ##################################################
-    # Evaluate workload after round-robin schedule
-    ##################################################
 
     sch_job_attainment_list = list()
     sch_job_name_list = list()
