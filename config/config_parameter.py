@@ -26,22 +26,43 @@ num_channels_bw = hyperparams_input['num_channel_bw']
 
 
 ##################################################
-# Hyperparameters placement schedule
+# General hyperparameters for Scheduling
 ##################################################
 
-placement_schedule_workload_cfg = cfg['placement_schedule']
-sch_gpu_num = placement_schedule_workload_cfg['gpu_device_num']
-sch_cpu_num = placement_schedule_workload_cfg['cpu_device_num']
-sch_job_num = placement_schedule_workload_cfg['job_num']
-sch_time_slots_num = placement_schedule_workload_cfg['time_slots_num']
-sch_slot_time_period = placement_schedule_workload_cfg['slot_time_period']
-train_dataset = placement_schedule_workload_cfg['train_dataset']
-sch_model_type_set = placement_schedule_workload_cfg['model_type_set']
-sch_batch_size_set = placement_schedule_workload_cfg['batch_size_set']
-sch_optimizer_set = placement_schedule_workload_cfg['optimizer_set']
-sch_learning_rate_set = placement_schedule_workload_cfg['learning_rate_set']
-sch_activation_set = placement_schedule_workload_cfg['activation_set']
-sch_reward_function = placement_schedule_workload_cfg['reward_function']
+schedule_cfg = cfg['dlt_schedule_para']
+sch_gpu_num = schedule_cfg['gpu_device_num']
+sch_cpu_num = schedule_cfg['cpu_device_num']
+sch_time_slots_num = schedule_cfg['time_slots_num']
+sch_slot_time_period = schedule_cfg['slot_time_period']
+
+
+##################################################
+# Scheduling workload for SLO
+##################################################
+
+schedule_workload_slo_cfg = cfg['dlt_schedule_workload_slo']
+slo_job_num = schedule_workload_slo_cfg['job_num']
+train_dataset = schedule_workload_slo_cfg['train_dataset']
+slo_model_type_set = schedule_workload_slo_cfg['model_type_set']
+slo_batch_size_set = schedule_workload_slo_cfg['batch_size_set']
+slo_optimizer_set = schedule_workload_slo_cfg['optimizer_set']
+slo_learning_rate_set = schedule_workload_slo_cfg['learning_rate_set']
+slo_activation_set = schedule_workload_slo_cfg['activation_set']
+slo_reward_function = schedule_workload_slo_cfg['reward_function']
+
+
+##################################################
+# Scheduling workload for hyperparameter search
+##################################################
+
+schedule_workload_hpsearch_cfg = cfg['dlt_schedule_workload_hpsearch']
+hpsearch_job_num = schedule_workload_hpsearch_cfg['job_num']
+hpsearch_train_dataset = schedule_workload_hpsearch_cfg['train_dataset']
+hpsearch_model_type = schedule_workload_hpsearch_cfg['model_type_set']
+hpsearch_layer_set = schedule_workload_hpsearch_cfg['layer_set']
+hpsearch_batch_size_set = schedule_workload_hpsearch_cfg['batch_size_set']
+hpsearch_optimizer_set = schedule_workload_hpsearch_cfg['optimizer_set']
+hpsearch_learning_rate_set = schedule_workload_hpsearch_cfg['learning_rate_set']
 
 
 ##############################################################
