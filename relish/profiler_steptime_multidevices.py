@@ -4,11 +4,13 @@ import multiprocessing as mp
 import numpy as np
 from timeit import default_timer as timer
 import os
+import sys
+sys.path.append(os.path.abspath(".."))
 
-import config_path as cfg_path_yml
-import config_parameter as cfg_para_yml
-from utils_img_func import load_imagenet_labels_onehot, load_imagenet_raw, load_cifar10_keras
-from model_importer import ModelImporter
+from models.model_importer import ModelImporter
+import config.config_parameter as cfg_para_yml
+import config.config_path as cfg_path_yml
+from utils.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras
 
 
 def generate_job_queue():
@@ -16,7 +18,7 @@ def generate_job_queue():
     gpu_job_queue = mp.Queue()
 
     workload_num = _cpu_model_num + _gpu_model_num
-    _rand_seed = cfg_para_yml.rand_seed
+    _rand_seed = 10000
     np.random.seed(_rand_seed)
     model_name_abbr = np.random.choice(_rand_seed, workload_num, replace=False).tolist()
 
@@ -48,10 +50,7 @@ def run_single_job(model_type, model_instance, layer_num, batch_size, optimizer,
 
         num_conv_layer, num_pool_layer, num_residual_layer = model_entity.get_layer_info()
 
-        model_arch_info = num_conv_layer + '-' + num_pool_layer + '-' + num_residual_layer
-
-
-
+        #model_arch_info = num_conv_layer + '-' + num_pool_layer + '-' + num_residual_layer
 
         if use_raw_image:
             image_list = sorted(os.listdir(_image_path_raw))
@@ -211,7 +210,7 @@ if __name__ == "__main__":
     ########################################
 
     os_thread_num = mp.cpu_count()
-    _available_gpu_num = cfg_para_yml.available_gpu_num
+    _available_gpu_num = cfg_para_yml.sch_gpu_num
     training_gpu_queue, training_cpu_queue = generate_job_queue()
 
     proc_gpu_list = list()

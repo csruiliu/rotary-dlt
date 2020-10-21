@@ -2,10 +2,10 @@ import tensorflow as tf
 import argparse
 from timeit import default_timer as timer
 
-from model_importer import ModelImporter
-import config_path as cfg_path_yml
-import config_parameter as cfg_para_yml
-from utils_img_func import load_imagenet_labels_onehot, load_cifar10_keras, load_mnist_label_onehot, load_mnist_image
+import config.config_parameter as cfg_para_yml
+import config.config_path as cfg_path_yml
+from models.model_importer import ModelImporter
+from utils.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras, load_mnist_image, load_mnist_label_onehot
 
 
 def profile_steptime(model_info_args):
