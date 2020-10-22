@@ -3,7 +3,7 @@ import tensorflow as tf
 from tf_agents.specs import tensor_spec
 from tf_agents.trajectories import time_step as ts
 
-import utils_reward_func
+import utils.utils_reward_func as reward_function
 
 
 class MLSchEnv:
@@ -59,9 +59,9 @@ class MLSchEnv:
         self._assigned_time_slots_num += 1
 
         # use award function
-        reward = getattr(utils_reward_func, self._reward_function)(self._accuracy_array,
-                                                                   self._steptime_array[:self._gpu_device_num],
-                                                                   self._steptime_array[self._gpu_device_num:self._total_device_num])
+        reward = getattr(reward_function, self._reward_function)(self._accuracy_array,
+                                                                 self._steptime_array[:self._gpu_device_num],
+                                                                 self._steptime_array[self._gpu_device_num:self._total_device_num])
 
         if self._assigned_time_slots_num == self._time_slots_num:
             self._current_time_step = ts.termination(self._accuracy_array, reward)

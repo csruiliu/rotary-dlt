@@ -3,10 +3,10 @@ from multiprocessing import Pool
 from timeit import default_timer as timer
 import os
 
-import config_path as cfg_path_yml
-import config_parameter as cfg_para_yml
-from model_importer import ModelImporter
-from utils_img_func import *
+import config.config_path as cfg_path_yml
+import config.config_parameter as cfg_para_yml
+from models.model_importer import ModelImporter
+from utils.utils_img_func import load_cifar10_test, load_imagenet_labels_onehot, load_imagenet_raw
 
 
 class MLSchLauncher:
