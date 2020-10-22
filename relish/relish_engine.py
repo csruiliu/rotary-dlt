@@ -2,12 +2,12 @@ import tensorflow as tf
 from tf_agents.utils import common
 from tf_agents.networks import actor_distribution_network
 #from tf_agents.networks import lstm_encoding_network
-from tf_agents.agents.ppo import ppo_agent
+#from tf_agents.agents.ppo import ppo_agent
 from tf_agents.agents.reinforce import reinforce_agent
 from tf_agents.trajectories import trajectory
 from tf_agents.replay_buffers import tf_uniform_replay_buffer
 
-import utils_reward_func
+import utils.utils_reward_func as reward_function
 
 
 class MLSchEngine:
@@ -78,7 +78,7 @@ class MLSchEngine:
         # avg_reward = total_return / eval_num_episodes
         print('episode_return_list', episode_return_list)
         print('###############################')
-        reward = getattr(utils_reward_func, self._mlsch_env.evaluation_function())(episode_return_list)
+        reward = getattr(reward_function, self._mlsch_env.evaluation_function())(episode_return_list)
 
         return reward
 
