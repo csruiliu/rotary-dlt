@@ -1,11 +1,14 @@
 import tensorflow as tf
 import argparse
+import numpy as np
 import os
+import sys
+sys.path.append(os.path.abspath(".."))
 
-import config_path as cfg_path_yml
-import config_parameter as cfg_para_yml
-from model_importer import ModelImporter
-from utils_img_func import *
+import config.config_path as cfg_path_yml
+import config.config_parameter as cfg_para_yml
+from models.model_importer import ModelImporter
+from utils.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras, load_mnist_image, load_mnist_label_onehot
 
 
 def build_model():

@@ -6,8 +6,8 @@ import os
 import sys
 sys.path.append(os.path.abspath(".."))
 
-from schedule_rl_environment import MLSchEnv
-from schedule_rl_engine import MLSchEngine
+from relish_environment import MLSchEnv
+from relish_engine import MLSchEngine
 from estimator_model_accuracy import AccuracyEstimator
 from estimator_model_steptime_multidevices import MultiDeviceTimeEstimator
 from models.model_importer import ModelImporter

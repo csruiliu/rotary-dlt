@@ -1,6 +1,9 @@
 import tensorflow as tf
 import argparse
 from timeit import default_timer as timer
+import os
+import sys
+sys.path.append(os.path.abspath(".."))
 
 import config.config_parameter as cfg_para_yml
 import config.config_path as cfg_path_yml
