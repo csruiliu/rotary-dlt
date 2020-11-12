@@ -3,7 +3,7 @@ import os
 
 current_folder = os.path.abspath(os.path.dirname(__file__))
 
-with open(current_folder+'/config_path.yml', 'r') as ymlfile:
+with open(current_folder+'/config_parameter.yml', 'r') as ymlfile:
     cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
 
@@ -58,7 +58,7 @@ slo_reward_function = schedule_workload_slo_cfg['reward_function']
 schedule_workload_hpsearch_cfg = cfg['dlt_schedule_workload_hpsearch']
 hpsearch_job_num = schedule_workload_hpsearch_cfg['job_num']
 hpsearch_train_dataset = schedule_workload_hpsearch_cfg['train_dataset']
-hpsearch_model_type = schedule_workload_hpsearch_cfg['model_type_set']
+hpsearch_model_type = schedule_workload_hpsearch_cfg['model_type']
 hpsearch_layer_set = schedule_workload_hpsearch_cfg['layer_set']
 hpsearch_batch_size_set = schedule_workload_hpsearch_cfg['batch_size_set']
 hpsearch_optimizer_set = schedule_workload_hpsearch_cfg['optimizer_set']
