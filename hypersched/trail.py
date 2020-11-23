@@ -1,16 +1,19 @@
-
-import tensorflow as tf
-import os
-
 from models.model_importer import ModelImporter
 import config.config_parameter as cfg_para
 import config.config_path as cfg_path
 from utils.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras, load_mnist_image, load_mnist_label_onehot
 
+import tensorflow as tf
+import numpy as np
+import time
+import os
+import sys
+sys.path.append(os.path.abspath(".."))
+
 
 class Trail:
     def __init__(self, job_conf):
-        self.job_id = job_conf['job_id']
+        self.trail_id = job_conf['job_id']
         self.model_type = job_conf['model_type']
         self.layer_number = job_conf['layer']
         self.batch_size = job_conf['batch_size']
@@ -18,8 +21,12 @@ class Trail:
         self.learning_rate = job_conf['learning_rate']
         self.train_dataset = job_conf['train_dataset']
 
+        # record how many training epochs has been launched
         self.train_progress = 0
         self.state = None
+
+        # the updated accuracy
+        self.cur_accuracy = 0
 
         #######################################
         # Prepare training dataset
@@ -66,7 +73,7 @@ class Trail:
         else:
             raise ValueError('Only support dataset: imagenet, cifar10, mnist')
 
-    def run(self, assign_device):
+    def train(self, assign_device):
         with tf.device(assign_device):
             feature_ph = tf.placeholder(tf.float32, [None, self.img_width, self.img_height, self.img_channels])
             label_ph = tf.placeholder(tf.int64, [None, self.img_num_class])
@@ -78,7 +85,6 @@ class Trail:
             model_entity = train_model.get_model_entity()
             model_logit = model_entity.build(feature_ph, is_training=True)
             model_train_op = model_entity.train(model_logit, label_ph)
-            model_eval_op = model_entity.evaluate(model_logit, label_ph)
 
             config = tf.ConfigProto()
             config.allow_soft_placement = True
@@ -110,8 +116,28 @@ class Trail:
     def evaluate(self):
         pass
 
+    def train_simulate(self):
+        time.sleep(np.random.randint(1, 4))
+        self.train_progress += 1
+        print('[process-{},trail-{}] training progress: {} epochs'.format(os.getpid(), self.trail_id,
+                                                                          self.train_progress))
+
+    def evaluate_simulate(self):
+        self.cur_accuracy += np.random.uniform(0, 0.2)
+        print('[process-{},trail-{}] after {} epochs, accuracy: {}'.format(os.getpid(), self.trail_id,
+                                                                           self.train_progress, self.cur_accuracy))
+
     def set_state(self, arg_state):
         self.state = arg_state
 
+    def get_state(self):
+        return self.state
+
     def get_progress(self):
         return self.train_progress
+
+    def get_accuracy(self):
+        return self.cur_accuracy
+
+    def get_trail_id(self):
+        return self.trail_id
