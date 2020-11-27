@@ -1,12 +1,14 @@
-import numpy as np
 from multiprocessing import Process, Manager, Value
 import time
 from timeit import default_timer as timer
 import os
+import numpy as np
 import sys
+import operator as opr
 sys.path.append(os.path.abspath(".."))
 
 from trail import Trail
+from trail import State
 import config.config_parameter as cfg_para
 from utils.utils_workload_func import generate_workload_hyperparamsearch
 
@@ -33,22 +35,30 @@ def insert_sort_trail(trail_arg):
 def hypersched_schedule():
     while True:
         try:
-            '''
-                try to get task from the queue. get_nowait() function will 
-                raise queue.Empty exception if the queue is empty. 
-                queue(False) function would do the same task also.
-            '''
             trail = live_trails_list.pop()
             print('process {} started'.format(os.getpid()))
         except IndexError:
             live_trails_list.append(get_available_trail())
         else:
-            trail.train_simulate()
-            trail.evaluate_simulate()
+            train_count = 0
+            while True:
+                rung_epoch_threshold = np.power(min_epoch, train_count) * reduction_factor
+                trail.set_state(State.RUN)
+                trail.train_simulate()
+                trail.evaluate_simulate()
 
-            if trail.get_state() == rung_epoch_threshold:
-                if len(live_trails_list) != 0 and trail.get_accuracy() >= live_trails_list.sort(key=lambda x: x.cur_accuracy):
-                    insert_sort_trail(trail)
+                if trail.get_train_progress() == rung_epoch_threshold:
+                    print('trail {} reaches the epoch threshold and is paused'.format(trail.get_trail_id()))
+                    trail.set_state(State.PAUSE)
+                    pause_threshold = np.percentile(sorted(live_trails_list, key=opr.attrgetter('cur_accuracy')),
+                                                    1/reduction_factor)
+
+                    if trail.get_accuracy() < pause_threshold:
+                        trail.set_state(State.PAUSE)
+                        insert_sort_trail(trail)
+                        break
+
+                train_count += 1
 
             if hpsearch_finish_flag.value == 1:
                 print('process {} finished'.format(os.getpid()))
@@ -100,7 +110,12 @@ if __name__ == "__main__":
     # deadline for hyperparameter search (unit: second)
     hpsearch_deadline = slot_time_num * slot_time_period
 
-    rung_epoch_threshold = 4
+    # various epoch threshold according its original implementation
+    min_epoch = 1
+    max_epoch = 100
+
+    # eta constant
+    reduction_factor = 4
 
     #######################################
     # Data Structure for HyperSched
@@ -109,15 +124,12 @@ if __name__ == "__main__":
     # a queue that can record the trails have been trained for at least one epoch
     live_trails_list = Manager().list()
 
-    for i in list(range(4, 2, -1)):
-        print(i)
-
     #######################################
     # HyperSched Starts
     #######################################
 
     # init the queue with some trails
-    for _ in range(total_devices):
+    for _ in range(total_devices*2):
         live_trails_list.append(get_available_trail())
 
     hpsearch_finish_flag = Value('i', 0)

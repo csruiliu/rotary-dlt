@@ -4,11 +4,18 @@ import config.config_path as cfg_path
 from utils.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras, load_mnist_image, load_mnist_label_onehot
 
 import tensorflow as tf
+from enum import Enum
 import numpy as np
 import time
 import os
 import sys
 sys.path.append(os.path.abspath(".."))
+
+
+class State(Enum):
+    RUN = 1
+    PAUSE = 2
+    STOP = 3
 
 
 class Trail:
@@ -73,12 +80,24 @@ class Trail:
         else:
             raise ValueError('Only support dataset: imagenet, cifar10, mnist')
 
+    def train_simulate(self):
+        time.sleep(np.random.randint(1, 4))
+        self.train_progress += 1
+        print('[process-{},trail-{}] training progress: {} epochs'.format(os.getpid(), self.trail_id,
+                                                                          self.train_progress))
+
+    def evaluate_simulate(self):
+        np.random.seed(time.time())
+        self.cur_accuracy += np.random.uniform(0, 0.2)
+        print('[process-{},trail-{}] after {} epochs, accuracy: {}'.format(os.getpid(), self.trail_id,
+                                                                           self.train_progress, self.cur_accuracy))
+
     def train(self, assign_device):
         with tf.device(assign_device):
             feature_ph = tf.placeholder(tf.float32, [None, self.img_width, self.img_height, self.img_channels])
             label_ph = tf.placeholder(tf.int64, [None, self.img_num_class])
 
-            train_model = ModelImporter(self.model_type, str(self.job_id), self.layer_number, self.img_height,
+            train_model = ModelImporter(self.model_type, str(self.trail_id), self.layer_number, self.img_height,
                                         self.img_width, self.img_channels, self.img_num_class, self.batch_size,
                                         self.optimizer, self.learning_rate, 'relu', False)
 
@@ -113,19 +132,45 @@ class Trail:
 
                 self.train_progress += 1
 
-    def evaluate(self):
-        pass
+    def evaluate(self, assign_device):
+        with tf.device(assign_device):
+            graph = tf.Graph()
+            with graph.as_default():
+                feature_ph = tf.placeholder(tf.float32, [None, self.img_width, self.img_height, self.img_channels])
+                label_ph = tf.placeholder(tf.int64, [None, self.img_num_class])
+                train_model = ModelImporter(self.model_type, str(self.trail_id), self.layer_number, self.img_height,
+                                            self.img_width, self.img_channels, self.img_num_class, self.batch_size,
+                                            self.optimizer, self.learning_rate, 'relu', False)
+                model_entity = train_model.get_model_entity()
+                model_logit = model_entity.build(feature_ph, is_training=True)
+                model_eval_op = model_entity.evaluate(model_logit, label_ph)
 
-    def train_simulate(self):
-        time.sleep(np.random.randint(1, 4))
-        self.train_progress += 1
-        print('[process-{},trail-{}] training progress: {} epochs'.format(os.getpid(), self.trail_id,
-                                                                          self.train_progress))
+            config = tf.ConfigProto()
+            config.allow_soft_placement = True
+            config.gpu_options.allow_growth = True
 
-    def evaluate_simulate(self):
-        self.cur_accuracy += np.random.uniform(0, 0.2)
-        print('[process-{},trail-{}] after {} epochs, accuracy: {}'.format(os.getpid(), self.trail_id,
-                                                                           self.train_progress, self.cur_accuracy))
+            if self.train_dataset == 'imagenet':
+                train_data_list = sorted(os.listdir(self.imagenet_train_data_path))
+
+            with tf.Session(graph=graph, config=config) as sess:
+                num_batch = self.train_label.shape[0] // self.batch_size
+
+                if self.train_dataset == 'imagenet':
+                    acc_sum = 0
+                    num_eval_batch = self.train_label.shape[0] // 50
+                    for n in range(num_eval_batch):
+                        batch_offset = n * self.batch_size
+                        batch_end = (n + 1) * self.batch_size
+                        batch_eval_list = self.eval_data[batch_offset:batch_end]
+                        feature_eval_batch = load_imagenet_raw(self.imagenet_eval_data_path, batch_eval_list,
+                                                               self.img_height, self.img_width)
+                        label_eval_batch = self.eval_label[batch_offset:batch_end]
+                        acc_batch = sess.run(model_eval_op,
+                                             feed_dict={feature_ph: feature_eval_batch, label_ph: label_eval_batch})
+                        acc_sum += acc_batch
+                else:
+                    self.cur_accuracy = sess.run(model_eval_op, feed_dict={feature_ph: self.eval_data,
+                                                                       label_ph: self.eval_label})
 
     def set_state(self, arg_state):
         self.state = arg_state
@@ -133,7 +178,7 @@ class Trail:
     def get_state(self):
         return self.state
 
-    def get_progress(self):
+    def get_train_progress(self):
         return self.train_progress
 
     def get_accuracy(self):
