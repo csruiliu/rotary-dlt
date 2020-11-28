@@ -40,25 +40,36 @@ def hypersched_schedule():
         except IndexError:
             live_trails_list.append(get_available_trail())
         else:
-            train_count = 0
+            rung_check = 0
             while True:
-                rung_epoch_threshold = np.power(min_epoch, train_count) * reduction_factor
+                rung_epoch_threshold = np.power(reduction_factor, rung_check) * min_epoch
+                print('current rung epoch threshold {}'.format(rung_epoch_threshold))
                 trail.set_state(State.RUN)
                 trail.train_simulate()
                 trail.evaluate_simulate()
 
+                if trail.get_train_progress == max_epoch:
+                    trail.set_state(State.STOP)
+                    insert_sort_trail(trail)
+                    break
+
                 if trail.get_train_progress() == rung_epoch_threshold:
                     print('trail {} reaches the epoch threshold and is paused'.format(trail.get_trail_id()))
                     trail.set_state(State.PAUSE)
-                    pause_threshold = np.percentile(sorted(live_trails_list, key=opr.attrgetter('cur_accuracy')),
-                                                    1/reduction_factor)
+                    live_trails_accuracy_list = list()
+                    for st in sorted(live_trails_list, key=opr.attrgetter('cur_accuracy')):
+                        live_trails_accuracy_list.append(st.get_accuracy())
+
+                    pause_threshold = np.percentile(live_trails_accuracy_list, 1/reduction_factor)
 
                     if trail.get_accuracy() < pause_threshold:
-                        trail.set_state(State.PAUSE)
+                        trail.set_state(State.STOP)
                         insert_sort_trail(trail)
                         break
+                    else:
+                        trail.set_state(State.RUN)
 
-                train_count += 1
+                    rung_check += 1
 
             if hpsearch_finish_flag.value == 1:
                 print('process {} finished'.format(os.getpid()))

@@ -87,7 +87,6 @@ class Trail:
                                                                           self.train_progress))
 
     def evaluate_simulate(self):
-        np.random.seed(time.time())
         self.cur_accuracy += np.random.uniform(0, 0.2)
         print('[process-{},trail-{}] after {} epochs, accuracy: {}'.format(os.getpid(), self.trail_id,
                                                                            self.train_progress, self.cur_accuracy))
@@ -149,12 +148,7 @@ class Trail:
             config.allow_soft_placement = True
             config.gpu_options.allow_growth = True
 
-            if self.train_dataset == 'imagenet':
-                train_data_list = sorted(os.listdir(self.imagenet_train_data_path))
-
             with tf.Session(graph=graph, config=config) as sess:
-                num_batch = self.train_label.shape[0] // self.batch_size
-
                 if self.train_dataset == 'imagenet':
                     acc_sum = 0
                     num_eval_batch = self.train_label.shape[0] // 50
@@ -165,12 +159,12 @@ class Trail:
                         feature_eval_batch = load_imagenet_raw(self.imagenet_eval_data_path, batch_eval_list,
                                                                self.img_height, self.img_width)
                         label_eval_batch = self.eval_label[batch_offset:batch_end]
-                        acc_batch = sess.run(model_eval_op,
-                                             feed_dict={feature_ph: feature_eval_batch, label_ph: label_eval_batch})
+                        acc_batch = sess.run(model_eval_op, feed_dict={feature_ph: feature_eval_batch,
+                                                                       label_ph: label_eval_batch})
                         acc_sum += acc_batch
                 else:
                     self.cur_accuracy = sess.run(model_eval_op, feed_dict={feature_ph: self.eval_data,
-                                                                       label_ph: self.eval_label})
+                                                                           label_ph: self.eval_label})
 
     def set_state(self, arg_state):
         self.state = arg_state
