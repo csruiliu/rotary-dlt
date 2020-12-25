@@ -2,21 +2,20 @@ from multiprocessing import Process, Manager, Value
 import time
 from timeit import default_timer as timer
 import os
-import numpy as np
 import sys
 import operator as opr
+import numpy as np
 sys.path.append(os.path.abspath(".."))
 
-from trail import Trail
-from trail import State
 import config.config_parameter as cfg_para
 from utils.utils_workload_func import generate_workload_hyperparamsearch
+from trail import Trail, State
 
 
 def get_available_trail():
     next_trail = Trail(hpsearch_workload_use.pop())
     if len(hpsearch_workload_use) == 0:
-        for idx, value in enumerate(hpsearch_workload):
+        for _, value in enumerate(hpsearch_workload):
             hpsearch_workload_use.append(value)
     return next_trail
 
@@ -42,32 +41,32 @@ def hypersched_schedule():
         else:
             rung_check = 0
             while True:
-                rung_epoch_threshold = np.power(reduction_factor, rung_check) * min_epoch
+                rung_epoch_threshold = np.power(REDUCT_FACTOR, rung_check) * MIN_EPOCH
                 print('current rung epoch threshold {}'.format(rung_epoch_threshold))
                 trail.set_state(State.RUN)
                 trail.train_simulate()
                 trail.evaluate_simulate()
 
-                if trail.get_train_progress == max_epoch:
+                if trail.get_train_progress == MAX_EPOCH:
                     trail.set_state(State.STOP)
                     insert_sort_trail(trail)
                     break
 
                 if trail.get_train_progress() == rung_epoch_threshold:
-                    print('trail {} reaches the epoch threshold and is paused'.format(trail.get_trail_id()))
+                    print('trail {} reaches the epoch threshold'.format(trail.get_trail_id()))
                     trail.set_state(State.PAUSE)
                     live_trails_accuracy_list = list()
                     for st in sorted(live_trails_list, key=opr.attrgetter('cur_accuracy')):
                         live_trails_accuracy_list.append(st.get_accuracy())
 
-                    pause_threshold = np.percentile(live_trails_accuracy_list, 1/reduction_factor)
+                    pause_threshold = np.percentile(live_trails_accuracy_list, 1 / REDUCT_FACTOR)
 
                     if trail.get_accuracy() < pause_threshold:
                         trail.set_state(State.STOP)
                         insert_sort_trail(trail)
                         break
-                    else:
-                        trail.set_state(State.RUN)
+
+                    trail.set_state(State.RUN)
 
                     rung_check += 1
 
@@ -93,17 +92,17 @@ if __name__ == "__main__":
     #######################################
     # Parameters of workload
     #######################################
-    hpsearch_job_num = cfg_para.hpsearch_job_num
-    hpsearch_model_type = cfg_para.hpsearch_model_type
-    hpsearch_batch_size_set = cfg_para.hpsearch_batch_size_set
-    hpsearch_layer_set = cfg_para.hpsearch_layer_set
-    hpsearch_optimizer_set = cfg_para.hpsearch_optimizer_set
-    hpsearch_learning_rate_set = cfg_para.hpsearch_learning_rate_set
-    hpsearch_train_dataset = cfg_para.hpsearch_train_dataset
+    job_num = cfg_para.hpsearch_job_num
+    model_type = cfg_para.hpsearch_model_type
+    batch_size_set = cfg_para.hpsearch_batch_size_set
+    layer_set = cfg_para.hpsearch_layer_set
+    optimizer_set = cfg_para.hpsearch_optimizer_set
+    lr_set = cfg_para.hpsearch_learning_rate_set
+    train_dataset = cfg_para.hpsearch_train_dataset
 
-    hpsearch_workload = generate_workload_hyperparamsearch(hpsearch_job_num, hpsearch_model_type, hpsearch_layer_set,
-                                                           hpsearch_batch_size_set, hpsearch_optimizer_set,
-                                                           hpsearch_learning_rate_set, hpsearch_train_dataset)
+    hpsearch_workload = generate_workload_hyperparamsearch(job_num, model_type, layer_set,
+                                                           batch_size_set, optimizer_set,
+                                                           lr_set, train_dataset)
 
     hpsearch_workload_use = Manager().list()
     for job in hpsearch_workload:
@@ -122,11 +121,11 @@ if __name__ == "__main__":
     hpsearch_deadline = slot_time_num * slot_time_period
 
     # various epoch threshold according its original implementation
-    min_epoch = 1
-    max_epoch = 100
+    MIN_EPOCH = 1
+    MAX_EPOCH = 100
 
     # eta constant
-    reduction_factor = 4
+    REDUCT_FACTOR = 4
 
     #######################################
     # Data Structure for HyperSched
