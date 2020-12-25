@@ -3,8 +3,6 @@ import argparse
 import numpy as np
 from timeit import default_timer as timer
 import os
-import sys
-sys.path.append(os.path.abspath(".."))
 
 import relish.config.config_parameter as cfg_para_yml
 import relish.config.config_path as cfg_path_yml
