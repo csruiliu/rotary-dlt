@@ -1,15 +1,13 @@
-from models.model_importer import ModelImporter
-import config.config_parameter as cfg_para
-import config.config_path as cfg_path
-from utils.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras, load_mnist_image, load_mnist_label_onehot
-
 import tensorflow as tf
 from enum import Enum
 import numpy as np
 import time
 import os
-import sys
-sys.path.append(os.path.abspath(".."))
+
+import relish.config.config_parameter as cfg_para
+import relish.config.config_path as cfg_path
+from relish.models.model_importer import ModelImporter
+from relish.tools.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras, load_mnist_image, load_mnist_label_onehot
 
 
 class State(Enum):

@@ -3,18 +3,16 @@ from multiprocessing import Process, Manager
 import argparse
 from timeit import default_timer as timer
 import os
-import sys
-sys.path.append(os.path.abspath(".."))
 
-from relish_environment import MLSchEnv
-from relish_engine import MLSchEngine
-from estimator_model_accuracy import AccuracyEstimator
-from estimator_model_steptime_multidevices import MultiDeviceTimeEstimator
-from models.model_importer import ModelImporter
-import config.config_parameter as cfg_para_yml
-import config.config_path as cfg_path_yml
-from utils.utils_workload_func import generate_workload_slo
-from utils.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras, load_mnist_image, load_mnist_label_onehot
+import relish.config.config_parameter as cfg_para_yml
+import relish.config.config_path as cfg_path_yml
+from relish.core.relish_environment import SchedEnv
+from relish.core.relish_engine import SchedEngine
+from relish.estimator.estimator_model_accuracy import AccuracyEstimator
+from relish.estimator.estimator_model_steptime_multidevices import MultiDeviceTimeEstimator
+from relish.models.model_importer import ModelImporter
+from relish.tools.utils_workload_func import generate_workload_slo
+from relish.tools.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras, load_mnist_image, load_mnist_label_onehot
 
 tf.compat.v1.enable_v2_behavior()
 
@@ -112,7 +110,7 @@ def run_job(job_info, job_progress_dict, assign_device):
 
 def schedule_job_rlsched():
     # init schedule environment
-    mlsch_env = MLSchEnv(time_slots_num=_sch_time_slots_num, gpu_device_num=_sch_gpu_device_num,
+    mlsch_env = SchedEnv(time_slots_num=_sch_time_slots_num, gpu_device_num=_sch_gpu_device_num,
                          cpu_device_num=_sch_cpu_device_num, workload=_sch_workload,
                          reward_function=_sch_reward_function, is_simulation=True)
 
@@ -126,7 +124,7 @@ def schedule_job_rlsched():
 
     mlsch_env.load_estimator(mlsch_mte, mlsch_ae)
 
-    mlsch_engine = MLSchEngine(mlsch_env)
+    mlsch_engine = SchedEngine(mlsch_env)
 
     mlsch_engine.build_sch_agent()
     mlsch_engine.benchmark_before_training(benchmark_num_episodes=20)

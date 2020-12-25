@@ -7,10 +7,10 @@ from tf_agents.agents.reinforce import reinforce_agent
 from tf_agents.trajectories import trajectory
 from tf_agents.replay_buffers import tf_uniform_replay_buffer
 
-import utils.utils_reward_func as reward_function
+import relish.tools.utils_reward_func as reward_function
 
 
-class MLSchEngine:
+class SchedEngine:
     def __init__(self, sch_env):
         self._mlsch_env = sch_env
         self._rl_agent = None

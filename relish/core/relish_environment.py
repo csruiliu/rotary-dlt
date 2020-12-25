@@ -3,10 +3,10 @@ import tensorflow as tf
 from tf_agents.specs import tensor_spec
 from tf_agents.trajectories import time_step as ts
 
-import utils.utils_reward_func as reward_function
+import relish.tools.utils_reward_func as reward_function
 
 
-class MLSchEnv:
+class SchedEnv:
     def __init__(self, time_slots_num, gpu_device_num, cpu_device_num, workload, reward_function, is_simulation=False):
         self._time_slots_num = time_slots_num
         self._gpu_device_num = gpu_device_num

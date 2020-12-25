@@ -4,13 +4,11 @@ import multiprocessing as mp
 import numpy as np
 from timeit import default_timer as timer
 import os
-import sys
-sys.path.append(os.path.abspath(".."))
 
-from models.model_importer import ModelImporter
-import config.config_parameter as cfg_para_yml
-import config.config_path as cfg_path_yml
-from utils.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras
+import relish.config.config_parameter as cfg_para_yml
+import relish.config.config_path as cfg_path_yml
+from relish.models.model_importer import ModelImporter
+from relish.tools.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras
 
 
 def generate_job_queue():

@@ -3,13 +3,13 @@ from multiprocessing import Pool
 from timeit import default_timer as timer
 import os
 
-import config.config_path as cfg_path_yml
-import config.config_parameter as cfg_para_yml
-from models.model_importer import ModelImporter
-from utils.utils_img_func import load_cifar10_test, load_imagenet_labels_onehot, load_imagenet_raw
+import relish.config.config_path as cfg_path_yml
+import relish.config.config_parameter as cfg_para_yml
+from relish.models.model_importer import ModelImporter
+from relish.tools.utils_img_func import load_cifar10_test, load_imagenet_labels_onehot, load_imagenet_raw
 
 
-class MLSchLauncher:
+class SchedLauncher:
     def __init__(self, sched_job_list, sched_workload, gpu_num, cpu_num, slot_time_period):
         self.schedule_job_list = sched_job_list
         self.schedule_workload = sched_workload

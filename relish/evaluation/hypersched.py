@@ -2,14 +2,12 @@ from multiprocessing import Process, Manager, Value
 import time
 from timeit import default_timer as timer
 import os
-import sys
 import operator as opr
 import numpy as np
-sys.path.append(os.path.abspath(".."))
 
-import config.config_parameter as cfg_para
-from utils.utils_workload_func import generate_workload_hyperparamsearch
-from trail import Trail, State
+import relish.config.config_parameter as cfg_para
+from relish.tools.utils_workload_func import generate_workload_hyperparamsearch
+from hypersched_trail import Trail, State
 
 
 def get_available_trail():
