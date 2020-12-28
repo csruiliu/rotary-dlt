@@ -105,7 +105,7 @@ def load_cifar10_train(path):
 ########################################################
 # read cifar-10 data, testing data
 ########################################################
-def load_cifar10_test(path):
+def load_cifar10_eval(path):
     with open(path + '/test_batch', 'rb') as fo:
         test_batch = pickle.load(fo, encoding='bytes')
         test_data = test_batch[b'data']
