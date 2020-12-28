@@ -93,8 +93,7 @@ def train_job(job_data, job_progress_dict, assign_device):
 
                     if train_dataset == 'imagenet':
                         batch_list = train_data_list[batch_offset:batch_end]
-                        train_data_batch = load_imagenet_raw(train_feature_input,
-                                                             batch_list, img_h, img_w)
+                        train_data_batch = load_imagenet_raw(train_feature_input, batch_list, img_h, img_w)
                     else:
                         train_data_batch = train_feature_input[batch_offset:batch_end]
 
@@ -145,10 +144,11 @@ def evaluate_job(job_data):
         if train_dataset == 'imagenet':
             acc_sum = 0
             num_eval_batch = eval_label_input.shape[0] // 50
+            eval_data_list = sorted(os.listdir(eval_feature_input))
             for n in range(num_eval_batch):
                 batch_offset = n * train_batchsize
                 batch_end = (n + 1) * train_batchsize
-                batch_eval_list = eval_feature_input[batch_offset:batch_end]
+                batch_eval_list = eval_data_list[batch_offset:batch_end]
                 feature_eval_batch = load_imagenet_raw(eval_feature_input, batch_eval_list, img_h, img_w)
                 label_eval_batch = eval_label_input[batch_offset:batch_end]
                 acc_batch = sess.run(eval_ops, feed_dict={feature_ph: feature_eval_batch,
@@ -170,20 +170,12 @@ def roundrobin_run():
 
     time_slots_num = cfg_para.sch_time_slots_num
     job_num = cfg_para.slo_job_num
-    model_type_set = cfg_para.slo_model_type_set
-    batch_size_set = cfg_para.slo_batch_size_set
-    optimizer_set = cfg_para.slo_optimizer_set
-    learning_rate_set = cfg_para.slo_learning_rate_set
-    activation_set = cfg_para.slo_activation_set
-    train_dataset = cfg_para.train_dataset
 
     ##################################################
     # Generate workload
     ##################################################
 
-    sched_workload = generate_workload_slo(job_num, model_type_set, batch_size_set,
-                                           optimizer_set, learning_rate_set,
-                                           activation_set, train_dataset, use_seed=True)
+    sched_workload = generate_workload_slo(job_num, use_seed=True)
     sched_workload_use = sched_workload.copy()
 
     ##################################################
