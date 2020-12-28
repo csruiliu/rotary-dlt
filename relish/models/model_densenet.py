@@ -3,9 +3,20 @@ import tensorflow.contrib as tc
 
 
 # DenseNet
-class DenseNet(object):
-    def __init__(self, net_name, num_layer, input_h, input_w, num_channel, num_classes, batch_size, opt,
-                 learning_rate=0.0001, activation='relu', batch_padding=False):
+class DenseNet:
+    def __init__(self,
+                 net_name,
+                 num_layer,
+                 input_h,
+                 input_w,
+                 num_channel,
+                 num_classes,
+                 batch_size,
+                 optimizer,
+                 learning_rate=0.0001,
+                 activation='relu',
+                 batch_padding=False):
+
         self.net_name = net_name
         self.residual_layer = num_layer
         self.img_h = input_h
@@ -13,7 +24,7 @@ class DenseNet(object):
         self.channel_num = num_channel
         self.num_classes = num_classes
         self.batch_size = batch_size
-        self.opt = opt
+        self.opt = optimizer
         self.learning_rate = learning_rate
         self.activation = activation
         self.batch_padding = batch_padding

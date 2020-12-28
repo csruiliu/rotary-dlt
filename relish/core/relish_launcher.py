@@ -5,8 +5,8 @@ import os
 
 import relish.config.config_path as cfg_path_yml
 import relish.config.config_parameter as cfg_para_yml
-from relish.models.model_importer import ModelImporter
-from relish.tools.utils_img_func import load_cifar10_test, load_imagenet_labels_onehot, load_imagenet_raw
+from relish.common.model_importer import ModelImporter
+from relish.tools.img_tool import load_cifar10_test, load_imagenet_labels_onehot, load_imagenet_raw
 
 
 class SchedLauncher:
