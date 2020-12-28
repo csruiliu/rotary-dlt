@@ -1,9 +1,14 @@
 import numpy as np
 
 
-def generate_workload_slo(job_num, model_type_set, batch_size_set, optimizer_set, learn_rate_set, activation_set,
-                          train_data, use_seed=False):
-
+def generate_workload_slo(job_num,
+                          model_type_set,
+                          batch_size_set,
+                          optimizer_set,
+                          learn_rate_set,
+                          activation_set,
+                          train_data,
+                          use_seed=False):
     if use_seed:
         np.random.seed(10000000)
 
@@ -35,8 +40,14 @@ def generate_workload_slo(job_num, model_type_set, batch_size_set, optimizer_set
     return sch_workload
 
 
-def generate_workload_hyperparamsearch(job_num, model_type, layer_set, batch_size_set, optimizer_set, learn_rate_set,
-                                       train_data, use_seed=False):
+def generate_workload_hyperparamsearch(job_num,
+                                       model_type,
+                                       layer_set,
+                                       batch_size_set,
+                                       optimizer_set,
+                                       learn_rate_set,
+                                       train_data,
+                                       use_seed=False):
     if use_seed:
         np.random.seed(10000000)
 

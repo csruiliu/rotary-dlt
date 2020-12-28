@@ -77,7 +77,6 @@ def load_cifar10_keras():
 # read cifar-10 data, batch 1-5 training data
 ########################################################
 def load_cifar10_train(path):
-
     cifar_train_data = None
     cifar_train_filenames = []
     cifar_train_labels = []
@@ -141,7 +140,8 @@ def load_imagenet_raw(image_dir, batch_list, img_h, img_w):
 ########################################################
 # read imagenet label
 ########################################################
-def load_imagenet_labels_onehot(path, num_classes):
+def load_imagenet_labels_onehot(path):
+    num_classes = 1000
     lines = open(path).readlines()
     labels_array = np.zeros((len(lines), num_classes))
     for idx, val in enumerate(lines):
