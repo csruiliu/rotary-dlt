@@ -3,46 +3,54 @@ import argparse
 import numpy as np
 import os
 
-import relish.config.config_path as cfg_path_yml
-import relish.config.config_parameter as cfg_para_yml
-from relish.models.model_importer import ModelImporter
-from relish.tools.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot
-from relish.tools.utils_img_func import load_mnist_image, load_mnist_label_onehot
-from relish.tools.utils_img_func import load_cifar10_keras
+from relish.common.model_importer import ModelImporter
+from relish.common.dataset_loader import load_dataset_para, load_train_dataset, load_eval_dataset
+from relish.common.dataset_loader import get_dataset_input_size
+from relish.tools.img_tool import load_imagenet_raw
 
 
-def build_model():
+def profile_model():
+    img_w, img_h, num_chn, num_cls = load_dataset_para(train_dataset)
+    train_feature_input, train_label_input = load_train_dataset(train_dataset)
+    eval_feature_input, eval_label_input = load_eval_dataset(train_dataset)
+
+    features = tf.placeholder(tf.float32, [None, img_w, img_h, num_chn])
+    labels = tf.placeholder(tf.int64, [None, num_cls])
+
+    img_w, img_h, num_chn, num_cls = load_dataset_para(train_dataset)
+    input_data_size = get_dataset_input_size(train_dataset)
+
     with tf.device(train_device):
         model_name_abbr = np.random.choice(rand_seed, 1, replace=False).tolist()
-        dm = ModelImporter(train_model, str(model_name_abbr.pop()), train_layer, img_height, img_width, num_channels,
-                           num_classes, train_batchsize, train_opt, train_learn_rate, train_activation, False)
+        dm = ModelImporter(train_model, str(model_name_abbr.pop()),
+                           train_layer, img_h, img_w,
+                           num_chn, num_cls, train_batchsize,
+                           train_opt, train_learn_rate,
+                           train_activation, False)
         model_entity = dm.get_model_entity()
         model_logit = model_entity.build(input_features=features, is_training=True)
         conv_layer_num, pool_layer_num, residual_layer_num = model_entity.get_layer_info()
 
-        model_name_output = '{}-{}-{}-{}-{}-{}-{}-{}-{}-{}-{}'.format(input_data_size, num_channels, num_classes,
-                                                                      train_batchsize, conv_layer_num, pool_layer_num,
-                                                                      residual_layer_num, train_learn_rate, train_opt,
+        model_name_output = '{}-{}-{}-{}-{}-{}-{}-{}-{}-{}-{}'.format(input_data_size, num_chn,
+                                                                      num_cls, train_batchsize,
+                                                                      conv_layer_num, pool_layer_num,
+                                                                      residual_layer_num,
+                                                                      train_learn_rate, train_opt,
                                                                       train_activation, train_epoch)
-        train_step = model_entity.train(model_logit, labels)
-        eval_step = model_entity.evaluate(model_logit, labels)
+        train_op = model_entity.train(model_logit, labels)
+        eval_op = model_entity.evaluate(model_logit, labels)
 
-    return train_step, eval_step, model_name_output
-
-
-def train_eval_model(trainOp, evalOp, model_info):
-    with tf.device(train_device):
         config = tf.ConfigProto()
         config.allow_soft_placement = True
         config.gpu_options.allow_growth = True
 
-        if train_data == 'imagenet':
-            image_list_train = sorted(os.listdir(imagenet_train_img_path))
-            image_list_eval = sorted(os.listdir(imagenet_test_img_path))
+        if train_dataset == 'imagenet':
+            image_list_train = sorted(os.listdir(train_feature_input))
+            image_list_eval = sorted(os.listdir(eval_feature_input))
 
         with tf.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
-            num_batch = Y_data_train.shape[0] // train_batchsize
+            num_batch = train_feature_input.shape[0] // train_batchsize
 
             for e in range(train_epoch):
                 for i in range(num_batch):
@@ -50,32 +58,38 @@ def train_eval_model(trainOp, evalOp, model_info):
                     batch_offset = i * train_batchsize
                     batch_end = (i+1) * train_batchsize
 
-                    if train_data == 'imagenet':
+                    if train_dataset == 'imagenet':
                         batch_list = image_list_train[batch_offset:batch_end]
-                        X_mini_batch_feed = load_imagenet_raw(imagenet_train_img_path, batch_list, img_height, img_width)
+                        train_feature_batch = load_imagenet_raw(train_feature_input,
+                                                                batch_list,
+                                                                img_h, img_w)
                     else:
-                        X_mini_batch_feed = X_data[batch_offset:batch_end]
+                        train_feature_batch = train_feature_input[batch_offset:batch_end]
 
-                    Y_mini_batch_feed = Y_data_train[batch_offset:batch_end]
-                    sess.run(trainOp, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    train_label_batch = train_label_input[batch_offset:batch_end]
+                    sess.run(train_op, feed_dict={features: train_feature_batch, labels: train_label_batch})
 
-            if train_data == 'imagenet':
+            if train_dataset == 'imagenet':
                 acc_sum = 0
-                num_eval_batch = Y_data_eval.shape[0] // 50
+                num_eval_batch = eval_label_input.shape[0] // 50
                 for n in range(num_eval_batch):
                     batch_offset = n * train_batchsize
                     batch_end = (n + 1) * train_batchsize
                     batch_eval_list = image_list_eval[batch_offset:batch_end]
-                    feature_eval_batch = load_imagenet_raw(imagenet_test_img_path, batch_eval_list, img_height, img_width)
-                    label_eval_batch = Y_data_eval[batch_offset:batch_end]
-                    acc_batch = sess.run(evalOp, feed_dict={features: feature_eval_batch, labels: label_eval_batch})
+                    eval_feature_batch = load_imagenet_raw(eval_feature_input,
+                                                           batch_eval_list,
+                                                           img_h, img_w)
+                    eval_label_batch = eval_label_input[batch_offset:batch_end]
+                    acc_batch = sess.run(eval_op, feed_dict={features: eval_feature_batch,
+                                                            labels: eval_label_batch})
                     acc_sum += acc_batch
 
                 acc_arg = acc_sum / num_eval_batch
             else:
-                acc_arg = sess.run(evalOp, feed_dict={features: X_data_eval, labels: Y_data_eval})
+                acc_arg = sess.run(eval_op, feed_dict={features: eval_feature_input,
+                                                       labels: eval_label_input})
 
-    print("{{\"model_name\": \"{}\", \"model_accuracy\": {}}}".format(model_info, acc_arg))
+    print("{{\"model_name\": \"{}\", \"model_accuracy\": {}}}".format(train_model, acc_arg))
 
 
 if __name__ == '__main__':
@@ -130,7 +144,7 @@ if __name__ == '__main__':
     else:
         train_layer = args.layer
 
-    train_data = args.train_set
+    train_dataset = args.train_set
     train_model = args.model
     train_batchsize = args.batchsize
     train_epoch = args.epoch
@@ -139,62 +153,4 @@ if __name__ == '__main__':
     train_activation = args.activation
     train_device = args.device
 
-    train_op = None
-    eval_op = None
-    img_width = None
-    img_height = None
-    num_channels = None
-    num_classes = None
-
-    if train_data == 'imagenet':
-        print('train the model on imagenet')
-        img_width = cfg_para_yml.img_width_imagenet
-        img_height = cfg_para_yml.img_height_imagenet
-        num_channels = cfg_para_yml.num_channels_rgb
-        num_classes = cfg_para_yml.num_class_imagenet
-        input_data_size = 224
-
-        imagenet_train_img_path = cfg_path_yml.imagenet_t50k_img_raw_path
-        imagenet_train_label_path = cfg_path_yml.imagenet_t50k_label_path
-        imagenet_test_img_path = cfg_path_yml.imagenet_t1k_img_raw_path
-        imagenet_test_label_path = cfg_path_yml.imagenet_t1k_label_path
-
-        Y_data_train = load_imagenet_labels_onehot(imagenet_train_label_path, num_classes)
-        Y_data_eval = load_imagenet_labels_onehot(imagenet_test_label_path, num_classes)
-
-    elif train_data == 'cifar10':
-        print('train the model on cifar10')
-        img_width = cfg_para_yml.img_width_cifar10
-        img_height = cfg_para_yml.img_height_cifar10
-        num_channels = cfg_para_yml.num_channels_rgb
-        num_classes = cfg_para_yml.num_class_cifar10
-        input_data_size = 32
-
-        cifar10_path = cfg_path_yml.cifar_10_path
-        X_data, Y_data, X_data_eval, Y_data_eval = load_cifar10_keras()
-        # X_data, Y_data = load_cifar10_train(cifar10_path)
-        # X_data_eval, Y_data_eval = load_cifar10_test(cifar10_path)
-
-    elif train_data == 'mnist':
-        print('train the model on mnist')
-        img_width = cfg_para_yml.img_width_mnist
-        img_height = cfg_para_yml.img_height_mnist
-        num_channels = cfg_para_yml.num_channels_bw
-        num_classes = cfg_para_yml.num_class_mnist
-        input_data_size = 28
-
-        mnist_train_img_path = cfg_path_yml.mnist_train_img_path
-        mnist_train_label_path = cfg_path_yml.mnist_train_label_path
-        mnist_test_img_path = cfg_path_yml.mnist_test_10k_img_path
-        mnist_test_label_path = cfg_path_yml.mnist_test_10k_label_path
-
-        X_data = load_mnist_image(mnist_train_img_path)
-        Y_data = load_mnist_label_onehot(mnist_train_label_path)
-        X_data_eval = load_mnist_image(mnist_test_img_path)
-        Y_data_eval = load_mnist_label_onehot(mnist_test_label_path)
-
-    features = tf.placeholder(tf.float32, [None, img_width, img_height, num_channels])
-    labels = tf.placeholder(tf.int64, [None, num_classes])
-    train_op, eval_op, train_model_name = build_model()
-
-    train_eval_model(train_op, eval_op, train_model_name)
+    profile_model(train_model, train_dataset)

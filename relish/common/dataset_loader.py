@@ -30,6 +30,19 @@ def load_dataset_para(dataset_arg):
     return img_width, img_height, num_channel, num_class
 
 
+def get_dataset_input_size(dataset_arg):
+    if dataset_arg == 'imagenet':
+        input_size = 224
+    elif dataset_arg == 'cifar10':
+        input_size = 32
+    elif dataset_arg == 'mnist':
+        input_size = 28
+    else:
+        raise ValueError('Training Dataset is invaild, only support mnist, cifar10, imagenet')
+
+    return input_size
+
+
 def load_train_dataset(dataset_arg):
     if dataset_arg == 'imagenet':
         train_feature = cfg_path.imagenet_t50k_img_raw_path

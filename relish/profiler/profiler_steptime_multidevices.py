@@ -5,53 +5,70 @@ import numpy as np
 from timeit import default_timer as timer
 import os
 
-import relish.config.config_parameter as cfg_para_yml
-import relish.config.config_path as cfg_path_yml
-from relish.models.model_importer import ModelImporter
-from relish.tools.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras
+import relish.config.config_parameter as cfg_para
+from relish.common.model_importer import ModelImporter
+from relish.common.dataset_loader import load_dataset_para, load_train_dataset
+from relish.tools.img_tool import load_imagenet_raw
 
 
 def generate_job_queue():
     cpu_job_queue = mp.Queue()
     gpu_job_queue = mp.Queue()
 
-    workload_num = _cpu_model_num + _gpu_model_num
+    workload_num = cpu_model_num + gpu_model_num
     _rand_seed = 10000
     np.random.seed(_rand_seed)
     model_name_abbr = np.random.choice(_rand_seed, workload_num, replace=False).tolist()
 
-    for _ in range(_gpu_model_num):
+    for _ in range(gpu_model_num):
         if not gpu_job_queue.full():
-            gpu_job_queue.put([_gpu_model_type, model_name_abbr.pop(), _gpu_model_layer, _gpu_batch_size,
-                               _gpu_optimizer, _gpu_learn_rate, _gpu_activation])
+            gpu_job_queue.put([gpu_model_type,
+                               model_name_abbr.pop(),
+                               gpu_model_layer,
+                               gpu_batch_size,
+                               gpu_optimizer,
+                               gpu_learn_rate,
+                               gpu_activation])
 
-    for _ in range(_cpu_model_num):
+    for _ in range(cpu_model_num):
         if not cpu_job_queue.full():
-            cpu_job_queue.put([_cpu_model_type, model_name_abbr.pop(), _cpu_model_layer, _cpu_batch_size,
-                               _cpu_optimizer, _cpu_learn_rate, _cpu_activation])
+            cpu_job_queue.put([cpu_model_type,
+                               model_name_abbr.pop(),
+                               cpu_model_layer,
+                               cpu_batch_size,
+                               cpu_optimizer,
+                               cpu_learn_rate,
+                               cpu_activation])
 
     return gpu_job_queue, cpu_job_queue
 
 
-def run_single_job(model_type, model_instance, layer_num, batch_size, optimizer, learning_rate, activation,
-                   assign_device, proc_idx=0):
+def run_single_job(model_type,
+                   model_instance,
+                   layer_num,
+                   batch_size,
+                   optimizer,
+                   learning_rate,
+                   activation,
+                   assign_device,
+                   proc_idx=0):
     with tf.device(assign_device):
-        features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _num_channels])
-        labels = tf.placeholder(tf.int64, [None, _num_classes])
+        feature_ph = tf.placeholder(tf.float32, [None, img_w, img_h, num_chn])
+        label_ph = tf.placeholder(tf.int64, [None, num_cls])
 
-        train_model = ModelImporter(model_type, str(model_instance), layer_num, _img_height, _img_width, _num_channels,
-                                    _num_classes, batch_size, optimizer, learning_rate, activation, False)
+        train_model = ModelImporter(model_type, str(model_instance),
+                                    layer_num, img_h, img_w, num_chn,
+                                    num_cls, batch_size, optimizer,
+                                    learning_rate, activation, False)
 
         model_entity = train_model.get_model_entity()
-        model_logit = model_entity.build(features, is_training=True)
-        train_ops = model_entity.train(model_logit, labels)
+        model_logit = model_entity.build(feature_ph, is_training=True)
+        train_ops = model_entity.train(model_logit, label_ph)
 
         num_conv_layer, num_pool_layer, num_residual_layer = model_entity.get_layer_info()
 
-        #model_arch_info = num_conv_layer + '-' + num_pool_layer + '-' + num_residual_layer
-
-        if use_raw_image:
-            image_list = sorted(os.listdir(_image_path_raw))
+        if train_dataset == 'imagenet':
+            image_list = sorted(os.listdir(train_feature_input))
 
         tf_config = tf.ConfigProto()
         tf_config.gpu_options.allow_growth = True
@@ -64,28 +81,28 @@ def run_single_job(model_type, model_instance, layer_num, batch_size, optimizer,
 
         with tf.Session(config=tf_config) as sess:
             sess.run(tf.global_variables_initializer())
-            num_batch = train_label.shape[0] // batch_size
+            num_batch = train_label_input.shape[0] // batch_size
             for i in range(num_batch):
                 if assign_device.startswith('/cpu'):
-                    print('**CPU JOB**: Proc-{}, {}-{}-{} on cpu [{}]: step {} / {}'.format(proc_idx, model_type,
-                                                                                            batch_size, model_instance,
-                                                                                            timer(), i + 1, num_batch))
+                    print('**CPU JOB**: Proc-{}, {}-{}-{} on cpu [{}]: step {} / {}'
+                          .format(proc_idx, model_type, batch_size, model_instance, timer(), i+1, num_batch))
                 elif assign_device.startswith('/gpu'):
-                    print('**GPU JOB**: {}-{}-{} on cpu [{}]: step {} / {}'.format(model_type, batch_size,
-                                                                                   model_instance, timer(),
-                                                                                   i + 1, num_batch))
+                    print('**GPU JOB**: {}-{}-{} on cpu [{}]: step {} / {}'
+                          .format(model_type, batch_size, model_instance, timer(), i+1, num_batch))
                 if i != 0:
                     start_time = timer()
 
                 batch_offset = i * batch_size
                 batch_end = (i + 1) * batch_size
-                if use_raw_image:
+                if train_dataset == 'imagenet':
                     batch_list = image_list[batch_offset:batch_end]
-                    X_mini_batch_feed = load_imagenet_raw(_image_path_raw, batch_list, _img_height, _img_width)
+                    train_feature_batch = load_imagenet_raw(train_feature_input,
+                                                          batch_list,
+                                                          img_h, img_w)
                 else:
-                    X_mini_batch_feed = train_data[batch_offset:batch_end]
-                Y_mini_batch_feed = train_label[batch_offset:batch_end]
-                sess.run(train_ops, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                    train_feature_batch = train_feature_input[batch_offset:batch_end]
+                train_label_batch = train_label_input[batch_offset:batch_end]
+                sess.run(train_ops, feed_dict={feature_ph: train_feature_batch, label_ph: train_label_batch})
 
                 if i != 0:
                     end_time = timer()
@@ -102,8 +119,14 @@ def run_single_job(model_type, model_instance, layer_num, batch_size, optimizer,
 def consumer_gpu(queue, assign_device):
     if not queue.empty():
         gpu_job = queue.get()
-        p = mp.Process(target=run_single_job, args=(gpu_job[0], gpu_job[1], gpu_job[2], gpu_job[3], gpu_job[4],
-                                                    gpu_job[5], gpu_job[6], assign_device))
+        p = mp.Process(target=run_single_job, args=(gpu_job[0],
+                                                    gpu_job[1],
+                                                    gpu_job[2],
+                                                    gpu_job[3],
+                                                    gpu_job[4],
+                                                    gpu_job[5],
+                                                    gpu_job[6],
+                                                    assign_device))
         p.start()
         p.join()
 
@@ -112,8 +135,15 @@ def consumer_cpu(queue, assign_device):
     for proc_idx in range(os_thread_num):
         if not queue.empty():
             cpu_job = queue.get()
-            p = mp.Process(target=run_single_job, args=(cpu_job[0], cpu_job[1], cpu_job[2], cpu_job[3], cpu_job[4],
-                                                        cpu_job[5], cpu_job[6], assign_device, proc_idx))
+            p = mp.Process(target=run_single_job, args=(cpu_job[0],
+                                                        cpu_job[1],
+                                                        cpu_job[2],
+                                                        cpu_job[3],
+                                                        cpu_job[4],
+                                                        cpu_job[5],
+                                                        cpu_job[6],
+                                                        assign_device,
+                                                        proc_idx))
             p.start()
         else:
             break
@@ -163,57 +193,38 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    _cpu_model_type = args.cpu_model
-    _cpu_model_layer = args.cpu_model_layer
-    _cpu_model_num = args.cpu_model_num
-    _cpu_batch_size = args.cpu_batch_size
-    _cpu_learn_rate = args.cpu_learn_rate
-    _cpu_activation = args.cpu_activation
-    _cpu_optimizer = args.cpu_optimizer
+    cpu_model_type = args.cpu_model
+    cpu_model_layer = args.cpu_model_layer
+    cpu_model_num = args.cpu_model_num
+    cpu_batch_size = args.cpu_batch_size
+    cpu_learn_rate = args.cpu_learn_rate
+    cpu_activation = args.cpu_activation
+    cpu_optimizer = args.cpu_optimizer
 
-    _gpu_model_type = args.gpu_model
-    _gpu_model_layer = args.gpu_model_layer
-    _gpu_model_num = args.gpu_model_num
-    _gpu_batch_size = args.gpu_batch_size
-    _gpu_learn_rate = args.gpu_learn_rate
-    _gpu_activation = args.gpu_activation
-    _gpu_optimizer = args.gpu_optimizer
+    gpu_model_type = args.gpu_model
+    gpu_model_layer = args.gpu_model_layer
+    gpu_model_num = args.gpu_model_num
+    gpu_batch_size = args.gpu_batch_size
+    gpu_learn_rate = args.gpu_learn_rate
+    gpu_activation = args.gpu_activation
+    gpu_optimizer = args.gpu_optimizer
 
-    _train_dataset = args.train_dataset
+    train_dataset = args.train_dataset
 
-    ########################################
-    # Get dataset parameters from config
-    ########################################
-
-    if _train_dataset == 'imagenet':
-        _image_path_raw = cfg_path_yml.imagenet_t10k_img_raw_path
-        _label_path = cfg_path_yml.imagenet_t1k_label_path
-        _img_width = cfg_para_yml.img_width_imagenet
-        _img_height = cfg_para_yml.img_height_imagenet
-        _num_channels = cfg_para_yml.num_channels_rgb
-        _num_classes = cfg_para_yml.num_class_imagenet
-        train_label = load_imagenet_labels_onehot(_label_path, _num_classes)
-        use_raw_image = True
-    elif _train_dataset == 'cifar10':
-        _img_width = cfg_para_yml.img_width_cifar10
-        _img_height = cfg_para_yml.img_height_cifar10
-        _num_channels = cfg_para_yml.num_channels_rgb
-        _num_classes = cfg_para_yml.num_class_cifar10
-        _cifar10_path = cfg_path_yml.cifar_10_path
-        train_data, train_label, test_data, test_label = load_cifar10_keras()
-        use_raw_image = False
+    img_w, img_h, num_chn, num_cls = load_dataset_para(train_dataset)
+    train_feature_input, train_label_input = load_train_dataset(train_dataset)
 
     ########################################
     # Processes for training
     ########################################
 
     os_thread_num = mp.cpu_count()
-    _available_gpu_num = cfg_para_yml.sch_gpu_num
+    available_gpu_num = cfg_para.sch_gpu_num
     training_gpu_queue, training_cpu_queue = generate_job_queue()
 
     proc_gpu_list = list()
 
-    for gn in range(_available_gpu_num):
+    for gn in range(available_gpu_num):
         assign_gpu = '/gpu:' + str(gn)
         device_proc_gpu = mp.Process(target=consumer_gpu, args=(training_gpu_queue, assign_gpu))
         proc_gpu_list.append(device_proc_gpu)

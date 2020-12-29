@@ -2,12 +2,8 @@ import tensorflow as tf
 import argparse
 from timeit import default_timer as timer
 
-import relish.config.config_parameter as cfg_para_yml
-import relish.config.config_path as cfg_path_yml
-from relish.models.model_importer import ModelImporter
-from relish.tools.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot
-from relish.tools.utils_img_func import load_mnist_image, load_mnist_label_onehot
-from relish.tools.utils_img_func import load_cifar10_keras
+from relish.common.model_importer import ModelImporter
+from relish.common.dataset_loader import load_dataset_para, load_train_dataset, load_eval_dataset
 
 
 def profile_steptime(model_info_args):
@@ -27,63 +23,21 @@ def profile_steptime(model_info_args):
 
     train_dataset = hyperparameter_list[7]
 
-    img_width = 0
-    img_height = 0
-    num_classes = 0
-    num_channels = 0
-
-    if train_dataset == 'imagenet':
-        print('train the model on imagenet')
-        img_width = cfg_para_yml.img_width_imagenet
-        img_height = cfg_para_yml.img_height_imagenet
-        num_channels = cfg_para_yml.num_channels_rgb
-        num_classes = cfg_para_yml.num_class_imagenet
-
-        imagenet_train_img_path = cfg_path_yml.imagenet_t50k_img_raw_path
-        imagenet_train_label_path = cfg_path_yml.imagenet_t50k_label_path
-        imagenet_test_img_path = cfg_path_yml.imagenet_t1k_img_raw_path
-        imagenet_test_label_path = cfg_path_yml.imagenet_t1k_label_path
-
-        train_label = load_imagenet_labels_onehot(imagenet_train_label_path, num_classes)
-        eval_label = load_imagenet_labels_onehot(imagenet_test_label_path, num_classes)
-
-    elif train_dataset == 'cifar10':
-        print('train the model on cifar10')
-        img_width = cfg_para_yml.img_width_cifar10
-        img_height = cfg_para_yml.img_height_cifar10
-        num_channels = cfg_para_yml.num_channels_rgb
-        num_classes = cfg_para_yml.num_class_cifar10
-
-        cifar10_path = cfg_path_yml.cifar_10_path
-        train_data, train_label, eval_data, eval_label = load_cifar10_keras()
-
-    elif train_dataset == 'mnist':
-        print('train the model on mnist')
-        img_width = cfg_para_yml.img_width_mnist
-        img_height = cfg_para_yml.img_height_mnist
-        num_channels = cfg_para_yml.num_channels_bw
-        num_classes = cfg_para_yml.num_class_mnist
-
-        mnist_train_img_path = cfg_path_yml.mnist_train_img_path
-        mnist_train_label_path = cfg_path_yml.mnist_train_label_path
-        mnist_test_img_path = cfg_path_yml.mnist_test_10k_img_path
-        mnist_test_label_path = cfg_path_yml.mnist_test_10k_label_path
-
-        train_data = load_mnist_image(mnist_train_img_path)
-        train_label = load_mnist_label_onehot(mnist_train_label_path)
-        eval_data = load_mnist_image(mnist_test_img_path)
-        eval_label = load_mnist_label_onehot(mnist_test_label_path)
+    img_w, img_h, num_chn, num_cls = load_dataset_para(train_dataset)
+    train_feature_input, train_label_input = load_train_dataset(train_dataset)
+    eval_feature_input, eval_label_input = load_eval_dataset(train_dataset)
 
     with tf.device(assign_device):
-        features = tf.placeholder(tf.float32, [None, img_width, img_height, num_channels])
-        labels = tf.placeholder(tf.int64, [None, num_classes])
+        feature_ph = tf.placeholder(tf.float32, [None, img_w, img_h, num_chn])
+        label_ph = tf.placeholder(tf.int64, [None, num_cls])
 
-        dm = ModelImporter(model_type, job_id, model_layer, img_height, img_width, num_channels,
-                           num_classes, batch_size, model_optimizer, learning_rate, model_activation, False)
+        dm = ModelImporter(model_type, job_id, model_layer,
+                           img_h, img_w, num_chn, num_cls,
+                           batch_size, model_optimizer,
+                           learning_rate, model_activation, False)
         model_entity = dm.get_model_entity()
-        model_logit = model_entity.build(input_features=features, is_training=True)
-
-        train_step = model_entity.train(model_logit, labels)
+        model_logit = model_entity.build(feature_ph, is_training=True)
+        train_op = model_entity.train(model_logit, label_ph)
 
         #########################################################################
         # Traing the model
@@ -97,18 +51,18 @@ def profile_steptime(model_info_args):
         step_count = 0
         with tf.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
-            num_batch = train_label.shape[0] // batch_size
+            num_batch = train_label_input.shape[0] // batch_size
             for i in range(num_batch):
                 start_time = timer()
                 #print('step {} / {}'.format(i + 1, num_batch))
                 batch_offset = i * batch_size
                 batch_end = (i + 1) * batch_size
 
-                X_mini_batch_feed = train_data[batch_offset:batch_end]
-                Y_mini_batch_feed = train_label[batch_offset:batch_end]
+                train_feature_batch = train_feature_input[batch_offset:batch_end]
+                train_label_batch = train_label_input[batch_offset:batch_end]
 
-                sess.run(train_step, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
-
+                sess.run(train_op, feed_dict={feature_ph: train_feature_batch,
+                                              label_ph: train_label_batch})
                 end_time = timer()
                 dur_time = end_time - start_time
                 #print("step time:", dur_time)
@@ -151,14 +105,14 @@ if __name__ == '__main__':
                 line_trim = line.replace('**Job Result**: ', '')
                 model_info, result_info = line_trim.split(',')
                 step = result_info.split('_')[1]
-                #avg_time = profile_steptime(model_info)
-                #train_time_list.append(avg_time)
-                #print(train_time_list)
+                # avg_time = profile_steptime(model_info)
+                # train_time_list.append(avg_time)
+                # print(train_time_list)
                 step_num_list.append(step)
-                #print(step_num_list)
-                #total_time += avg_time * int(step)
+                # print(step_num_list)
+                # total_time += avg_time * int(step)
             line = fp.readline()
-    #print('total time: {}'.format(total_time))
-    #print(train_time_list)
-    #print('#########################')
+    # print('total time: {}'.format(total_time))
+    # print(train_time_list)
+    # print('#########################')
     print(step_num_list)
