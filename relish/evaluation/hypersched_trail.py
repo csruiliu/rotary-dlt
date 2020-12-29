@@ -19,7 +19,7 @@ class Trail:
     def __init__(self, job_conf):
         self.trail_id = job_conf['job_id']
         self.model_type = job_conf['model_type']
-        self.layer_number = job_conf['layer']
+        self.layer_number = job_conf['model_layer_num']
         self.batch_size = job_conf['batch_size']
         self.optimizer = job_conf['optimizer']
         self.learning_rate = job_conf['learning_rate']

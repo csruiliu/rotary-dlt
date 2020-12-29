@@ -62,6 +62,7 @@ hpsearch_model_type = schedule_workload_hpsearch_cfg['model_type']
 hpsearch_layer_set = schedule_workload_hpsearch_cfg['layer_set']
 hpsearch_batch_size_set = schedule_workload_hpsearch_cfg['batch_size_set']
 hpsearch_optimizer_set = schedule_workload_hpsearch_cfg['optimizer_set']
+hpsearch_activation_set = schedule_workload_slo_cfg['activation_set']
 hpsearch_learning_rate_set = schedule_workload_hpsearch_cfg['learning_rate_set']
 
 

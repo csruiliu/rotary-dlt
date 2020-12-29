@@ -3,10 +3,10 @@ from multiprocessing import Pool
 from timeit import default_timer as timer
 import os
 
-import relish.config.config_path as cfg_path_yml
-import relish.config.config_parameter as cfg_para_yml
+import relish.config.config_path as cfg_path
 from relish.common.model_importer import ModelImporter
-from relish.tools.img_tool import load_cifar10_test, load_imagenet_labels_onehot, load_imagenet_raw
+from relish.common.dataset_loader import load_dataset_para, load_train_dataset
+from relish.tools.img_tool import load_imagenet_raw
 
 
 class SchedLauncher:
@@ -40,47 +40,30 @@ class SchedLauncher:
         proc_start_time = timer()
 
         with tf.device(sch_device):
-            sch_job_id = sch_job[0]
-            sch_model_type = sch_job[1]
-            sch_batch_size = sch_job[2]
-            sch_model_optimizer = sch_job[3]
-            sch_model_learning_rate = sch_job[4]
-            sch_model_activation = sch_job[5]
-            train_dataset = sch_job[6]
+            job_id = sch_job['job_id']
+            model_type = sch_job['model_type']
+            num_layer = sch_job['model_layer_num']
+            batch_size = sch_job['batch_size']
+            optimizer = sch_job['optimizer']
+            learning_rate = sch_job['learning_rate']
+            activation = sch_job['activation']
+            train_dataset = sch_job['train_dataset']
 
-            _ckpt_path = cfg_path_yml.ckpt_save_path
+            ckpt_path = cfg_path.ckpt_save_path
 
-            if train_dataset == 'imagenet':
-                _image_path_raw = cfg_path_yml.imagenet_t10k_img_raw_path
-                _image_path_bin = cfg_path_yml.imagenet_t10k_label_path
-                _label_path = cfg_path_yml.imagenet_t1k_label_path
-                _img_width = cfg_para_yml.img_width_imagenet
-                _img_height = cfg_para_yml.img_height_imagenet
-                _num_channels = cfg_para_yml.num_channels_rgb
-                _num_classes = cfg_para_yml.num_class_imagenet
-                train_image_list = sorted(os.listdir(_image_path_raw))
-                train_label = load_imagenet_labels_onehot(_label_path, _num_channels)
+            img_w, img_h, num_chn, num_cls = load_dataset_para(train_dataset)
+            train_feature_input, train_label_input = load_train_dataset(train_dataset)
 
-            elif train_dataset == 'cifar10':
-                _image_path = cfg_path_yml.cifar_10_path
-                _img_width = cfg_para_yml.img_height_cifar10
-                _img_height = cfg_para_yml.img_height_cifar10
-                _num_channels = cfg_para_yml.num_channels_rgb
-                _num_classes = cfg_para_yml.num_class_cifar10
-                train_label = load_cifar10_test(_image_path)
-
-            else:
-                raise NameError('dataset cannot be found')
-
-            model_ckpt_save_path = _ckpt_path + '/' + sch_model_type + '_' + str(sch_job_id) + '/model.ckpt'
+            model_ckpt_save_path = ckpt_path + '/' + model_type + '_' + str(job_id) + '/model.ckpt'
             saver = tf.train.Saver()
 
-            features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _num_channels])
-            labels = tf.placeholder(tf.int64, [None, _num_classes])
+            features = tf.placeholder(tf.float32, [None, img_w, img_h, num_chn])
+            labels = tf.placeholder(tf.int64, [None, num_cls])
 
-            dm = ModelImporter(sch_model_type, str(sch_job_id), 1, _img_height, _img_width, _num_channels,
-                               _num_classes, sch_batch_size, sch_model_optimizer, sch_model_learning_rate,
-                               sch_model_activation, False)
+            dm = ModelImporter(model_type, str(job_id), num_layer,
+                               img_h, img_w, num_chn, num_cls,
+                               batch_size, optimizer, learning_rate,
+                               activation, batch_padding=False)
 
             model_entity = dm.get_model_entity()
             model_logit = model_entity.build(features)
@@ -96,21 +79,24 @@ class SchedLauncher:
                 else:
                     sess.run(tf.global_variables_initializer())
 
-                num_batch = train_label.shape[0] // sch_batch_size
+                num_batch = train_label_input.shape[0] // batch_size
+
+                if train_dataset == 'imagenet':
+                    train_data_list = sorted(os.listdir(train_feature_input))
 
                 epoch_count = 0
                 while True:
                     for i in range(num_batch):
-                        print('*JOB at {0}*: job id {1}, model {2}-{3}, step {4}, epoch {5}'.format(sch_device, sch_job_id,
-                                                                                                    sch_model_type, sch_batch_size,
-                                                                                                    i, epoch_count))
+                        print('*JOB at {0}*: job id {1}, model {2}-{3}, step {4}, epoch {5}'
+                              .format(sch_device, job_id, model_type, batch_size, i, epoch_count))
 
-                        batch_offset = i * sch_batch_size
-                        batch_end = (i + 1) * sch_batch_size
-                        batch_list = train_image_list[batch_offset:batch_end]
-                        X_mini_batch_feed = load_imagenet_raw(_image_path_raw, batch_list, _img_height, _img_width)
-                        Y_mini_batch_feed = train_label[batch_offset:batch_end, :]
-                        sess.run(train_ops, feed_dict={features: X_mini_batch_feed, labels: Y_mini_batch_feed})
+                        batch_offset = i * batch_size
+                        batch_end = (i + 1) * batch_size
+                        batch_list = train_data_list[batch_offset:batch_end]
+                        train_feature_batch = load_imagenet_raw(train_feature_input, batch_list, img_h, img_w)
+                        train_label_batch = train_label_input[batch_offset:batch_end, :]
+                        sess.run(train_ops, feed_dict={features: train_feature_batch,
+                                                       labels: train_label_batch})
 
                         proc_end_time = timer()
                         proc_dur_time = proc_end_time - proc_start_time
@@ -121,4 +107,3 @@ class SchedLauncher:
                             return
 
                     epoch_count += 1
-

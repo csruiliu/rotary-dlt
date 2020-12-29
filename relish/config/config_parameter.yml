@@ -43,10 +43,10 @@ dlt_schedule_workload_slo:
   train_dataset: cifar10
   # total available model type
   model_type_set:
-    - mobilenet
-    - resnet
-    - densenet
-    - mlp
+    - MobileNet
+    - ResNet
+    - DenseNet
+    - MLP
   batch_size_set:
     - 32
     - 50
@@ -78,7 +78,7 @@ dlt_schedule_workload_hpsearch:
   job_num: 100
   # training dataset
   train_dataset: cifar10
-  model_type: resnet
+  model_type: ResNet
   layer_set:
     - 18
     - 34
@@ -102,13 +102,18 @@ dlt_schedule_workload_hpsearch:
     - 0.0001
     - 0.00001
     - 0.000001
+  activation_set:
+    - relu
+    - sigmoid
+    - tanh
+    - leaky_relu
 
 
 profile_concur_cpugpu_workload:
   cpu_model_num:
     - 6
   cpu_model_type:
-    - mobilenet
+    - MobileNet
   cpu_batch_size:
     - 32
   cpu_learning_rate:
@@ -120,7 +125,7 @@ profile_concur_cpugpu_workload:
   gpu_model_num:
     - 1
   gpu_model_type:
-    - resnet
+    - ResNet
   gpu_batch_size:
     - 32
   gpu_learning_rate:

@@ -1,43 +1,54 @@
 import tensorflow as tf
 from multiprocessing import Process, Manager
-import argparse
 from timeit import default_timer as timer
 import os
 
-import relish.config.config_parameter as cfg_para_yml
-import relish.config.config_path as cfg_path_yml
+import relish.config.config_parameter as cfg_para
+import relish.config.config_path as cfg_path
 from relish.core.relish_environment import SchedEnv
 from relish.core.relish_engine import SchedEngine
+from relish.common.model_importer import ModelImporter
+from relish.common.dataset_loader import load_dataset_para, load_train_dataset, load_eval_dataset
+from relish.tools.img_tool import load_imagenet_raw
+from relish.tools.workload_func import generate_workload_slo
 from relish.estimator.estimator_model_accuracy import AccuracyEstimator
 from relish.estimator.estimator_model_steptime_multidevices import MultiDeviceTimeEstimator
-from relish.models.model_importer import ModelImporter
-from relish.tools.utils_workload_func import generate_workload_slo
-from relish.tools.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras, load_mnist_image, load_mnist_label_onehot
 
 tf.compat.v1.enable_v2_behavior()
 
 
-def produce_job_roundrobin():
-    global _is_cover_workload
-    if len(_sch_workload_use) != 0:
-        cur_job = _sch_workload_use.pop()
-        if len(_sch_workload_use) == 0:
-            _is_cover_workload = True
+def produce_job_roundrobin(sch_workload_use):
+    global is_cover_workload
+    if len(sch_workload_use) != 0:
+        cur_job = sch_workload_use.pop()
+        if len(sch_workload_use) == 0:
+            is_cover_workload = True
         return cur_job
 
 
-def schedule_job_roundrobin():
+def schedule_job_roundrobin(sch_device_num, sch_workload):
     sch_list = list()
-    for i in range(_sch_device_num):
-        job = produce_job_roundrobin()
+    for i in range(sch_device_num):
+        job = produce_job_roundrobin(sch_workload)
         sch_list.append(job)
     return sch_list
 
 
 def build_model(job_data, ph_features, ph_labels):
-    train_model = ModelImporter(job_data['model_type'], str(job_data['job_id']), job_data['model_layer_num'],
-                                _img_height, _img_width, _img_channels, _img_num_class, job_data['batch_size'],
-                                job_data['optimizer'], job_data['learning_rate'], job_data['activation'], False)
+    train_dataset = cfg_para.train_dataset
+    img_w, img_h, num_chn, num_cls = load_dataset_para(train_dataset)
+    train_model = ModelImporter(job_data['model_type'],
+                                str(job_data['job_id']),
+                                job_data['model_layer_num'],
+                                img_h,
+                                img_w,
+                                num_chn,
+                                num_cls,
+                                job_data['batch_size'],
+                                job_data['optimizer'],
+                                job_data['learning_rate'],
+                                job_data['activation'],
+                                batch_padding=False)
 
     model_entity = train_model.get_model_entity()
     model_logit = model_entity.build(ph_features, is_training=True)
@@ -52,28 +63,37 @@ def build_model(job_data, ph_features, ph_labels):
     return model_train_op, model_eval_op, model_name
 
 
-def run_job(job_info, job_progress_dict, assign_device):
+def run_job(job_data, job_progress_dict, assign_device):
     start_time = timer()
 
+    time_slots_num = cfg_para.sch_time_slots_num
+    job_num = cfg_para.slo_job_num
+    slot_time_period = cfg_para.sch_slot_time_period
+    ckpt_save_path = cfg_path.ckpt_save_path + '/workload_' + str(job_num) + '_timeslot_' + str(time_slots_num)
+
+    train_dataset = cfg_para.train_dataset
+    img_w, img_h, num_chn, num_cls = load_dataset_para(train_dataset)
+    train_feature_input, train_label_input = load_train_dataset(train_dataset)
+
     with tf.device(assign_device):
-        features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _img_channels])
-        labels = tf.placeholder(tf.int64, [None, _img_num_class])
-        train_ops, _, model_name = build_model(job_info, features, labels)
+        features = tf.placeholder(tf.float32, [None, img_w, img_h, num_chn])
+        labels = tf.placeholder(tf.int64, [None, num_cls])
+        train_ops, _, model_name = build_model(job_data, features, labels)
         saver = tf.train.Saver()
 
-        model_ckpt_save_path = _ckpt_save_path + '/' + model_name
+        model_ckpt_save_path = ckpt_save_path + '/' + model_name
         if not os.path.exists(model_ckpt_save_path):
             os.makedirs(model_ckpt_save_path)
 
         checkpoint_file = model_ckpt_save_path + '/' + 'model_ckpt'
-        train_batchsize = job_info['batch_size']
+        train_batchsize = job_data['batch_size']
 
         config = tf.ConfigProto()
         config.allow_soft_placement = True
         config.gpu_options.allow_growth = True
 
-        if _sch_train_dataset == 'imagenet':
-            train_data_list = sorted(os.listdir(_imagenet_train_data_path))
+        if train_dataset == 'imagenet':
+            train_data_list = sorted(os.listdir(train_feature_input))
 
         with tf.Session(config=config) as sess:
             if os.path.isfile(checkpoint_file + '.meta'):
@@ -81,7 +101,7 @@ def run_job(job_info, job_progress_dict, assign_device):
             else:
                 sess.run(tf.global_variables_initializer())
 
-            num_batch = train_label.shape[0] // train_batchsize
+            num_batch = train_label_input.shape[0] // train_batchsize
             total_step = 0
             while True:
                 for i in range(num_batch):
@@ -89,38 +109,45 @@ def run_job(job_info, job_progress_dict, assign_device):
                     batch_offset = i * train_batchsize
                     batch_end = (i + 1) * train_batchsize
 
-                    if _sch_train_dataset == 'imagenet':
+                    if train_dataset == 'imagenet':
                         batch_list = train_data_list[batch_offset:batch_end]
-                        train_data_batch = load_imagenet_raw(_imagenet_train_data_path, batch_list, _img_height,
-                                                             _img_width)
+                        train_data_batch = load_imagenet_raw(train_feature_input, batch_list, img_h, img_w)
                     else:
-                        train_data_batch = train_data[batch_offset:batch_end]
+                        train_data_batch = train_feature_input[batch_offset:batch_end]
 
-                    train_label_batch = train_label[batch_offset:batch_end]
+                    train_label_batch = train_label_input[batch_offset:batch_end]
 
                     sess.run(train_ops, feed_dict={features: train_data_batch, labels: train_label_batch})
                     total_step += 1
                     end_time = timer()
                     dur_time = end_time - start_time
-                    if dur_time > _sch_slot_time_period:
+                    if dur_time > slot_time_period:
                         job_progress_dict[model_name] += total_step
                         saver.save(sess, checkpoint_file)
                         return
 
 
-def schedule_job_rlsched():
+def schedule_job_rlsched(sch_workload, sch_reward_func):
+    time_slots_num = cfg_para.sch_time_slots_num
+    gpu_device_num = cfg_para.sch_gpu_num
+    cpu_device_num = cfg_para.sch_cpu_num
+
     # init schedule environment
-    mlsch_env = SchedEnv(time_slots_num=_sch_time_slots_num, gpu_device_num=_sch_gpu_device_num,
-                         cpu_device_num=_sch_cpu_device_num, workload=_sch_workload,
-                         reward_function=_sch_reward_function, is_simulation=True)
+    mlsch_env = SchedEnv(time_slots_num, gpu_device_num,
+                         cpu_device_num, sch_workload,
+                         sch_reward_func, is_simulation=False)
+
+    # Get path parameters from config
+    steptime_dataset_path = cfg_path.multidevices_time_dataset_path
+    accuracy_dataset_path = cfg_path.accuracy_dataset_path
 
     # inti schedule multi-device time estimator
     mlsch_mte = MultiDeviceTimeEstimator(top_k=3)
-    mlsch_mte.import_steptime_dataset(_steptime_dataset_path)
+    mlsch_mte.import_steptime_dataset(steptime_dataset_path)
 
     # inti schedule multi-device accuracy estimator
     mlsch_ae = AccuracyEstimator(top_k=3)
-    mlsch_ae.import_accuracy_dataset(_accuracy_dataset_path)
+    mlsch_ae.import_accuracy_dataset(accuracy_dataset_path)
 
     mlsch_env.load_estimator(mlsch_mte, mlsch_ae)
 
@@ -129,8 +156,13 @@ def schedule_job_rlsched():
     mlsch_engine.build_sch_agent()
     mlsch_engine.benchmark_before_training(benchmark_num_episodes=20)
 
-    mlsch_engine.train_sch_agent(num_train_iterations=50, collect_episodes_per_iteration=5, steps_num_per_batch=100,
-                                 log_interval=25, include_eval=False, eval_interval=50, num_eval_episodes_for_train=15)
+    mlsch_engine.train_sch_agent(num_train_iterations=50,
+                                 collect_episodes_per_iteration=5,
+                                 steps_num_per_batch=100,
+                                 log_interval=25,
+                                 include_eval=False,
+                                 eval_interval=50,
+                                 num_eval_episodes_for_train=15)
 
     final_reward = mlsch_engine.evaluate_sch_agent(eval_num_episodes=20)
     print('final reward: {}'.format(final_reward))
@@ -139,14 +171,22 @@ def schedule_job_rlsched():
 
 
 def evaluate_job(job_info, job_accuracy_increment_dict, job_current_accuracy_dict):
+    time_slots_num = cfg_para.sch_time_slots_num
+    job_num = cfg_para.slo_job_num
+    ckpt_save_path = cfg_path.ckpt_save_path + '/workload_' + str(job_num) + '_timeslot_' + str(time_slots_num)
+
+    train_dataset = cfg_para.train_dataset
+    img_w, img_h, num_chn, num_cls = load_dataset_para(train_dataset)
+    eval_feature_input, eval_label_input = load_eval_dataset(train_dataset)
+
     graph = tf.Graph()
     with graph.as_default():
-        features = tf.placeholder(tf.float32, [None, _img_width, _img_height, _img_channels])
-        labels = tf.placeholder(tf.int64, [None, _img_num_class])
+        features = tf.placeholder(tf.float32, [None, img_w, img_h, num_chn])
+        labels = tf.placeholder(tf.int64, [None, num_cls])
         _, eval_ops, model_name = build_model(job_info, features, labels)
         saver = tf.train.Saver()
 
-    model_ckpt_save_path = _ckpt_save_path + '/' + model_name
+    model_ckpt_save_path = ckpt_save_path + '/' + model_name
     checkpoint_file = os.path.join(model_ckpt_save_path, 'model_ckpt')
     train_batchsize = job_info['batch_size']
 
@@ -160,21 +200,22 @@ def evaluate_job(job_info, job_accuracy_increment_dict, job_current_accuracy_dic
         else:
             sess.run(tf.global_variables_initializer())
 
-        if _sch_train_dataset == 'imagenet':
+        if train_dataset == 'imagenet':
             acc_sum = 0
-            num_eval_batch = train_label.shape[0] // 50
+            num_eval_batch = eval_label_input.shape[0] // 50
+            eval_data_list = sorted(os.listdir(eval_feature_input))
             for n in range(num_eval_batch):
                 batch_offset = n * train_batchsize
                 batch_end = (n + 1) * train_batchsize
-                batch_eval_list = eval_data[batch_offset:batch_end]
-                feature_eval_batch = load_imagenet_raw(_imagenet_eval_data_path, batch_eval_list, _img_height, _img_width)
-                label_eval_batch = eval_label[batch_offset:batch_end]
+                batch_eval_list = eval_data_list[batch_offset:batch_end]
+                feature_eval_batch = load_imagenet_raw(eval_feature_input, batch_eval_list, img_h, img_w)
+                label_eval_batch = eval_label_input[batch_offset:batch_end]
                 acc_batch = sess.run(eval_ops, feed_dict={features: feature_eval_batch, labels: label_eval_batch})
                 acc_sum += acc_batch
-
             model_acc_avg = acc_sum / num_eval_batch
         else:
-            model_acc_avg = sess.run(eval_ops, feed_dict={features: eval_data, labels: eval_label})
+            model_acc_avg = sess.run(eval_ops, feed_dict={features: eval_feature_input,
+                                                          labels: eval_label_input})
 
     job_accuracy_increment_dict[model_name] = model_acc_avg - job_current_accuracy_dict[model_name]
     job_current_accuracy_dict[model_name] = model_acc_avg
@@ -182,149 +223,74 @@ def evaluate_job(job_info, job_accuracy_increment_dict, job_current_accuracy_dic
     return model_acc_avg, model_name
 
 
-def init_shared_dict():
-    for job in _sch_workload:
-        model_name = '{}_{}_{}_{}_{}_{}_{}_{}'.format(job['job_id'], job['model_type'],
-                                                      job['model_layer_num'], job['batch_size'],
-                                                      job['optimizer'], job['learning_rate'],
-                                                      job['activation'], job['train_dataset'])
-        _sch_job_progress_dict[model_name] = 0
-        _job_accuracy_increment_dict[model_name] = 0
-        _job_current_accuracy_dict[model_name] = 0
-
-
-if __name__ == "__main__":
+def relish_run():
     ##################################################
-    # Key Parameters for evaluation
+    # Key parameters
     ##################################################
-    parser = argparse.ArgumentParser()
 
-    parser.add_argument('-j', '--job_num', action='store', type=int, help='the number of jobs in a workload')
-    parser.add_argument('-t', '--time_slot', action='store', type=int, help='the number of time slots')
-    args = parser.parse_args()
-
-    if args.job_num is not None:
-        _sch_job_num = args.job_num
-    else:
-        _sch_job_num = cfg_para_yml.slo_job_num
-
-    if args.time_slot is not None:
-        _sch_time_slots_num = args.time_slot
-    else:
-        _sch_time_slots_num = cfg_para_yml.sch_time_slots_num
+    time_slots_num = cfg_para.sch_time_slots_num
+    job_num = cfg_para.slo_job_num
 
     ##################################################
     # Generate Workload
     ##################################################
 
-    _sch_model_type_set = cfg_para_yml.slo_model_type_set
-    _sch_batch_size_set = cfg_para_yml.slo_batch_size_set
-    _sch_optimizer_set = cfg_para_yml.slo_optimizer_set
-    _sch_learning_rate_set = cfg_para_yml.slo_learning_rate_set
-    _sch_activation_set = cfg_para_yml.slo_activation_set
-    _sch_train_dataset = cfg_para_yml.train_dataset
-
-    _sch_workload = generate_workload_slo(_sch_job_num, _sch_model_type_set, _sch_batch_size_set, _sch_optimizer_set,
-                                          _sch_learning_rate_set, _sch_activation_set, _sch_train_dataset, True)
-    _sch_workload_use = _sch_workload.copy()
+    sched_workload = generate_workload_slo(job_num, use_seed=True)
+    sched_workload_use = sched_workload.copy()
 
     ##################################################
     # Prepare the shared dict
     ##################################################
 
     # record the progress of each job during a specific schedule
-    _sch_job_progress_dict = Manager().dict()
+    job_progress_dict = Manager().dict()
 
     # record the progress of each job during a specific schedule
-    _job_accuracy_increment_dict = Manager().dict()
-    _job_current_accuracy_dict = Manager().dict()
+    job_accuracy_increment_dict = Manager().dict()
+    job_current_accuracy_dict = Manager().dict()
 
-    init_shared_dict()
+    for job in sched_workload:
+        model_name = '{}_{}_{}_{}_{}_{}_{}_{}'.format(job['job_id'], job['model_type'],
+                                                      job['model_layer_num'], job['batch_size'],
+                                                      job['optimizer'], job['learning_rate'],
+                                                      job['activation'], job['train_dataset'])
+        job_progress_dict[model_name] = 0
+        job_accuracy_increment_dict[model_name] = 0
+        job_current_accuracy_dict[model_name] = 0
 
-    ##################################################
-    # Prepare Training Dataset
-    ##################################################
-
-    if _sch_train_dataset == 'imagenet':
-        _img_width = cfg_para_yml.img_width_imagenet
-        _img_height = cfg_para_yml.img_height_imagenet
-        _num_classes = cfg_para_yml.num_class_imagenet
-        _img_channels = cfg_para_yml.num_channels_rgb
-        _imagenet_train_data_path = cfg_path_yml.imagenet_t10k_img_raw_path
-        _imagenet_train_label_path = cfg_path_yml.imagenet_t10k_label_path
-        _imagenet_eval_data_path = cfg_path_yml.imagenet_t1k_img_raw_path
-        _imagenet_eval_label_path = cfg_path_yml.imagenet_t1k_label_path
-
-        train_label = load_imagenet_labels_onehot(_imagenet_train_label_path, _num_classes)
-        eval_label = load_imagenet_labels_onehot(_imagenet_eval_label_path, _num_classes)
-
-    elif _sch_train_dataset == 'cifar10':
-        _img_width = cfg_para_yml.img_width_cifar10
-        _img_height = cfg_para_yml.img_height_cifar10
-        _img_num_class = cfg_para_yml.num_class_cifar10
-        _img_channels = cfg_para_yml.num_channels_rgb
-        _img_path = cfg_path_yml.cifar_10_path
-
-        cifar10_path = cfg_path_yml.cifar_10_path
-        train_data, train_label, eval_data, eval_label = load_cifar10_keras()
-
-    elif _sch_train_dataset == 'mnist':
-        _img_width = cfg_para_yml.img_width_mnist
-        _img_height = cfg_para_yml.img_height_mnist
-        _img_num_class = cfg_para_yml.num_class_imagenet
-        _img_channels = cfg_para_yml.num_channels_bw
-
-        _mnist_train_img_path = cfg_path_yml.mnist_train_img_path
-        _mnist_train_label_path = cfg_path_yml.mnist_train_label_path
-        _mnist_test_img_path = cfg_path_yml.mnist_test_10k_img_path
-        _mnist_test_label_path = cfg_path_yml.mnist_test_10k_label_path
-
-        train_data = load_mnist_image(_mnist_train_img_path)
-        train_label = load_mnist_label_onehot(_mnist_train_label_path)
-        eval_data = load_mnist_image(_mnist_test_img_path)
-        eval_label = load_mnist_label_onehot(_mnist_test_label_path)
-
-    else:
-        raise ValueError('Only support dataset: imagenet, cifar10, mnist')
 
     ##################################################
     # Schedule Parameter
     ##################################################
 
-    _sch_gpu_device_num = cfg_para_yml.sch_gpu_num
-    _sch_cpu_device_num = cfg_para_yml.sch_cpu_num
-    _sch_device_num = _sch_gpu_device_num + _sch_cpu_device_num
-    _sch_slot_time_period = cfg_para_yml.sch_slot_time_period
-    _ckpt_save_path = cfg_path_yml.ckpt_save_path + '/workload_' + str(_sch_job_num) + '_timeslot_' + str(_sch_time_slots_num)
+    gpu_device_num = cfg_para.sch_gpu_num
+    cpu_device_num = cfg_para.sch_cpu_num
+    sched_device_num = gpu_device_num + cpu_device_num
 
     # reward function
-    _sch_reward_function = cfg_para_yml.slo_reward_function
-    print("Reward Function: {}".format(_sch_reward_function))
-
-    # Get path parameters from config
-    _steptime_dataset_path = cfg_path_yml.multidevices_time_dataset_path
-    _accuracy_dataset_path = cfg_path_yml.accuracy_dataset_path
+    reward_function = cfg_para.slo_reward_function
+    print("Reward Function: {}".format(reward_function))
 
     ##################################################
     # Reinforcement Learning Schedule
     ##################################################
-
-    _is_cover_workload = False
+    is_cover_workload = False
     time_slot_count = 0
-    while time_slot_count < _sch_time_slots_num:
-        if _is_cover_workload:
+
+    while time_slot_count < time_slots_num:
+        if is_cover_workload:
             print('starting the rl-based scheduling')
-            job_list = schedule_job_rlsched()
+            job_list = schedule_job_rlsched(sched_workload, reward_function)
         else:
-            job_list = schedule_job_roundrobin()
+            job_list = schedule_job_roundrobin(sched_device_num, sched_workload_use)
 
         proc_gpu_list = list()
 
-        for gn in range(_sch_gpu_device_num):
+        for gn in range(gpu_device_num):
             assign_gpu = '/gpu:' + str(gn)
-            proc_gpu = Process(target=run_job, args=(job_list[gn], _sch_job_progress_dict, assign_gpu))
+            proc_gpu = Process(target=run_job, args=(job_list[gn], job_progress_dict, assign_gpu))
             proc_gpu_list.append(proc_gpu)
-        proc_cpu = Process(target=run_job, args=(job_list[_sch_device_num - 1], _sch_job_progress_dict, '/cpu:0'))
+        proc_cpu = Process(target=run_job, args=(job_list[sched_device_num - 1], job_progress_dict, '/cpu:0'))
 
         for proc_gpu in proc_gpu_list:
             proc_gpu.start()
@@ -336,17 +302,17 @@ if __name__ == "__main__":
     sch_job_name_list = list()
     sch_job_progress_list = list()
 
-    for jidx in _sch_workload:
+    for jidx in sched_workload:
         job_accuracy, job_name = evaluate_job(jidx)
         sch_job_attainment_list.append(job_accuracy)
         sch_job_name_list.append(job_name)
-        sch_job_progress_list.append(_sch_job_progress_dict[job_name])
+        sch_job_progress_list.append(job_progress_dict[job_name])
 
-    workload_acc_avg = sum(sch_job_attainment_list) / _sch_job_num
+    workload_acc_avg = sum(sch_job_attainment_list) / job_num
 
     print('#########################################################')
     print('jobs attainment in the workload:')
-    for job_idx, _ in enumerate(_sch_workload):
+    for job_idx, _ in enumerate(sched_workload):
         print('**Job Result**: {}_{}_{}'.format(sch_job_name_list[job_idx], sch_job_attainment_list[job_idx],
                                                 sch_job_progress_list[job_idx]))
     print('**Workload Result**: {}'.format(workload_acc_avg))
