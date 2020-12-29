@@ -1,21 +1,22 @@
 import numpy as np
+import relish.config.config_parameter as cfg_para
 
 
-def generate_workload_slo(job_num,
-                          model_type_set,
-                          batch_size_set,
-                          optimizer_set,
-                          learn_rate_set,
-                          activation_set,
-                          train_data,
-                          use_seed=False):
+def generate_workload_slo(job_num, use_seed=False):
     if use_seed:
         np.random.seed(10000000)
+
+    model_type_set = cfg_para.slo_model_type_set
+    batch_size_set = cfg_para.slo_batch_size_set
+    optimizer_set = cfg_para.slo_optimizer_set
+    learning_rate_set = cfg_para.slo_learning_rate_set
+    activation_set = cfg_para.slo_activation_set
+    train_dataset = cfg_para.train_dataset
 
     sampled_model_type_list = np.random.choice(model_type_set, job_num, replace=True)
     sampled_batch_size_list = np.random.choice(batch_size_set, job_num, replace=True)
     sampled_optimizer_list = np.random.choice(optimizer_set, job_num, replace=True)
-    sampled_learning_rate_list = np.random.choice(learn_rate_set, job_num, replace=True)
+    sampled_learning_rate_list = np.random.choice(learning_rate_set, job_num, replace=True)
     sampled_activation_list = np.random.choice(activation_set, job_num, replace=True)
 
     sch_workload = list()
@@ -34,22 +35,22 @@ def generate_workload_slo(job_num,
         sch_model_config_dict['optimizer'] = sampled_optimizer_list[i]
         sch_model_config_dict['learning_rate'] = sampled_learning_rate_list[i]
         sch_model_config_dict['activation'] = sampled_activation_list[i]
-        sch_model_config_dict['train_dataset'] = train_data
+        sch_model_config_dict['train_dataset'] = train_dataset
         sch_workload.append(sch_model_config_dict)
 
     return sch_workload
 
 
-def generate_workload_hyperparamsearch(job_num,
-                                       model_type,
-                                       layer_set,
-                                       batch_size_set,
-                                       optimizer_set,
-                                       learn_rate_set,
-                                       train_data,
-                                       use_seed=False):
+def generate_workload_hyperparamsearch(job_num, use_seed=False):
     if use_seed:
         np.random.seed(10000000)
+
+    model_type = cfg_para.hpsearch_model_type
+    batch_size_set = cfg_para.hpsearch_batch_size_set
+    layer_set = cfg_para.hpsearch_layer_set
+    optimizer_set = cfg_para.hpsearch_optimizer_set
+    learn_rate_set = cfg_para.hpsearch_learning_rate_set
+    train_dataset = cfg_para.hpsearch_train_dataset
 
     sampled_layer_list = np.random.choice(layer_set, job_num, replace=True)
     sampled_batch_size_list = np.random.choice(batch_size_set, job_num, replace=True)
@@ -66,7 +67,7 @@ def generate_workload_hyperparamsearch(job_num,
         sch_model_config_dict['batch_size'] = sampled_batch_size_list[i]
         sch_model_config_dict['optimizer'] = sampled_optimizer_list[i]
         sch_model_config_dict['learning_rate'] = sampled_learning_rate_list[i]
-        sch_model_config_dict['train_dataset'] = train_data
+        sch_model_config_dict['train_dataset'] = train_dataset
         sch_workload.append(sch_model_config_dict)
 
     return sch_workload

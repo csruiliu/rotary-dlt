@@ -4,10 +4,9 @@ import numpy as np
 import time
 import os
 
-import relish.config.config_parameter as cfg_para
-import relish.config.config_path as cfg_path
-from relish.models.model_importer import ModelImporter
-from relish.tools.utils_img_func import load_imagenet_raw, load_imagenet_labels_onehot, load_cifar10_keras, load_mnist_image, load_mnist_label_onehot
+from relish.common.model_importer import ModelImporter
+from relish.common.dataset_loader import load_dataset_para, load_train_dataset, load_eval_dataset
+from relish.tools.img_tool import load_imagenet_raw
 
 
 class State(Enum):
@@ -36,47 +35,10 @@ class Trail:
         #######################################
         # Prepare training dataset
         #######################################
-        if self.train_dataset == 'imagenet':
-            self.img_width = cfg_para.img_width_imagenet
-            self.img_height = cfg_para.img_height_imagenet
-            self.num_classes = cfg_para.num_class_imagenet
-            self.img_channels = cfg_para.num_channels_rgb
-            self.imagenet_train_data_path = cfg_path.imagenet_t10k_img_raw_path
-            self.imagenet_train_label_path = cfg_path.imagenet_t10k_label_path
-            self.imagenet_eval_data_path = cfg_path.imagenet_t1k_img_raw_path
-            self.imagenet_eval_label_path = cfg_path.imagenet_t1k_label_path
 
-            self.train_label = load_imagenet_labels_onehot(self.imagenet_train_label_path, self.num_classes)
-            self.eval_label = load_imagenet_labels_onehot(self.imagenet_eval_label_path, self.num_classes)
-
-        elif self.train_dataset == 'cifar10':
-            self.img_width = cfg_para.img_width_cifar10
-            self.img_height = cfg_para.img_height_cifar10
-            self.img_num_class = cfg_para.num_class_cifar10
-            self.img_channels = cfg_para.num_channels_rgb
-            self.img_path = cfg_path.cifar_10_path
-
-            self.cifar10_path = cfg_path.cifar_10_path
-            self.train_data, self.train_label, self.eval_data, self.eval_label = load_cifar10_keras()
-
-        elif self.train_dataset == 'mnist':
-            self.img_width = cfg_para.img_width_mnist
-            self.img_height = cfg_para.img_height_mnist
-            self.img_num_class = cfg_para.num_class_imagenet
-            self.img_channels = cfg_para.num_channels_bw
-
-            self.mnist_train_img_path = cfg_path.mnist_train_img_path
-            self.mnist_train_label_path = cfg_path.mnist_train_label_path
-            self.mnist_test_img_path = cfg_path.mnist_test_10k_img_path
-            self.mnist_test_label_path = cfg_path.mnist_test_10k_label_path
-
-            self.train_data = load_mnist_image(self.mnist_train_img_path)
-            self.train_label = load_mnist_label_onehot(self.mnist_train_label_path)
-            self.eval_data = load_mnist_image(self.mnist_test_img_path)
-            self.eval_label = load_mnist_label_onehot(self.mnist_test_label_path)
-
-        else:
-            raise ValueError('Only support dataset: imagenet, cifar10, mnist')
+        self.img_w, self.img_h, self.num_chn, self.num_class = load_dataset_para(self.train_dataset)
+        self.train_feature, self.train_label = load_train_dataset(self.train_dataset)
+        self.eval_feature, self.eval_label = load_eval_dataset(self.train_dataset)
 
     def train_simulate(self):
         time.sleep(np.random.randint(1, 4))
@@ -91,12 +53,15 @@ class Trail:
 
     def train(self, assign_device):
         with tf.device(assign_device):
-            feature_ph = tf.placeholder(tf.float32, [None, self.img_width, self.img_height, self.img_channels])
-            label_ph = tf.placeholder(tf.int64, [None, self.img_num_class])
+            feature_ph = tf.placeholder(tf.float32, [None, self.img_w, self.img_h, self.num_chn])
+            label_ph = tf.placeholder(tf.int64, [None, self.num_class])
 
-            train_model = ModelImporter(self.model_type, str(self.trail_id), self.layer_number, self.img_height,
-                                        self.img_width, self.img_channels, self.img_num_class, self.batch_size,
-                                        self.optimizer, self.learning_rate, 'relu', False)
+            train_model = ModelImporter(self.model_type, str(self.trail_id),
+                                        self.layer_number, self.img_h,
+                                        self.img_w, self.num_chn,
+                                        self.num_class, self.batch_size,
+                                        self.optimizer, self.learning_rate,
+                                        activation='relu', batch_padding=False)
 
             model_entity = train_model.get_model_entity()
             model_logit = model_entity.build(feature_ph, is_training=True)
@@ -107,7 +72,7 @@ class Trail:
             config.gpu_options.allow_growth = True
 
             if self.train_dataset == 'imagenet':
-                train_data_list = sorted(os.listdir(self.imagenet_train_data_path))
+                train_data_list = sorted(os.listdir(self.train_feature))
 
             with tf.Session(config=config) as sess:
                 num_batch = self.train_label.shape[0] // self.batch_size
@@ -119,10 +84,9 @@ class Trail:
 
                     if self.train_dataset == 'imagenet':
                         batch_list = train_data_list[batch_offset:batch_end]
-                        train_data_batch = load_imagenet_raw(self.imagenet_train_data_path, batch_list, self.img_height,
-                                                             self.img_width)
+                        train_data_batch = load_imagenet_raw(self.train_feature, batch_list, self.img_h, self.img_w)
                     else:
-                        train_data_batch = self.train_data[batch_offset:batch_end]
+                        train_data_batch = self.train_feature[batch_offset:batch_end]
 
                     train_label_batch = self.train_label[batch_offset:batch_end]
                     sess.run(model_train_op, feed_dict={feature_ph: train_data_batch, label_ph: train_label_batch})
@@ -133,11 +97,14 @@ class Trail:
         with tf.device(assign_device):
             graph = tf.Graph()
             with graph.as_default():
-                feature_ph = tf.placeholder(tf.float32, [None, self.img_width, self.img_height, self.img_channels])
-                label_ph = tf.placeholder(tf.int64, [None, self.img_num_class])
-                train_model = ModelImporter(self.model_type, str(self.trail_id), self.layer_number, self.img_height,
-                                            self.img_width, self.img_channels, self.img_num_class, self.batch_size,
-                                            self.optimizer, self.learning_rate, 'relu', False)
+                feature_ph = tf.placeholder(tf.float32, [None, self.img_w, self.img_h, self.num_chn])
+                label_ph = tf.placeholder(tf.int64, [None, self.num_class])
+                train_model = ModelImporter(self.model_type, str(self.trail_id),
+                                            self.layer_number, self.img_h,
+                                            self.img_w, self.num_chn,
+                                            self.num_class, self.batch_size,
+                                            self.optimizer, self.learning_rate,
+                                            activation='relu', batch_padding=False)
                 model_entity = train_model.get_model_entity()
                 model_logit = model_entity.build(feature_ph, is_training=True)
                 model_eval_op = model_entity.evaluate(model_logit, label_ph)
@@ -150,18 +117,21 @@ class Trail:
                 if self.train_dataset == 'imagenet':
                     acc_sum = 0
                     num_eval_batch = self.train_label.shape[0] // 50
+                    eval_data_list = sorted(os.listdir(self.eval_feature))
                     for n in range(num_eval_batch):
                         batch_offset = n * self.batch_size
                         batch_end = (n + 1) * self.batch_size
-                        batch_eval_list = self.eval_data[batch_offset:batch_end]
-                        feature_eval_batch = load_imagenet_raw(self.imagenet_eval_data_path, batch_eval_list,
-                                                               self.img_height, self.img_width)
+                        batch_eval_list = eval_data_list[batch_offset:batch_end]
+                        feature_eval_batch = load_imagenet_raw(self.eval_feature,
+                                                               batch_eval_list,
+                                                               self.img_h,
+                                                               self.img_w)
                         label_eval_batch = self.eval_label[batch_offset:batch_end]
                         acc_batch = sess.run(model_eval_op, feed_dict={feature_ph: feature_eval_batch,
                                                                        label_ph: label_eval_batch})
                         acc_sum += acc_batch
                 else:
-                    self.cur_accuracy = sess.run(model_eval_op, feed_dict={feature_ph: self.eval_data,
+                    self.cur_accuracy = sess.run(model_eval_op, feed_dict={feature_ph: self.eval_feature,
                                                                            label_ph: self.eval_label})
 
     def set_state(self, arg_state):
