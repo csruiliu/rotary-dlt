@@ -3,7 +3,7 @@ import json
 import matplotlib.pyplot as plt
 
 
-class MLEstimator:
+class AccuracyEstimator:
     def __init__(self, input_model_dict, top_k):
         self.top_k = top_k
         self.input_model_dict = input_model_dict
