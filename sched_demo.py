@@ -1,11 +1,8 @@
 
-import argparse
-from relish.evaluation.roundrobin import roundrobin_run
-from relish.evaluation.tetrisched_greedy import tetrisched_run
-from relish.evaluation.hypersched import hypersched_run
-from relish.evaluation.relish_evaluation import relish_run
+import tools.reward_func as reward_function
 
 
+'''
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
@@ -25,3 +22,4 @@ if __name__ == "__main__":
         relish_run()
     else:
         raise ValueError('the schedule evaluation is not recognized')
+'''

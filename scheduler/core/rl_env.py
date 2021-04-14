@@ -3,8 +3,6 @@ import tensorflow as tf
 from tf_agents.specs import tensor_spec
 from tf_agents.trajectories import time_step as ts
 
-import relish.tools.reward_func as reward_function
-
 
 class SchedEnv:
     def __init__(self,
@@ -66,9 +64,9 @@ class SchedEnv:
         self._assigned_time_slots_num += 1
 
         # use award function
-        reward = getattr(reward_function, self._reward_function)(self._accuracy_array,
-                                                                 self._steptime_array[:self._gpu_device_num],
-                                                                 self._steptime_array[self._gpu_device_num:self._total_device_num])
+        reward = getattr(self._reward_function)(self._accuracy_array,
+                                                self._steptime_array[:self._gpu_device_num],
+                                                self._steptime_array[self._gpu_device_num:self._total_device_num])
 
         if self._assigned_time_slots_num == self._time_slots_num:
             self._current_time_step = ts.termination(self._accuracy_array, reward)

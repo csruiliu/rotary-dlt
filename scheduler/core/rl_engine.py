@@ -1,38 +1,30 @@
 import tensorflow as tf
 from tf_agents.utils import common
 from tf_agents.networks import actor_distribution_network
-#from tf_agents.networks import lstm_encoding_network
-#from tf_agents.agents.ppo import ppo_agent
-from tf_agents.agents.reinforce import reinforce_agent
+from tf_agents.agents.ppo import ppo_agent
 from tf_agents.trajectories import trajectory
 from tf_agents.replay_buffers import tf_uniform_replay_buffer
 
-import relish.tools.reward_func as reward_function
-
 
 class SchedEngine:
-    def __init__(self, sch_env):
+    def __init__(self, sch_env, reward_function):
         self._mlsch_env = sch_env
         self._rl_agent = None
         self._replay_buffer = None
         self._reward_list = list()
+        self._reward_func = reward_function
 
     def build_sch_agent(self):
-        #actor_net = lstm_encoding_network.LSTMEncodingNetwork(self._mlsch_env.observation_spec(),
-        #                                                      output_fc_layer_params=(100,))
+
         actor_net = actor_distribution_network.ActorDistributionNetwork(self._mlsch_env.observation_spec(),
                                                                         self._mlsch_env.action_spec(),
                                                                         fc_layer_params=(100,))
         optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
         train_step_counter = tf.Variable(0)
 
-        #self._rl_agent = ppo_agent.PPOAgent(self._mlsch_env.time_step_spec(), self._mlsch_env.action_spec(),
-        #                                    actor_net=actor_net, optimizer=optimizer, normalize_rewards=True,
-        #                                    train_step_counter=train_step_counter)
-
-        self._rl_agent = reinforce_agent.ReinforceAgent(self._mlsch_env.time_step_spec(), self._mlsch_env.action_spec(),
-                                                        actor_network=actor_net, optimizer=optimizer,
-                                                        normalize_returns=True, train_step_counter=train_step_counter)
+        self._rl_agent = ppo_agent.PPOAgent(self._mlsch_env.time_step_spec(), self._mlsch_env.action_spec(),
+                                            actor_net=actor_net, optimizer=optimizer, normalize_rewards=True,
+                                            train_step_counter=train_step_counter)
 
         self._rl_agent.initialize()
         self._rl_agent.train = common.function(self._rl_agent.train)
@@ -78,7 +70,7 @@ class SchedEngine:
         # avg_reward = total_return / eval_num_episodes
         print('episode_return_list', episode_return_list)
         print('###############################')
-        reward = getattr(reward_function, self._mlsch_env.evaluation_function())(episode_return_list)
+        reward = getattr(self._reward_func, self._mlsch_env.evaluation_function())(episode_return_list)
 
         return reward
 
