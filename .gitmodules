@@ -1,0 +1,6 @@
+[submodule "model_base/tensorflow_cifar"]
+	path = model_base/tensorflow_cifar
+	url = git@github.com:csruiliu/tensorflow_cifar.git
+[submodule "model_base/tensorflow_ptb"]
+	path = model_base/tensorflow_ptb
+	url = git@github.com:csruiliu/tensorflow_ptb.git
