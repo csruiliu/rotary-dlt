@@ -33,9 +33,13 @@ class WorkloadGenerator:
         self._cv_model_light_list = ['inception', 'mobilenet', 'mobilenet_v2', 'squeezenet', 'xception']
         self._cv_model_med_list = ['shufflenet', 'shufflenet_v2', 'resnet', 'resnext', 'efficientnet']
         self._cv_model_heavy_list = ['lenet', 'vgg', 'alexnet', 'zfnet', 'densenet']
+        self._cv_model_list = self._cv_model_light_list + self._cv_model_med_list + self._cv_model_heavy_list
+
         self._nlp_model_light_list = ['nnlm', 'word2vec']
         self._nlp_model_med_list = ['textrnn', 'bilstm']
         self._nlp_model_heavy_list = ['seq2seq', 'transformer']
+        self._nlp_model_list = self._nlp_model_light_list + self._nlp_model_med_list + self._nlp_model_heavy_list
+
         self._convergence_list = [('convergence', 0.1), ('convergence', 0.05), ('convergence', 0.01),
                                   ('convergence', 0.005), ('convergence', 0.001),
                                   ('convergence', 0.0005), ('convergence', 0.0001)]
@@ -99,9 +103,11 @@ class WorkloadGenerator:
         workload = list()
         for oidx, obj in enumerate(objective_list):
             job = dict()
+            job['id'] = oidx
             job['model'] = model_select_list[oidx]
             job['batch_size'] = np.random.choice(self._batch_size_list, size=1)[0]
             job['epoch'] = np.random.choice(self._epoch_list, size=1)[0]
+            job['dataset'] = 'cifar10' if job['model'] in self._cv_model_list else 'ptb'
             job['goal_type'] = obj[0]
             job['goal_value'] = obj[1]
             workload.append(job)

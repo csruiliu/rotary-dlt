@@ -1,0 +1,15 @@
+workload:
+  workload_size: 20
+  cv_light_ratio: 0.4
+  cv_med_ratio: 0.2
+  cv_heavy_ratio: 0.4
+  nlp_light_ratio: 0.3
+  nlp_med_ratio: 0.3
+  nlp_heavy_ratio: 0.4
+
+objective:
+  convergence_ratio: 0.2
+  accuracy_ratio: 0.6
+  runtime_ratio: 0.2
+
+random_seed: 10000
