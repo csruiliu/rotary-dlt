@@ -1,3 +1,6 @@
+dataset:
+  ptb_path: /home/ruiliu/Development/tensorflow_ptb/dataset/
+
 workload:
   workload_size: 20
   cv_light_ratio: 0.4

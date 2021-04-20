@@ -43,16 +43,14 @@ class WorkloadGenerator:
         self._convergence_list = [('convergence', 0.1), ('convergence', 0.05), ('convergence', 0.01),
                                   ('convergence', 0.005), ('convergence', 0.001),
                                   ('convergence', 0.0005), ('convergence', 0.0001)]
-        self._accuracy_list = [('accuracy', 0.7), ('accuracy', 0.72), ('accuracy', 0.74), ('accuracy', 0.76),
-                               ('accuracy', 0.78), ('accuracy', 0.8), ('accuracy', 0.82), ('accuracy', 0.84),
-                               ('accuracy', 0.86), ('accuracy', 0.88), ('accuracy', 0.9), ('accuracy', 0.92),
+        self._accuracy_list = [('accuracy', 0.8), ('accuracy', 0.82), ('accuracy', 0.84), ('accuracy', 0.86),
+                               ('accuracy', 0.88), ('accuracy', 0.9), ('accuracy', 0.92),
                                ('accuracy', 0.94), ('accuracy', 0.96), ('accuracy', 0.98)]
         # unit of runtime: mins
         self._runtime_list = [('runtime', 5), ('runtime', 10), ('runtime', 60), ('runtime', 180), ('runtime', 300),
                               ('runtime', 600), ('runtime', 1440), ('runtime', 4320), ('runtime', 10080)]
 
         self._batch_size_list = [25, 32, 50, 64, 100, 128]
-        self._epoch_list = [1, 5, 10, 100, 500]
 
         self._random_seed = random_seed
 
@@ -106,7 +104,6 @@ class WorkloadGenerator:
             job['id'] = oidx
             job['model'] = model_select_list[oidx]
             job['batch_size'] = np.random.choice(self._batch_size_list, size=1)[0]
-            job['epoch'] = np.random.choice(self._epoch_list, size=1)[0]
             job['dataset'] = 'cifar10' if job['model'] in self._cv_model_list else 'ptb'
             job['goal_type'] = obj[0]
             job['goal_value'] = obj[1]
