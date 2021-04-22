@@ -12,7 +12,10 @@ from tf_agents.replay_buffers import tf_uniform_replay_buffer
 import tf_agents.specs.tensor_spec as tensor_spec
 from tf_agents.trajectories import time_step as ts
 
-from utils.img_tool import load_imagenet_raw
+from utils.dataset_tool import load_imagenet_raw
+from utils.dataset_tool import load_dataset_para
+from utils.dataset_tool import load_eval_dataset
+from utils.dataset_tool import load_train_dataset
 from utils.workload_func import generate_workload_slo
 from estimator.accuracy_estimator import AccuracyEstimator
 import config.config_parameter as cfg_para
