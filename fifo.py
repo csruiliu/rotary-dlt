@@ -1,91 +1,22 @@
+import tensorflow as tf
 from multiprocessing import Manager, Pool
 from timeit import default_timer as timer
-import tensorflow as tf
 import os
 
+import workload.tensorflow_ptb.tools.ptb_reader as ptb_reader
+from workload.tensorflow_cifar.tools.dataset_loader import load_cifar10_keras
 import config.config_path as cfg_path
 import config.config_workload as cfg_workload
 from workload.generator import WorkloadGenerator
-
-from workload.tensorflow_cifar.models.resnet import ResNet
-from workload.tensorflow_cifar.models.densenet import DenseNet
-from workload.tensorflow_cifar.models.mobilenet_v2 import MobileNetV2
-from workload.tensorflow_cifar.models.mobilenet import MobileNet
-from workload.tensorflow_cifar.models.vgg import VGG
-from workload.tensorflow_cifar.models.lenet import LeNet
-from workload.tensorflow_cifar.models.inception import Inception
-from workload.tensorflow_cifar.models.alexnet import AlexNet
-from workload.tensorflow_cifar.models.resnext import ResNeXt
-from workload.tensorflow_cifar.models.xception import Xception
-from workload.tensorflow_cifar.models.squeezenet import SqueezeNet
-from workload.tensorflow_cifar.models.zfnet import ZFNet
-from workload.tensorflow_cifar.models.efficientnet import EfficientNet
-from workload.tensorflow_cifar.models.shufflenet import ShuffleNet
-from workload.tensorflow_cifar.models.shufflenet_v2 import ShuffleNetV2
-from workload.tensorflow_cifar.tools.dataset_loader import load_cifar10_keras
-
-import workload.tensorflow_ptb.tools.ptb_reader as ptb_reader
-import workload.tensorflow_ptb.tools.model_trainer as model_trainer
-from workload.tensorflow_ptb.models.nnlm import NNLM
-from workload.tensorflow_ptb.models.word2vec import Word2Vec
-from workload.tensorflow_ptb.models.bi_lstm import BiLSTM
-from workload.tensorflow_ptb.models.textrnn import TextRNN
+from utils.model_tool import build_model
 
 
-def build_model(job_data, n_class, feature, label):
-    job_id = job_data['id']
-    model_type = job['model_type']
-    if model_type == 'alexnet':
-        model = AlexNet(num_classes=n_class)
-    elif model_type == 'densenet':
-        model = DenseNet(residual_layer=121, num_classes=n_class)
-    elif model_type == 'efficientnet':
-        model = EfficientNet(num_classes=n_class)
-    elif model_type == 'inception':
-        model = Inception(num_classes=n_class)
-    elif model_type == 'lenet':
-        model = LeNet(num_classes=n_class)
-    elif model_type == 'mobilenet':
-        model = MobileNet(num_classes=n_class)
-    elif model_type == 'mobilenet_v2':
-        model = MobileNetV2(num_classes=n_class)
-    elif model_type == 'resnet':
-        model = ResNet(residual_layer=18, num_classes=n_class)
-    elif model_type == 'resnext':
-        model = ResNeXt(cardinality=8, num_classes=n_class)
-    elif model_type == 'shufflenet':
-        model = ShuffleNet(num_groups=2, num_classes=n_class)
-    elif model_type == 'squeezenet':
-        model = SqueezeNet(num_classes=n_class)
-    elif model_type == 'vgg':
-        model = VGG(conv_layer=16, num_classes=n_class)
-    elif model_type == 'xception':
-        model = Xception(num_classes=n_class)
-    elif model_type == 'zfnet':
-        model = ZFNet(num_classes=n_class)
-    elif model_type == 'shufflenet_v2':
-        model = ShuffleNetV2(complexity=1, num_classes=n_class)
-    elif model_type == 'nnlm':
-        model = NNLM(n_class=n_class, n_step=2, n_hidden=2)
-    elif model_type == 'bilstm':
-        model = BiLSTM(n_class=n_class, n_step=2, n_hidden=2)
-    elif model_type == 'word2vec':
-        model = Word2Vec(voc_size=n_class, embedding_size=2)
-    elif model_type == 'textrnn':
-        model = TextRNN(n_class=n_class, n_step=2, n_hidden=2)
-    else:
-        raise ValueError("the model type is not supported")
+def train_job(job_data,
+              num_gpu,
+              job_accuracy,
+              job_time,
+              job_done):
 
-    logit = model.build(feature)
-    train_op = model_trainer.train_model(logit, label)
-    eval_op = model_trainer.eval_model(logit, label)
-
-    job_name = str(job_id) + '-' + str(model_type)
-
-    return train_op, eval_op, job_name
-
-
-def train_job(job_data, num_gpu):
     assign_device = '/gpu:' + str(job_data['id'] % num_gpu)
 
     train_dataset = job_data['dataset']
@@ -103,8 +34,7 @@ def train_job(job_data, num_gpu):
         with tf.device(assign_device):
             feature_ph = tf.placeholder(tf.float32, [None, img_w, img_h, num_chn])
             label_ph = tf.placeholder(tf.int64, [None, num_cls])
-            train_op, eval_op, model_name = build_model(job_data, feature_ph, label_ph)
-
+            train_op, eval_op, model_name = build_model(job_data, num_cls, feature_ph, label_ph)
             saver = tf.train.Saver()
             model_ckpt_save_path = ckpt_save_path + '/' + model_name
             if not os.path.exists(model_ckpt_save_path):
@@ -140,23 +70,23 @@ def train_job(job_data, num_gpu):
                     end_time = timer()
                     dur_time = end_time - start_time
 
-                    pre_accuracy = job_accuracy_dict[model_name]
+                    pre_accuracy = job_accuracy[model_name]
 
-                    job_time_dict[model_name] += dur_time
-                    job_accuracy_dict[model_name] = cur_accuracy
+                    job_time[model_name] += dur_time
+                    job_accuracy[model_name] = cur_accuracy
 
                     if job_data['goal_type'] == 'accuracy':
                         if cur_accuracy >= job_data['goal_value']:
-                            job_done_dict[model_name] = True
+                            job_done[model_name] = True
                             break
                     elif job_data['goal_type'] == 'runtime':
-                        if job_time_dict[model_name] > job_data['goal_value']:
-                            job_done_dict[model_name] = True
+                        if job_time[model_name] > job_data['goal_value']:
+                            job_done[model_name] = True
                             break
                     elif job_data['goal_type'] == 'convergence':
                         delta = cur_accuracy - pre_accuracy
                         if delta < job_data['goal_value']:
-                            job_done_dict[model_name] = True
+                            job_done[model_name] = True
                             break
                     else:
                         raise ValueError('the job objective type is not supported')
@@ -220,23 +150,23 @@ def train_job(job_data, num_gpu):
                         end_time = timer()
                         dur_time = end_time - start_time
 
-                        pre_accuracy = job_accuracy_dict[model_name]
+                        pre_accuracy = job_accuracy[model_name]
 
-                        job_time_dict[model_name] += dur_time
-                        job_accuracy_dict[model_name] = cur_accuracy
+                        job_time[model_name] += dur_time
+                        job_accuracy[model_name] = cur_accuracy
 
                         if job_data['goal_type'] == 'accuracy':
                             if cur_accuracy >= job_data['goal_value']:
-                                job_done_dict[model_name] = True
+                                job_done[model_name] = True
                                 break
                         elif job_data['goal_type'] == 'runtime':
-                            if job_time_dict[model_name] > job_data['goal_value']:
-                                job_done_dict[model_name] = True
+                            if job_time[model_name] > job_data['goal_value']:
+                                job_done[model_name] = True
                                 break
                         elif job_data['goal_type'] == 'convergence':
                             delta = cur_accuracy - pre_accuracy
                             if delta < job_data['goal_value']:
-                                job_done_dict[model_name] = True
+                                job_done[model_name] = True
                                 break
                         else:
                             raise ValueError('the job objective type is not supported')
@@ -301,23 +231,23 @@ def train_job(job_data, num_gpu):
                         end_time = timer()
                         dur_time = end_time - start_time
 
-                        pre_accuracy = job_accuracy_dict[model_name]
+                        pre_accuracy = job_accuracy[model_name]
 
-                        job_time_dict[model_name] += dur_time
-                        job_accuracy_dict[model_name] = cur_accuracy
+                        job_time[model_name] += dur_time
+                        job_accuracy[model_name] = cur_accuracy
 
                         if job_data['goal_type'] == 'accuracy':
                             if cur_accuracy >= job_data['goal_value']:
-                                job_done_dict[model_name] = True
+                                job_done[model_name] = True
                                 break
                         elif job_data['goal_type'] == 'runtime':
-                            if job_time_dict[model_name] > job_data['goal_value']:
-                                job_done_dict[model_name] = True
+                            if job_time[model_name] > job_data['goal_value']:
+                                job_done[model_name] = True
                                 break
                         elif job_data['goal_type'] == 'convergence':
                             delta = cur_accuracy - pre_accuracy
                             if delta < job_data['goal_value']:
-                                job_done_dict[model_name] = True
+                                job_done[model_name] = True
                                 break
                         else:
                             raise ValueError('the job objective type is not supported')
@@ -350,11 +280,13 @@ if __name__ == "__main__":
         job_key = str(job['id']) + '-' + job['model']
         job_accuracy_dict[job_key] = 0
         job_time_dict[job_key] = 0
-        job_objective_dict[job_key] = 0
         job_done_dict[job_key] = False
 
     for job in ml_workload:
-        proc_pool.apply_async(func=train_job, args=(job, n_gpu,))
+        proc_pool.apply_async(func=train_job, args=(job, n_gpu,
+                                                    job_accuracy_dict,
+                                                    job_time_dict,
+                                                    job_done_dict))
 
     proc_pool.close()
     proc_pool.join()
