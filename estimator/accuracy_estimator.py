@@ -104,10 +104,10 @@ class AccuracyEstimator:
             else:
                 self.weight_list.append(base_weight)
 
-        coefs = np.polyfit(x=np.asarray(self.acc_epoch_list), y=np.asarray(self.acc_list), deg=3, w=self.weight_list)
+        coefs = np.polyfit(x=np.asarray(self.acc_epoch_list), y=np.asarray(self.acc_list), deg=4, w=self.weight_list)
 
         plt.figure()
-        plt.plot(np.arange(1, 21), np.polyval(coefs, np.arange(1, 21)), color="black")
+        plt.plot(np.arange(1, 21), np.polyval(coefs, np.arange(1, 21)), color="blue", linestyle='--', marker='o', label='Estimation')
         plt.plot(np.arange(1, 21), [0.10569999970495701,
                                     0.17059999911114573,
                                     0.23050000064074994,
@@ -127,10 +127,24 @@ class AccuracyEstimator:
                                     0.6603000056743622,
                                     0.6548000074923038,
                                     0.6700000047683716,
-                                    0.6700000068545342], color="black")
-        plt.xticks(np.arange(1, 21))
-        plt.show()
+                                    0.6700000068545342], color="green", linestyle='-', marker='D', label='Accuracy')
+        plt.tick_params(axis='y',direction='in', labelsize=14) 
+        plt.tick_params(axis='x',direction='in', labelsize=12)
+        
+        plt.ylabel('Accuracy', fontsize=16)
+        plt.xlabel('Epochs', fontsize=18)
 
+        plt.xticks(np.arange(1, 21))
+        plt.yticks(np.arange(0, 1.1, step=0.2))
+        plt.legend()
+        plt.legend(loc='best',fontsize=20)
+        plt.tight_layout()
+        outpath = '/home/ruiliu/Development/model_accuracy.png'
+        plt.savefig(outpath, format='png', bbox_inches='tight', pad_inches=0.05)
+
+        
+        #plt.show()
+        
         acc_estimation = np.polyval(coefs, input_model_epoch)
 
         return acc_estimation
@@ -147,14 +161,14 @@ if __name__ == "__main__":
     input_model['training_data'] = 'cifar'
     input_model['classes'] = 10
 
-    ml_estimator = MLEstimator(input_model, top_k=5)
-    ml_estimator.import_accuracy_dataset('/home/ruiliu/Development/ml-estimator/mlbase/model_acc.json')
+    ml_estimator = AccuracyEstimator(input_model, top_k=5)
+    ml_estimator.import_accuracy_dataset('/home/ruiliu/Development/mtdl-sched/knowledgebase/model_accuracy.json')
     ml_estimator.distill_actual_data([1, 0.10569999970495701])
-    # ml_estimator.distill_actual_data([2, 0.17059999911114573])
-    ml_estimator.distill_actual_data([3, 0.23050000064074994])
-    # ml_estimator.distill_actual_data([4, 0.30139999993145467])
-    ml_estimator.distill_actual_data([5, 0.3693000010401011])
-    # ml_estimator.distill_actual_data([6, 0.4184000000357628])
+    #ml_estimator.distill_actual_data([2, 0.17059999911114573])
+    #ml_estimator.distill_actual_data([3, 0.23050000064074994])
+    ml_estimator.distill_actual_data([4, 0.30139999993145467])
+    #ml_estimator.distill_actual_data([5, 0.3693000010401011])
+    #ml_estimator.distill_actual_data([6, 0.4184000000357628])
     ml_estimator.distill_actual_data([7, 0.4499999986588955])
     acc = ml_estimator.predict_accuracy(10)
 
