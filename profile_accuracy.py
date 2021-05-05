@@ -199,11 +199,11 @@ if __name__ == "__main__":
 
     steptime_avg = sum(time_record_list) / len(time_record_list)
 
-    json_acc_path = '/home/ruiliu/Development/ml-estimator/mlbase/model_acc.json'
-    json_time_path = '/home/ruiliu/Development/ml-estimator/mlbase/model_time_simulate.json'
+    # json_acc_path = '/home/ruiliu/Development/rotary/knowledgebase/model_acc.json'
+    # json_time_path = '/home/ruiliu/Development/rotary/knowledgebase/model_time_simulate.json'
 
-    # json_acc_path = '/home/ruiliu/Development/ml-estimator/mlbase/model_acc.json'
-    # json_time_path = '/home/ruiliu/Development/ml-estimator/mlbase/model_time.json'
+    json_acc_path = '/tank/local/ruiliu/rotary/knowledgebase/model_acc.json'
+    json_time_path = '/tank/local/ruiliu/rotary/knowledgebase/model_time_simulate.json'
 
     if profile_mode == 'accuracy':
         if os.path.exists(json_acc_path):
