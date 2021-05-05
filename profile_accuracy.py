@@ -1,7 +1,6 @@
 import numpy as np
 import json
 import argparse
-import itertools
 from timeit import default_timer as timer
 import os
 
