@@ -1,1 +1,1 @@
-# Schedulers for DLT Tasks on Shared Infrastructure #
+# SLO-aware Resource Sharing for Heterogeneous Deep Learning Workload #
