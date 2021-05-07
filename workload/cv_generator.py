@@ -1,5 +1,4 @@
 import numpy as np
-from math import ceil as ceiling
 from operator import itemgetter
 
 
@@ -71,16 +70,12 @@ class CVWorkloadGenerator:
         cv_med_num = round(self._cv_med_ratio * self._workload_size)
         cv_heavy_num = round(self._cv_light_ratio * self._workload_size)
 
-        print(cv_light_num)
-        print(cv_med_num)
-        print(cv_heavy_num)
-
         assert cv_light_num + cv_med_num + cv_heavy_num == self._workload_size
 
-        convergence_num = ceiling(self._convergence_ratio * self._workload_size)
-        accuracy_num = ceiling(self._accuracy_ratio * self._workload_size)
-        runtime_num = ceiling(self._runtime_ratio * self._workload_size)
-        deadline_num = ceiling(self._deadline_ratio * self._workload_size)
+        convergence_num = round(self._convergence_ratio * self._workload_size)
+        accuracy_num = round(self._accuracy_ratio * self._workload_size)
+        runtime_num = round(self._runtime_ratio * self._workload_size)
+        deadline_num = round(self._deadline_ratio * self._workload_size)
 
         assert convergence_num + accuracy_num + runtime_num + deadline_num == self._workload_size
 

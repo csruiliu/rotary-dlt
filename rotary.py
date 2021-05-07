@@ -2,8 +2,7 @@ import tensorflow as tf
 from multiprocessing import Manager, Pool
 from timeit import default_timer as timer
 import os
-import time
-import numpy as np
+import torch
 
 import config.config_rotary as cfg_rotary
 from workload.cv_generator import CVWorkloadGenerator
@@ -50,8 +49,10 @@ def train_job_trial():
 
         saver = tf.train.Saver()
 
-        model_ckpt_save_path = cfg_path.ckpt_save_path + '/job_' + str(job_data['id']) + '_' + model_name
-        os.makedirs(model_ckpt_save_path)
+        model_ckpt_save_path = cfg_path.ckpt_save_path + '/job_' + model_name
+
+        if os.path.exists(model_ckpt_save_path):
+            os.makedirs(model_ckpt_save_path)
 
         config = tf.ConfigProto()
         config.allow_soft_placement = True
@@ -75,7 +76,22 @@ def train_job_trial():
 
                 sess.run(train_op, feed_dict={feature_ph: train_data_batch, label_ph: train_label_batch})
 
-            cur_accuracy = sess.run(eval_op, feed_dict={feature_ph: eval_feature, label_ph: eval_labels})
+            print('start evaluation phrase')
+            acc_sum = 0
+            eval_batch_size = 50
+            num_batch_eval = eval_labels.shape[0] // eval_batch_size
+            for i in range(num_batch_eval):
+                print('evaluation step %d / %d' % (i + 1, num_batch_eval))
+                batch_offset = i * eval_batch_size
+                batch_end = (i + 1) * eval_batch_size
+                eval_feature_batch = eval_feature[batch_offset:batch_end]
+                eval_label_batch = eval_labels[batch_offset:batch_end]
+                acc_batch = sess.run(eval_op,
+                                     feed_dict={feature_ph: eval_feature_batch, label_ph: eval_label_batch})
+                acc_sum += acc_batch
+
+            cur_accuracy = acc_sum / num_batch_eval
+            print('evaluation accuracy:{}'.format(cur_accuracy))
 
             end_time_proc = timer()
             run_time_proc = end_time_proc - start_time_proc
@@ -115,9 +131,12 @@ def train_job_trial():
             else:
                 raise ValueError('the job objective type is not supported')
 
-    saver.save(sess, checkpoint_file)
+            saver.save(sess, checkpoint_file)
+
     # exceed the running slot and haven't achieve goal so put the job back to the queue
     job_queue.put(job)
+
+    torch.cuda.empty_cache()
 
     msg = 'job {} is finished'.format(job_data['id'])
     return msg
@@ -164,7 +183,7 @@ def train_job():
         saver = tf.train.Saver()
 
         # get the path of checkpoint
-        model_ckpt_save_path = cfg_path.ckpt_save_path + '/job_' + str(job_data['id']) + '_' + model_name
+        model_ckpt_save_path = cfg_path.ckpt_save_path + '/job_' + model_name
 
         if not os.path.exists(model_ckpt_save_path):
             os.makedirs(model_ckpt_save_path)
@@ -197,7 +216,22 @@ def train_job():
 
                 run_epoch += 1
 
-                cur_accuracy = sess.run(eval_op, feed_dict={feature_ph: eval_feature, label_ph: eval_labels})
+                print('start evaluation phrase')
+                acc_sum = 0
+                eval_batch_size = 50
+                num_batch_eval = eval_labels.shape[0] // eval_batch_size
+                for i in range(num_batch_eval):
+                    print('evaluation step %d / %d' % (i + 1, num_batch_eval))
+                    batch_offset = i * eval_batch_size
+                    batch_end = (i + 1) * eval_batch_size
+                    eval_feature_batch = eval_feature[batch_offset:batch_end]
+                    eval_label_batch = eval_labels[batch_offset:batch_end]
+                    acc_batch = sess.run(eval_op,
+                                         feed_dict={feature_ph: eval_feature_batch, label_ph: eval_label_batch})
+                    acc_sum += acc_batch
+
+                cur_accuracy = acc_sum / num_batch_eval
+                print('evaluation accuracy:{}'.format(cur_accuracy))
 
                 end_time_proc = timer()
                 run_time_proc = end_time_proc - start_time_proc
@@ -237,9 +271,12 @@ def train_job():
                 else:
                     raise ValueError('the job objective type is not supported')
 
-    saver.save(sess, checkpoint_file)
+                saver.save(sess, checkpoint_file)
+
     # exceed the running slot and haven't achieve goal so put the job back to the queue
     job_queue.put(job)
+
+    torch.cuda.empty_cache()
 
     msg = 'job {} is finished'.format(job_data['id'])
     return msg
@@ -263,6 +300,8 @@ if __name__ == "__main__":
 
     ml_workload = wg.generate_workload()
 
+    print(ml_workload)
+
     job_queue = Manager().Queue()
     job_accuracy_dict = Manager().dict()
     job_time_dict = Manager().dict()
@@ -284,6 +323,7 @@ if __name__ == "__main__":
     for job in ml_workload:
         result = proc_pool.apply_async(train_job_trial)
         results.append(result)
+        torch.cuda.empty_cache()
 
     for i in results:
         i.wait()
@@ -296,7 +336,6 @@ if __name__ == "__main__":
     for key in job_accuracy_dict:
         print(key, '->', job_accuracy_dict[key])
 
-    '''
     results = list()
     while not job_queue.empty():
         result = proc_pool.apply_async(train_job)
@@ -309,4 +348,3 @@ if __name__ == "__main__":
         if i.ready():
             if i.successful():
                 print(i.get())
-    '''

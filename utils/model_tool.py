@@ -25,7 +25,7 @@ def build_model(job_data,
                 label):
 
     job_id = job_data['id']
-    model_type = job_data['model_type']
+    model_type = job_data['model']
     if model_type == 'alexnet':
         model = AlexNet(num_classes=n_class)
     elif model_type == 'densenet':
@@ -75,7 +75,7 @@ def build_model(job_data,
     else:
         raise ValueError('Optimizer is not recognized')
 
-    prediction = tf.equal(tf.argmax(model, -1), tf.argmax(label, -1))
+    prediction = tf.equal(tf.argmax(logit, -1), tf.argmax(label, -1))
     eval_op = tf.reduce_mean(tf.cast(prediction, tf.float32))
 
     job_name = str(job_id) + '-' + str(model_type)
