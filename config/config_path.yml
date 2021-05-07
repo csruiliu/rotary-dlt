@@ -12,12 +12,12 @@ local_path:
   dataset_mnist_t10k_img: /home/ruiliu/Development/dataset/mnist/mnist-t10k-images.idx3-ubyte
   dataset_mnist_t10k_label: /home/ruiliu/Development/dataset/mnist/mnist-t10k-labels.idx1-ubyte
   dataset_cifar_10_path: /home/ruiliu/Development/dataset/cifar-10
-  profile_path: /home/ruiliu/Development/mtml-tf/profile-result
-  multidevices_time_dataset_path: /home/ruiliu/Development/mtml-tf/ml-sched/dataset_model_steptime_multidevices.json
-  accuracy_dataset_path: /home/ruiliu/Development/mtml-tf/ml-sched/dataset_model_accuracy.json
-  ckpt_save_path: /home/ruiliu/Development/mtml-tf/ml-sched/model_ckpt
+  profile_path: /home/ruiliu/Development/rotary/profile-result
+  multidevices_time_dataset_path: /home/ruiliu/Development/rotary/dataset_model_steptime_multidevices.json
+  accuracy_dataset_path: /home/ruiliu/Development/rotary/dataset_model_accuracy.json
+  ckpt_save_path: /home/ruiliu/Development/rotary/model_ckpt
 
-roscoe_path:
+cluster_path:
   dataset_imagenet_t50k_img_raw: /tank/local/ruiliu/dataset/imagenet50k
   dataset_imagenet_t50k_label: /tank/local/ruiliu/dataset/imagenet50k-label.txt
   dataset_imagenet_t10k_img_raw: /tank/local/ruiliu/dataset/imagenet10k
@@ -31,29 +31,7 @@ roscoe_path:
   dataset_mnist_t10k_img: /tank/local/ruiliu/dataset/mnist-t10k-images.idx3-ubyte
   dataset_mnist_t10k_label: /tank/local/ruiliu/dataset/mnist-t10k-labels.idx1-ubyte
   dataset_cifar_10_path: /tank/local/ruiliu/dataset/cifar-10
-  profile_path: /tank/local/ruiliu/mtml-tf/profile-result
-  multidevices_time_dataset_path: /tank/local/ruiliu/mtml-tf/ml-sched/dataset_model_steptime_multidevices.json
-  accuracy_dataset_path: /tank/local/ruiliu/mtml-tf/ml-sched/dataset_model_accuracy.json
-  ckpt_save_path: /tank/local/ruiliu/mtml-tf/ml-sched/model_ckpt
-
-hp_path:
-  dataset_imagenet_t50k_img_raw: /home/user/Development/dataset/imagenet50k
-  dataset_imagenet_t50k_label: /home/user/Development/dataset/imagenet50k-label.txt
-  dataset_imagenet_t10k_img_raw: /home/user/Development/dataset/imagenet10k
-  dataset_imagenet_t10k_img_bin: /home/user/Development/dataset/imagenet10k.bin
-  dataset_imagenet_t10k_label: /home/user/Development/dataset/imagenet10k-label.txt
-  dataset_imagenet_t1k_img_raw: /home/user/Development/dataset/imagenet1k
-  dataset_imagenet_t1k_img_bin: /home/user/Development/dataset/imagenet1k.bin
-  dataset_imagenet_t1k_label: /home/user/Development/dataset/imagenet1k-label.txt
-  dataset_mnist_train_img: /home/user/Development/dataset/mnist-train-images.idx3-ubyte
-  dataset_mnist_train_label: /home/user/Development/dataset/mnist-train-labels.idx1-ubyte
-  dataset_mnist_t10k_img: /home/user/Development/dataset/mnist-t10k-images.idx3-ubyte
-  dataset_mnist_t10k_label: /home/user/Development/dataset/mnist-t10k-labels.idx1-ubyte
-  dataset_cifar_10_path: /home/user/Development/dataset/cifar-10
-  profile_path: /home/user/Development/mtml-tf/profile-result
-  multidevices_time_dataset_path: /home/user/Development/mtml-tf/ml-sched/dataset_model_steptime_multidevices.json
-  accuracy_dataset_path: /home/user/Development/mtml-tf/ml-sched/dataset_model_accuracy.json
-  ckpt_save_path: /home/user/Development/mtml-tf/ml-sched/model_ckpt
-
-
-
+  profile_path: /tank/local/ruiliu/rotary/profile-result
+  multidevices_time_dataset_path: /tank/local/ruiliu/rotary/dataset_model_steptime_multidevices.json
+  accuracy_dataset_path: /tank/local/ruiliu/rotary/dataset_model_accuracy.json
+  ckpt_save_path: /tank/local/ruiliu/rotary/model_ckpt
