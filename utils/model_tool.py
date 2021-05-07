@@ -16,13 +16,10 @@ from workload.tensorflow_cifar.models.efficientnet import EfficientNet
 from workload.tensorflow_cifar.models.shufflenet import ShuffleNet
 from workload.tensorflow_cifar.models.shufflenet_v2 import ShuffleNetV2
 
-from workload.tensorflow_ptb.models.nnlm import NNLM
-from workload.tensorflow_ptb.models.word2vec import Word2Vec
-from workload.tensorflow_ptb.models.bi_lstm import BiLSTM
-from workload.tensorflow_ptb.models.textrnn import TextRNN
-
 
 def build_model(job_data,
+                opt,
+                lr,
                 n_class,
                 feature,
                 label):
@@ -59,22 +56,24 @@ def build_model(job_data,
         model = ZFNet(num_classes=n_class)
     elif model_type == 'shufflenet_v2':
         model = ShuffleNetV2(complexity=1, num_classes=n_class)
-    elif model_type == 'nnlm':
-        model = NNLM(n_class=n_class, n_step=2, n_hidden=2)
-    elif model_type == 'bilstm':
-        model = BiLSTM(n_class=n_class, n_step=2, n_hidden=2)
-    elif model_type == 'word2vec':
-        model = Word2Vec(voc_size=n_class, embedding_size=2)
-    elif model_type == 'textrnn':
-        model = TextRNN(n_class=n_class, n_step=2, n_hidden=2)
     else:
         raise ValueError("the model type is not supported")
 
     logit = model.build(feature)
     cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(label, logit)
+
     train_loss = tf.reduce_mean(cross_entropy)
     tf.trainable_variables()
-    train_op = tf.train.AdamOptimizer(3e-4).minimize(train_loss)
+    if opt == 'Adam':
+        train_op = tf.train.AdamOptimizer(lr).minimize(train_loss)
+    elif opt == 'SGD':
+        train_op = tf.train.GradientDescentOptimizer(lr).minimize(train_loss)
+    elif opt == 'Adagrad':
+        train_op = tf.train.AdagradOptimizer(lr).minimize(train_loss)
+    elif opt == 'Momentum':
+        train_op = tf.train.MomentumOptimizer(lr, 0.9).minimize(train_loss)
+    else:
+        raise ValueError('Optimizer is not recognized')
 
     prediction = tf.equal(tf.argmax(model, -1), tf.argmax(label, -1))
     eval_op = tf.reduce_mean(tf.cast(prediction, tf.float32))

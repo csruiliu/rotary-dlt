@@ -1,7 +1,7 @@
 #!/bin/sh
 
-#MODEL_LIST="alexnet efficientnet inception lenet mobilenet mobilenetv2 squeezenet xception zfnet"
-MODEL_LIST="zfnet"
+MODEL_LIST="alexnet efficientnet inception lenet mobilenet mobilenetv2 squeezenet xception zfnet"
+#MODEL_LIST="zfnet"
 BATCH_SIZE_LIST="32 64 128 256"
 OPT_LIST="SGD Adam Adagrad Momentum"
 LEARN_RATE_LIST="0.1 0.01 0.001 0.0001 0.00001"
@@ -23,7 +23,7 @@ do
   done
 done
 
-: <<'END'
+
 MODEL_LIST="resnet densenet resnext vgg shufflenet shufflenetv2"
 BATCH_SIZE_LIST="32 64 128 256"
 OPT_LIST="SGD Adam Adagrad Momentum"
@@ -81,4 +81,3 @@ do
     done
   done
 done
-END

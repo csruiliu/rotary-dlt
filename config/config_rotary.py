@@ -25,5 +25,8 @@ objective_cfg = cfg['objective']
 convergence_ratio = objective_cfg['convergence_ratio']
 accuracy_ratio = objective_cfg['accuracy_ratio']
 runtime_ratio = objective_cfg['runtime_ratio']
+deadline_ratio = objective_cfg['deadline_ratio']
 
 random_seed = cfg['random_seed']
+num_gpu = cfg['num_gpu']
+running_slot = cfg['running_slot']

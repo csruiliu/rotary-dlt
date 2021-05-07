@@ -47,7 +47,7 @@ class GPUSpecUtil:
 
 if __name__ == "__main__":
     gpu_id = 0
-    gpu_util = GPUtil(gpu_id)
+    gpu_util = GPUSpecUtil(gpu_id)
     cuda_cores = gpu_util.get_cuda_cores()
     base_clock = gpu_util.get_base_clock()
     computation_power = cuda_cores * base_clock
