@@ -293,6 +293,9 @@ if __name__ == "__main__":
             if i.successful():
                 print(i.get())
 
+    for key in job_accuracy_dict:
+        print(key, '->', job_accuracy_dict[key])
+
     '''
     results = list()
     while not job_queue.empty():

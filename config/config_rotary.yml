@@ -1,5 +1,5 @@
 workload:
-  workload_size: 20
+  workload_size: 10
   cv_light_ratio: 0.4
   cv_med_ratio: 0.2
   cv_heavy_ratio: 0.4

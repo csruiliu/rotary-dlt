@@ -40,15 +40,15 @@ class CVWorkloadGenerator:
                                ('accuracy', 0.88), ('accuracy', 0.9), ('accuracy', 0.92), ('accuracy', 0.94),
                                ('accuracy', 0.96), ('accuracy', 0.98), ('accuracy', 0.99)]
 
-        # unit of deadline: mins
-        self._deadline_list = [('deadline', 30), ('deadline', 60), ('deadline', 180), ('deadline', 300),
-                               ('deadline', 600), ('deadline', 1440)]
+        # unit of deadline: second
+        self._deadline_list = [('deadline', 1800), ('deadline', 3600), ('deadline', 10800), ('deadline', 18000),
+                               ('deadline', 36000), ('deadline', 864000)]
 
         # unit of runtime: epoch
         self._runtime_list = [('runtime', 1), ('runtime', 5), ('runtime', 10),
                               ('runtime', 20), ('runtime', 50), ('runtime', 100)]
 
-        self._epoch_list = [10, 20, 30, 40, 50]
+        self._epoch_list = [10, 20, 30, 40, 50, 100]
 
         self._batch_size_list = [25, 32, 50, 64, 100, 128]
 
@@ -67,9 +67,13 @@ class CVWorkloadGenerator:
     def generate_workload(self):
         np.random.seed(self._random_seed)
 
-        cv_light_num = ceiling(self._cv_light_ratio * self._workload_size)
-        cv_med_num = ceiling(self._cv_med_ratio * self._workload_size)
-        cv_heavy_num = ceiling(self._cv_light_ratio * self._workload_size)
+        cv_light_num = round(self._cv_light_ratio * self._workload_size)
+        cv_med_num = round(self._cv_med_ratio * self._workload_size)
+        cv_heavy_num = round(self._cv_light_ratio * self._workload_size)
+
+        print(cv_light_num)
+        print(cv_med_num)
+        print(cv_heavy_num)
 
         assert cv_light_num + cv_med_num + cv_heavy_num == self._workload_size
 
