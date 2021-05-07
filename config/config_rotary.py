@@ -3,7 +3,7 @@ import os
 
 current_folder = os.path.abspath(os.path.dirname(__file__))
 
-with open(current_folder+'/config_workload.yml', 'r') as ymlfile:
+with open(current_folder+'/config_rotary.yml', 'r') as ymlfile:
     cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
 dataset_cfg = cfg['dataset']
