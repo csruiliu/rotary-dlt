@@ -1,8 +1,8 @@
 import tensorflow as tf
-from multiprocessing import Manager, Pool
+import multiprocessing as mp
 from timeit import default_timer as timer
 import os
-import torch
+import queue
 
 import config.config_rotary as cfg_rotary
 from workload.cv_generator import CVWorkloadGenerator
@@ -19,12 +19,16 @@ def train_job_trial():
     start_time_proc = timer()
     run_epoch = 0
 
-    job_data = job_queue.get_nowait()
+    try:
+        job_data = job_queue.get_nowait()
+    except queue.Empty:
+        return
+
     job_name = str(job_data['id']) + '-' + job_data['model']
     print('get job {}'.format(job_name))
 
     assign_device = '/gpu:' + str(job_data['id'] % num_gpu)
-    print('running on device {}'.format(assign_device))
+    print('running job {} on device {} at process {}'.format(job_name, assign_device, os.getpid()))
 
     model_opt = job_data['opt']
     model_learn_rate = job_data['learn_rate']
@@ -66,24 +70,24 @@ def train_job_trial():
 
             # check if the total runtime is less than running_slot
 
-            for i in range(num_batch):
-                print('step {} / {}'.format(i + 1, num_batch))
-                batch_offset = i * train_batchsize
-                batch_end = (i + 1) * train_batchsize
+            for n in range(num_batch):
+                # print('step {} / {}'.format(n + 1, num_batch))
+                batch_offset = n * train_batchsize
+                batch_end = (n + 1) * train_batchsize
 
                 train_data_batch = train_feature[batch_offset:batch_end]
                 train_label_batch = train_labels[batch_offset:batch_end]
 
                 sess.run(train_op, feed_dict={feature_ph: train_data_batch, label_ph: train_label_batch})
 
-            print('start evaluation phrase')
+            print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
             acc_sum = 0
             eval_batch_size = 50
             num_batch_eval = eval_labels.shape[0] // eval_batch_size
-            for i in range(num_batch_eval):
-                print('evaluation step %d / %d' % (i + 1, num_batch_eval))
-                batch_offset = i * eval_batch_size
-                batch_end = (i + 1) * eval_batch_size
+            for ne in range(num_batch_eval):
+                # print('evaluation step %d / %d' % (ne + 1, num_batch_eval))
+                batch_offset = ne * eval_batch_size
+                batch_end = (ne + 1) * eval_batch_size
                 eval_feature_batch = eval_feature[batch_offset:batch_end]
                 eval_label_batch = eval_labels[batch_offset:batch_end]
                 acc_batch = sess.run(eval_op,
@@ -133,10 +137,8 @@ def train_job_trial():
 
             saver.save(sess, checkpoint_file)
 
-    # exceed the running slot and haven't achieve goal so put the job back to the queue
-    job_queue.put(job)
-
-    torch.cuda.empty_cache()
+    # finish first trial, put it back to job_queue
+    job_queue.put(job_data)
 
     msg = 'job {} is finished'.format(job_data['id'])
     return msg
@@ -148,7 +150,11 @@ def train_job():
     run_epoch = 0
 
     # get the job id
-    job_data = job_queue.get_nowait()
+    try:
+        job_data = job_queue.get_nowait()
+    except queue.Empty:
+        return
+
     job_name = str(job_data['id']) + '-' + job_data['model']
     print('get job {}'.format(job_name))
 
@@ -276,13 +282,15 @@ def train_job():
     # exceed the running slot and haven't achieve goal so put the job back to the queue
     job_queue.put(job)
 
-    torch.cuda.empty_cache()
-
     msg = 'job {} is finished'.format(job_data['id'])
     return msg
 
 
 if __name__ == "__main__":
+
+    if not os.path.exists(cfg_path.ckpt_save_path):
+        os.makedirs(cfg_path.ckpt_save_path)
+
     num_gpu = cfg_rotary.num_gpu
     running_slot = cfg_rotary.running_slot
 
@@ -300,15 +308,15 @@ if __name__ == "__main__":
 
     ml_workload = wg.generate_workload()
 
-    print(ml_workload)
+    job_queue = mp.Manager().Queue()
 
-    job_queue = Manager().Queue()
-    job_accuracy_dict = Manager().dict()
-    job_time_dict = Manager().dict()
-    job_epoch_dict = Manager().dict()
-    job_steptime_dict = Manager().dict()
+    job_accuracy_dict = mp.Manager().dict()
 
-    proc_pool = Pool(processes=num_gpu)
+    job_time_dict = mp.Manager().dict()
+    job_epoch_dict = mp.Manager().dict()
+    job_steptime_dict = mp.Manager().dict()
+
+    proc_pool = mp.Pool(num_gpu, maxtasksperchild=1)
 
     # init some dicts to track the progress
     for job in ml_workload:
@@ -323,7 +331,6 @@ if __name__ == "__main__":
     for job in ml_workload:
         result = proc_pool.apply_async(train_job_trial)
         results.append(result)
-        torch.cuda.empty_cache()
 
     for i in results:
         i.wait()
@@ -336,6 +343,7 @@ if __name__ == "__main__":
     for key in job_accuracy_dict:
         print(key, '->', job_accuracy_dict[key])
 
+    '''
     results = list()
     while not job_queue.empty():
         result = proc_pool.apply_async(train_job)
@@ -348,3 +356,4 @@ if __name__ == "__main__":
         if i.ready():
             if i.successful():
                 print(i.get())
+    '''
