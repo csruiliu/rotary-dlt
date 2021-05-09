@@ -47,12 +47,12 @@ def train_job_deadline():
     with tf.device(assign_device):
         feature_ph = tf.placeholder(tf.float32, [None, img_w, img_h, num_chn])
         label_ph = tf.placeholder(tf.int64, [None, num_cls])
-        train_op, eval_op, model_name = build_model(job_data,
-                                                    model_opt,
-                                                    model_learn_rate,
-                                                    num_cls,
-                                                    feature_ph,
-                                                    label_ph)
+        train_op, eval_op, model_name, _ = build_model(job_data,
+                                                       model_opt,
+                                                       model_learn_rate,
+                                                       num_cls,
+                                                       feature_ph,
+                                                       label_ph)
 
         # init the tf saver for checkpoint
         saver = tf.train.Saver()
@@ -165,12 +165,12 @@ def train_job_others():
     with tf.device(assign_device):
         feature_ph = tf.placeholder(tf.float32, [None, img_w, img_h, num_chn])
         label_ph = tf.placeholder(tf.int64, [None, num_cls])
-        train_op, eval_op, model_name = build_model(job_data,
-                                                    model_opt,
-                                                    model_learn_rate,
-                                                    num_cls,
-                                                    feature_ph,
-                                                    label_ph)
+        train_op, eval_op, model_name, _ = build_model(job_data,
+                                                       model_opt,
+                                                       model_learn_rate,
+                                                       num_cls,
+                                                       feature_ph,
+                                                       label_ph)
 
         # init the tf saver for checkpoint
         saver = tf.train.Saver()

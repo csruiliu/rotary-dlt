@@ -63,7 +63,24 @@ def build_model(job_data,
     cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(label, logit)
 
     train_loss = tf.reduce_mean(cross_entropy)
-    tf.trainable_variables()
+
+    ###########################################
+    # count overall trainable parameters
+    ###########################################
+
+    total_parameters = 0
+    for variable in tf.trainable_variables():
+        # shape is an array of tf.Dimension
+        shape = variable.get_shape()
+        variable_parameters = 1
+        for dim in shape:
+            variable_parameters *= dim.value
+        total_parameters += variable_parameters
+
+    ###########################################
+    # configure the optimizer for training
+    ###########################################
+
     if opt == 'Adam':
         train_op = tf.train.AdamOptimizer(lr).minimize(train_loss)
     elif opt == 'SGD':
@@ -80,4 +97,4 @@ def build_model(job_data,
 
     job_name = str(job_id) + '-' + str(model_type)
 
-    return train_op, eval_op, job_name
+    return train_op, eval_op, job_name, total_parameters
