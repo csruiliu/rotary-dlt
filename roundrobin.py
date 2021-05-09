@@ -147,7 +147,7 @@ def train_job():
                 saver.save(sess, checkpoint_file)
 
     # exceed the running slot and haven't achieve goal so put the job back to the queue
-    job_queue.put(job)
+    job_queue.put(job_data)
 
     msg = 'job {} is finished'.format(job_data['id'])
     return msg

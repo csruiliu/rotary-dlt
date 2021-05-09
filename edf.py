@@ -125,7 +125,7 @@ def train_job_deadline():
                 saver.save(sess, checkpoint_file)
 
     # exceed the running slot and haven't achieve goal so put the job back to the queue
-    ml_workload_deadline.append(job)
+    ml_workload_deadline.append(job_data)
 
     msg = 'job {} is finished the current running slot'.format(job_data['id'])
     return msg
@@ -267,7 +267,7 @@ def train_job_others():
                 saver.save(sess, checkpoint_file)
 
     # exceed the running slot and haven't achieve goal so put the job back to the queue
-    job_queue.put(job)
+    job_queue.put(job_data)
 
     msg = 'job {} is finished the current running slot'.format(job_data['id'])
     return msg
