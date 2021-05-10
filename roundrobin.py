@@ -119,13 +119,13 @@ def train_job(gpu_id):
 
                 if job_data['goal_type'] == 'accuracy':
                     if (job_accuracy_dict[job_name] > job_data['goal_value'] or
-                            job_epoch_dict[job_name] > job_data['goal_value_extra']):
+                            job_epoch_dict[job_name] >= job_data['goal_value_extra']):
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
                         return msg
 
                 elif job_data['goal_type'] == 'deadline':
-                    if job_time_dict[job_name] > job_data['goal_value']:
+                    if round(job_time_dict[job_name]) >= job_data['goal_value']:
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
                         return msg
@@ -133,13 +133,13 @@ def train_job(gpu_id):
                 elif job_data['goal_type'] == 'convergence':
                     delta = cur_accuracy - pre_accuracy
                     if (delta < job_data['goal_value'] or
-                            job_epoch_dict[job_name] > job_data['goal_value_extra']):
+                            job_epoch_dict[job_name] >= job_data['goal_value_extra']):
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
                         return msg
 
                 elif job_data['goal_type'] == 'runtime':
-                    if job_epoch_dict[job_name] > job_data['goal_value']:
+                    if job_epoch_dict[job_name] >= job_data['goal_value']:
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
                         return msg
@@ -175,6 +175,9 @@ if __name__ == "__main__":
                              cfg_rotary.random_seed)
 
     ml_workload = wg.generate_workload()
+
+    for s in ml_workload:
+        print(s)
 
     job_queue = mp.Manager().Queue()
 
