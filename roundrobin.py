@@ -11,7 +11,7 @@ import config.config_path as cfg_path
 from utils.model_tool import build_model
 
 
-def train_job():
+def train_job(gpu_id):
     start_time_proc = timer()
     run_time_proc = 0
     run_epoch = 0
@@ -25,8 +25,10 @@ def train_job():
     job_name = str(job_data['id']) + '-' + job_data['model']
     print('get job {}'.format(job_name))
 
+    job_running_dict[job_name] = 1
+
     # get the device id
-    assign_device = '/gpu:' + str(job_data['id'] % num_gpu)
+    assign_device = '/gpu:' + str(gpu_id)
     print('running on device {}'.format(assign_device))
 
     # get opt, learning rate, batch size and image size for training
@@ -137,7 +139,7 @@ def train_job():
                         return msg
 
                 elif job_data['goal_type'] == 'runtime':
-                    if run_epoch > job_data['goal_value']:
+                    if job_epoch_dict[job_name] > job_data['goal_value']:
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
                         return msg
@@ -149,7 +151,7 @@ def train_job():
     # exceed the running slot and haven't achieve goal so put the job back to the queue
     job_queue.put(job_data)
 
-    msg = 'job {} is finished'.format(job_data['id'])
+    msg = 'job {} is finished for current running slot'.format(job_data['id'])
     return msg
 
 
@@ -180,6 +182,8 @@ if __name__ == "__main__":
     job_time_dict = mp.Manager().dict()
     job_epoch_dict = mp.Manager().dict()
 
+    job_running_dict = mp.Manager().dict()
+
     proc_pool = mp.Pool(num_gpu, maxtasksperchild=1)
 
     # init some dicts to track the progress
@@ -190,10 +194,11 @@ if __name__ == "__main__":
         job_epoch_dict[job_key] = 0
         job_queue.put(job)
 
-    results = list()
     while not job_queue.empty():
-        for _ in ml_workload:
-            result = proc_pool.apply_async(train_job)
+        results = list()
+        for idx in range(job_queue.qsize()):
+            gpuid = idx % num_gpu
+            result = proc_pool.apply_async(train_job, args=(gpuid,))
             results.append(result)
 
         for i in results:
