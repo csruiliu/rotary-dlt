@@ -101,7 +101,7 @@ class CVWorkloadGenerator:
             job['opt'] = np.random.choice(self._opt_list, size=1)[0]
             job['learn_rate'] = np.random.choice(self._learn_rate_list, size=1)[0]
             job['batch_size'] = np.random.choice(self._batch_size_list, size=1)[0]
-            job['dataset'] = 'cifar10'
+            job['training_data'] = 'cifar10'
             job['goal_type'] = obj[0]
             job['goal_value'] = obj[1]
 

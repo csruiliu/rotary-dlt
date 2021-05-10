@@ -1,58 +1,85 @@
 import numpy as np
 import json
-import matplotlib.pyplot as plt
+import operator
 
 
 class AccuracyEstimator:
-    def __init__(self, input_model_dict, top_k):
-        self.top_k = top_k
-        self.input_model_dict = input_model_dict
+    def __init__(self, topk=5):
+        # the list for all models' accuracy in the knowledgebase
+        self.acc_model_list = list()
 
-        # list stores model info with accuracy of various epochs
-        self.acc_model_list = None
+        # top k for selecting neighbours
+        self.top_k = topk
 
-        # list stores model info with training steptime
-        self.steptime_model_list = None
-
-        # lists for predicting accuracy for current model
-        self.acc_list = None
-        self.acc_epoch_list = None
-        self.acc_weight_list = None
-        self.acc_flag_list = None
-
-        # lists for predicting steptime for current model
-        self.steptime_list = None
-        self.steptime_weight_list = None
-        self.steptime_flag_list = None
+        # the dict for all jobs data
+        # key: str(input_model_dict['id']) + '-' + input_model_dict['model']
+        # value is a dict with all necessary info: flag_list, acc_list, epoch_list
+        self.job_predict_dict = dict()
 
     def import_accuracy_dataset(self, dataset_path):
         with open(dataset_path) as json_file:
-            self.acc_model_list = json.load(json_file)
+            for item in json.load(json_file):
+                self.acc_model_list.append(item)
 
-        self.acc_list = list()
-        self.acc_epoch_list = list()
-        self.acc_flag_list = list()
+    def import_workload(self, ml_workload):
+        for m in ml_workload:
+            m_key = str(m['id']) + '-' + m['model']
+            job_predict_info = dict()
+            accuracy_list = list()
+            epoch_list = list()
 
-        neighbour_model_acc_list = self.compute_model_similarity_acc(self.input_model_dict, self.acc_model_list)
+            neighbour_model_acc_list = self.compute_model_similarity_acc(m, self.acc_model_list)
 
-        for model in neighbour_model_acc_list:
-            for aidx, acc in enumerate(model['accuracy']):
-                self.acc_list.append(acc)
-                self.acc_epoch_list.append(aidx)
+            for nb_model in neighbour_model_acc_list:
+                for aidx, acc in enumerate(nb_model['accuracy']):
+                    accuracy_list.append(acc)
+                    epoch_list.append(aidx)
 
-        self.acc_flag_list = [0] * len(self.acc_list)
+            flag_list = [0] * len(accuracy_list)
 
-    def import_steptime_dataset(self, dataset_path):
-        with open(dataset_path) as json_file:
-            self.steptime_model_list = json.load(json_file)
+            job_predict_info['flag'] = flag_list
+            job_predict_info['accuracy'] = accuracy_list
+            job_predict_info['epoch'] = epoch_list
 
-        self.steptime_list = list()
+            self.job_predict_dict[m_key] = job_predict_info
 
-        for st in self.steptime_model_list:
-            self.steptime_list.append(st['steptime'])
+    def predict_accuracy(self, input_model_dict, input_model_epoch):
+        job_key = str(input_model_dict['id']) + '-' + input_model_dict['model']
+
+        job_predict_info = self.job_predict_dict[job_key]
+        accuracy_list = job_predict_info['accuracy']
+        epoch_list = job_predict_info['epoch']
+        # the list for historical and actual accuracy data, 1 is actual accuracy, 0 is historical data
+        flag_list = job_predict_info['flag']
+
+        # init a new curve weight list for this prediction
+        curve_weight_list = list()
+
+        actual_dp_num = flag_list.count(1)
+        base_dp_num = len(flag_list) - actual_dp_num
+
+        actual_weight = 1 / (actual_dp_num + 1)
+        base_weight = actual_weight / base_dp_num
+
+        for flag in flag_list:
+            if flag:
+                curve_weight_list.append(actual_weight)
+            else:
+                curve_weight_list.append(base_weight)
+
+        coefs = np.polyfit(x=np.asarray(epoch_list), y=np.asarray(accuracy_list), deg=2, w=curve_weight_list)
+
+        acc_estimation = np.polyval(coefs, input_model_epoch)
+
+        return acc_estimation
+
+    def add_actual_accuracy(self, job_key, accuracy, epoch):
+        job_predict_info = self.job_predict_dict[job_key]
+        job_predict_info['flag'].append(1)
+        job_predict_info['accuracy'].append(accuracy)
+        job_predict_info['epoch'].append(epoch)
 
     def compute_model_similarity_acc(self, center_model, candidate_models):
-        ''' similarity between each model in mlbase and the center model '''
         similarity_list = list()
 
         for candidate in candidate_models:
@@ -65,7 +92,7 @@ class AccuracyEstimator:
                 Otherwise, set the similarity as -1
             '''
             if (center_model['training_data'] == candidate['training_data'] and
-                center_model['classes'] == candidate['classes'] and
+                # center_model['classes'] == candidate['classes'] and
                 center_model['learn_rate'] == candidate['learn_rate'] and
                 center_model['batch_size'] == candidate['batch_size']):
 
@@ -81,95 +108,6 @@ class AccuracyEstimator:
                                             key=lambda k: similarity_list[k],
                                             reverse=True)[:self.top_k]
 
-        topk_model_list = [self.acc_model_list[i] for i in similarity_sorted_idx_list]
+        topk_model_list = operator.itemgetter(*similarity_sorted_idx_list)(self.acc_model_list)
 
         return topk_model_list
-
-    def distill_actual_data(self, actual_data):
-        self.acc_epoch_list.append(actual_data[0])
-        self.acc_list.append(actual_data[1])
-        self.acc_flag_list.append(1)
-
-    def predict_accuracy(self, input_model_epoch):
-        self.weight_list = list()
-        actual_dp_num = self.acc_flag_list.count(1)
-        base_dp_num = len(self.acc_flag_list) - actual_dp_num
-
-        actual_weight = 1 / (actual_dp_num + 1)
-        base_weight = actual_weight / base_dp_num
-
-        for flag in self.acc_flag_list:
-            if flag:
-                self.weight_list.append(actual_weight)
-            else:
-                self.weight_list.append(base_weight)
-
-        coefs = np.polyfit(x=np.asarray(self.acc_epoch_list), y=np.asarray(self.acc_list), deg=4, w=self.weight_list)
-
-        plt.figure()
-        plt.plot(np.arange(1, 21), np.polyval(coefs, np.arange(1, 21)), color="blue", linestyle='--', marker='o', label='Estimation')
-        plt.plot(np.arange(1, 21), [0.10569999970495701,
-                                    0.17059999911114573,
-                                    0.23050000064074994,
-                                    0.30139999993145467,
-                                    0.3693000010401011,
-                                    0.4184000000357628,
-                                    0.4499999986588955,
-                                    0.505199998319149,
-                                    0.5318000014126301,
-                                    0.5642000022530556,
-                                    0.5793000020086765,
-                                    0.5967000035941601,
-                                    0.6219000032544136,
-                                    0.6229000036418438,
-                                    0.6461000037193299,
-                                    0.6477000056207181,
-                                    0.6603000056743622,
-                                    0.6548000074923038,
-                                    0.6700000047683716,
-                                    0.6700000068545342], color="green", linestyle='-', marker='D', label='Accuracy')
-        plt.tick_params(axis='y',direction='in', labelsize=14) 
-        plt.tick_params(axis='x',direction='in', labelsize=12)
-        
-        plt.ylabel('Accuracy', fontsize=16)
-        plt.xlabel('Epochs', fontsize=18)
-
-        plt.xticks(np.arange(1, 21))
-        plt.yticks(np.arange(0, 1.1, step=0.2))
-        plt.legend()
-        plt.legend(loc='best',fontsize=20)
-        plt.tight_layout()
-        outpath = '/home/ruiliu/Development/model_accuracy.png'
-        plt.savefig(outpath, format='png', bbox_inches='tight', pad_inches=0.05)
-
-        
-        #plt.show()
-        
-        acc_estimation = np.polyval(coefs, input_model_epoch)
-
-        return acc_estimation
-
-
-if __name__ == "__main__":
-    input_model = dict()
-
-    input_model['model_name'] = 'model_demo'
-    input_model['num_parameters'] = 2258538
-    input_model['batch_size'] = 128
-    input_model['opt'] = 'Momentum'
-    input_model['learn_rate'] = 0.01
-    input_model['training_data'] = 'cifar'
-    input_model['classes'] = 10
-
-    ml_estimator = AccuracyEstimator(input_model, top_k=5)
-    ml_estimator.import_accuracy_dataset('/home/ruiliu/Development/mtdl-sched/knowledgebase/model_accuracy.json')
-    ml_estimator.distill_actual_data([1, 0.10569999970495701])
-    #ml_estimator.distill_actual_data([2, 0.17059999911114573])
-    #ml_estimator.distill_actual_data([3, 0.23050000064074994])
-    ml_estimator.distill_actual_data([4, 0.30139999993145467])
-    #ml_estimator.distill_actual_data([5, 0.3693000010401011])
-    #ml_estimator.distill_actual_data([6, 0.4184000000357628])
-    ml_estimator.distill_actual_data([7, 0.4499999986588955])
-    acc = ml_estimator.predict_accuracy(10)
-
-    print(acc)
