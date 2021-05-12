@@ -4,10 +4,10 @@ from timeit import default_timer as timer
 import os
 import queue
 import math
+import datetime
 
 import config.config_rotary as cfg_rotary
 import config.config_path as cfg_path
-
 from workload.cv_generator import CVWorkloadGenerator
 from estimator.accuracy_estimator import AccuracyEstimator
 from workload.tensorflow_cifar.tools.dataset_loader import load_cifar10_keras
@@ -120,28 +120,50 @@ def train_job_trial(gpu_id):
             job_accuracy_dict[job_name] = cur_accuracy
 
             if job_data['goal_type'] == 'accuracy':
-                if (job_accuracy_dict[job_name] > job_data['goal_value'] or
-                        job_epoch_dict[job_name] > job_data['goal_value_extra']):
+                if job_accuracy_dict[job_name] > job_data['goal_value']:
+                    end_time_overall = timer()
+                    job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                    job_attain_dict[job_name] = 1
+                    saver.save(sess, checkpoint_file)
+                    msg = 'job {} is finished'.format(job_data['id'])
+                    return msg
+
+                if job_epoch_dict[job_name] > job_data['goal_value_extra']:
+                    end_time_overall = timer()
+                    job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
                     return msg
 
             elif job_data['goal_type'] == 'deadline':
                 if job_time_dict[job_name] > job_data['goal_value']:
+                    end_time_overall = timer()
+                    job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
                     return msg
 
             elif job_data['goal_type'] == 'convergence':
                 delta = cur_accuracy - pre_accuracy
-                if (delta < job_data['goal_value'] or
-                        job_epoch_dict[job_name] > job_data['goal_value_extra']):
+                if delta < job_data['goal_value']:
+                    end_time_overall = timer()
+                    job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                    job_attain_dict[job_name] = 1
+                    saver.save(sess, checkpoint_file)
+                    msg = 'job {} is finished'.format(job_data['id'])
+                    return msg
+
+                if job_epoch_dict[job_name] > job_data['goal_value_extra']:
+                    end_time_overall = timer()
+                    job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
                     return msg
 
             elif job_data['goal_type'] == 'runtime':
                 if job_epoch_dict[job_name] > job_data['goal_value']:
+                    end_time_overall = timer()
+                    job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
                     return msg
@@ -306,28 +328,50 @@ def train_job(gpu_id, job_data):
                 job_accuracy_dict[job_name] = cur_accuracy
 
                 if job_data['goal_type'] == 'accuracy':
-                    if (job_accuracy_dict[job_name] > job_data['goal_value'] or
-                            job_epoch_dict[job_name] >= job_data['goal_value_extra']):
+                    if job_accuracy_dict[job_name] > job_data['goal_value']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        job_attain_dict[job_name] = 1
+                        saver.save(sess, checkpoint_file)
+                        msg = 'job {} is finished'.format(job_data['id'])
+                        return msg
+
+                    if job_epoch_dict[job_name] > job_data['goal_value_extra']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
                         return msg
 
                 elif job_data['goal_type'] == 'deadline':
-                    if round(job_time_dict[job_name]) >= job_data['goal_value']:
+                    if job_time_dict[job_name] > job_data['goal_value']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
                         return msg
 
                 elif job_data['goal_type'] == 'convergence':
                     delta = cur_accuracy - pre_accuracy
-                    if (delta < job_data['goal_value'] or
-                            job_epoch_dict[job_name] >= job_data['goal_value_extra']):
+                    if delta < job_data['goal_value']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        job_attain_dict[job_name] = 1
+                        saver.save(sess, checkpoint_file)
+                        msg = 'job {} is finished'.format(job_data['id'])
+                        return msg
+
+                    if job_epoch_dict[job_name] > job_data['goal_value_extra']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
                         return msg
 
                 elif job_data['goal_type'] == 'runtime':
-                    if job_epoch_dict[job_name] >= job_data['goal_value']:
+                    if job_epoch_dict[job_name] > job_data['goal_value']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
                         return msg
@@ -378,6 +422,14 @@ if __name__ == "__main__":
         print(i)
 
     #######################################################
+    # get time info
+    #######################################################
+
+    now = datetime.datetime.now()
+
+    start_time_overall = timer()
+
+    #######################################################
     # init the accuracy estimator
     #######################################################
 
@@ -403,6 +455,8 @@ if __name__ == "__main__":
     job_epoch_dict = mp.Manager().dict()
     job_epochtime_dict = mp.Manager().dict()
     job_parameters_dict = mp.Manager().dict()
+    job_completion_time_dict = mp.Manager().dict()
+    job_attain_dict = mp.Manager().dict()
 
     deadline_max = 0
     deadline_min = float('inf')
@@ -419,6 +473,8 @@ if __name__ == "__main__":
         job_epoch_dict[job_key] = 0
         job_epochtime_dict[job_key] = 0
         job_parameters_dict[job_key] = 0
+        job_attain_dict[job_key] = 0
+        job_completion_time_dict[job_key] = 0
 
         if job['goal_type'] == 'deadline':
             if job['goal_value'] < deadline_min:
@@ -520,3 +576,9 @@ if __name__ == "__main__":
 
     for key in job_epoch_dict:
         print(key, '[epoch]->', job_epoch_dict[key])
+
+    for key in job_completion_time_dict:
+        print(key, '[completion time]->', job_completion_time_dict[key])
+
+    for key in job_attain_dict:
+        print(key, '[attainment]->', job_attain_dict[key])

@@ -3,6 +3,7 @@ import multiprocessing as mp
 from timeit import default_timer as timer
 import os
 import queue
+import datetime
 
 import config.config_rotary as cfg_rotary
 from workload.cv_generator import CVWorkloadGenerator
@@ -24,8 +25,6 @@ def train_job(gpu_id):
 
     job_name = str(job_data['id']) + '-' + job_data['model']
     print('get job {}'.format(job_name))
-
-    job_running_dict[job_name] = 1
 
     # get the device id
     assign_device = '/gpu:' + str(gpu_id)
@@ -118,28 +117,52 @@ def train_job(gpu_id):
                 job_accuracy_dict[job_name] = cur_accuracy
 
                 if job_data['goal_type'] == 'accuracy':
-                    if (job_accuracy_dict[job_name] > job_data['goal_value'] or
-                            job_epoch_dict[job_name] >= job_data['goal_value_extra']):
+                    if job_accuracy_dict[job_name] > job_data['goal_value']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        job_attain_dict[job_name] = 1
+                        saver.save(sess, checkpoint_file)
+                        msg = 'job {} is finished'.format(job_data['id'])
+                        return msg
+
+                    if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
                         return msg
 
                 elif job_data['goal_type'] == 'deadline':
                     if round(job_time_dict[job_name]) >= job_data['goal_value']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        job_attain_dict[job_name] = 1
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
                         return msg
 
                 elif job_data['goal_type'] == 'convergence':
                     delta = cur_accuracy - pre_accuracy
-                    if (delta < job_data['goal_value'] or
-                            job_epoch_dict[job_name] >= job_data['goal_value_extra']):
+                    if delta < job_data['goal_value']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        job_attain_dict[job_name] = 1
+                        saver.save(sess, checkpoint_file)
+                        msg = 'job {} is finished'.format(job_data['id'])
+                        return msg
+
+                    if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
                         return msg
 
                 elif job_data['goal_type'] == 'runtime':
                     if job_epoch_dict[job_name] >= job_data['goal_value']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        job_attain_dict[job_name] = 1
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
                         return msg
@@ -179,13 +202,17 @@ if __name__ == "__main__":
     for s in ml_workload:
         print(s)
 
+    now = datetime.datetime.now()
+
+    start_time_overall = timer()
+
     job_queue = mp.Manager().Queue()
 
     job_accuracy_dict = mp.Manager().dict()
     job_time_dict = mp.Manager().dict()
     job_epoch_dict = mp.Manager().dict()
-
-    job_running_dict = mp.Manager().dict()
+    job_completion_time_dict = mp.Manager().dict()
+    job_attain_dict = mp.Manager().dict()
 
     proc_pool = mp.Pool(num_gpu, maxtasksperchild=1)
 
@@ -195,6 +222,8 @@ if __name__ == "__main__":
         job_accuracy_dict[job_key] = 0
         job_time_dict[job_key] = 0
         job_epoch_dict[job_key] = 0
+        job_attain_dict[job_key] = 0
+        job_completion_time_dict[job_key] = 0
         job_queue.put(job)
 
     while not job_queue.empty():
@@ -212,6 +241,9 @@ if __name__ == "__main__":
                 if i.successful():
                     print(i.get())
 
+    print("Start date and time : ")
+    print(now.strftime("%Y-%m-%d %H:%M:%S"))
+
     for key in job_accuracy_dict:
         print(key, '[accuracy]->', job_accuracy_dict[key])
 
@@ -220,3 +252,9 @@ if __name__ == "__main__":
 
     for key in job_epoch_dict:
         print(key, '[epoch]->', job_epoch_dict[key])
+
+    for key in job_completion_time_dict:
+        print(key, '[completion time]->', job_completion_time_dict[key])
+
+    for key in job_attain_dict:
+        print(key, '[attainment]->', job_attain_dict[key])

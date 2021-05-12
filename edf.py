@@ -116,10 +116,11 @@ def train_job_deadline(gpu_id):
                 job_accuracy_dict[job_name] = cur_accuracy
 
                 if round(job_time_dict[job_name]) >= job_data['goal_value']:
+                    end_time_overall = timer()
+                    job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                    job_attain_dict[job_name] = 1
                     saver.save(sess, checkpoint_file)
-                    now = datetime.now()
-                    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-                    msg = 'job {} is finished at {}'.format(job_data['id'], dt_string)
+                    msg = 'job {} is finished'.format(job_data['id'])
                     return msg
 
                 saver.save(sess, checkpoint_file)
@@ -236,30 +237,45 @@ def train_job_others(gpu_id):
                 job_accuracy_dict[job_name] = cur_accuracy
 
                 if job_data['goal_type'] == 'accuracy':
-                    if (job_accuracy_dict[job_name] > job_data['goal_value'] or
-                            job_epoch_dict[job_name] >= job_data['goal_value_extra']):
+                    if job_accuracy_dict[job_name] > job_data['goal_value']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        job_attain_dict[job_name] = 1
                         saver.save(sess, checkpoint_file)
-                        now = datetime.now()
-                        dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-                        msg = 'job {} is finished at {}'.format(job_data['id'], dt_string)
+                        msg = 'job {} is finished'.format(job_data['id'])
+                        return msg
+
+                    if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        saver.save(sess, checkpoint_file)
+                        msg = 'job {} is finished'.format(job_data['id'])
                         return msg
 
                 elif job_data['goal_type'] == 'convergence':
                     delta = cur_accuracy - pre_accuracy
-                    if (delta < job_data['goal_value'] or
-                            job_epoch_dict[job_name] >= job_data['goal_value_extra']):
+                    if delta < job_data['goal_value']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        job_attain_dict[job_name] = 1
                         saver.save(sess, checkpoint_file)
-                        now = datetime.now()
-                        dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-                        msg = 'job {} is finished at {}'.format(job_data['id'], dt_string)
+                        msg = 'job {} is finished'.format(job_data['id'])
+                        return msg
+
+                    if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        saver.save(sess, checkpoint_file)
+                        msg = 'job {} is finished'.format(job_data['id'])
                         return msg
 
                 elif job_data['goal_type'] == 'runtime':
                     if job_epoch_dict[job_name] >= job_data['goal_value']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        job_attain_dict[job_name] = 1
                         saver.save(sess, checkpoint_file)
-                        now = datetime.now()
-                        dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-                        msg = 'job {} is finished at {}'.format(job_data['id'], dt_string)
+                        msg = 'job {} is finished'.format(job_data['id'])
                         return msg
                 else:
                     raise ValueError('the job objective type is not supported')
@@ -294,16 +310,24 @@ if __name__ == "__main__":
 
     ml_workload = wg.generate_workload()
 
+    for s in ml_workload:
+        print(s)
+
+    now = datetime.now()
+
+    start_time_overall = timer()
+
     ml_workload_deadline = mp.Manager().list()
     ml_workload_others = mp.Manager().list()
 
     job_queue = mp.Manager().Queue()
-
     job_queue_others = mp.Manager().Queue()
 
     job_accuracy_dict = mp.Manager().dict()
     job_time_dict = mp.Manager().dict()
     job_epoch_dict = mp.Manager().dict()
+    job_completion_time_dict = mp.Manager().dict()
+    job_attain_dict = mp.Manager().dict()
 
     proc_pool = mp.Pool(num_gpu, maxtasksperchild=1)
 
@@ -351,6 +375,9 @@ if __name__ == "__main__":
                 if i.successful():
                     print(i.get())
 
+    print("Start date and time : ")
+    print(now.strftime("%Y-%m-%d %H:%M:%S"))
+
     for key in job_accuracy_dict:
         print(key, '[accuracy]->', job_accuracy_dict[key])
 
@@ -359,3 +386,9 @@ if __name__ == "__main__":
 
     for key in job_epoch_dict:
         print(key, '[epoch]->', job_epoch_dict[key])
+
+    for key in job_completion_time_dict:
+        print(key, '[completion time]->', job_completion_time_dict[key])
+
+    for key in job_attain_dict:
+        print(key, '[attainment]->', job_attain_dict[key])
