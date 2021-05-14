@@ -21,6 +21,9 @@ class AccuracyEstimator:
             for item in json.load(json_file):
                 self.acc_model_list.append(item)
 
+    def get_accuracy_dataset(self):
+        return self.acc_model_list
+
     def import_workload(self, ml_workload):
         for m in ml_workload:
             m_key = str(m['id']) + '-' + m['model']
