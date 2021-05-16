@@ -24,7 +24,10 @@ class AccuracyEstimator:
     def get_accuracy_dataset(self):
         return self.acc_model_list
 
-    def import_workload(self, ml_workload):
+    def get_predict_dict(self):
+        return self.job_predict_dict
+
+    def prepare_workload(self, ml_workload):
         for m in ml_workload:
             m_key = str(m['id']) + '-' + m['model']
             job_predict_info = dict()
@@ -74,7 +77,7 @@ class AccuracyEstimator:
 
         acc_estimation = np.polyval(coefs, input_model_epoch)
 
-        return acc_estimation
+        return acc_estimation, coefs
 
     def add_actual_accuracy(self, job_key, accuracy, epoch):
         job_predict_info = self.job_predict_dict[job_key]
