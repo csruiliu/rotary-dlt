@@ -205,7 +205,7 @@ def train_job(gpu_id, job_data):
 
         running_epoch = running_slot / job_epochtime_dict[job_ins_key]
 
-        next_accuracy_predict = acc_estimator.predict_accuracy(job_ins, running_epoch)
+        next_accuracy_predict, _ = acc_estimator.predict_accuracy(job_ins, running_epoch)
 
         delta_accuracy = next_accuracy_predict - prev_accuracy if next_accuracy_predict > prev_accuracy else 0
 
@@ -440,7 +440,7 @@ if __name__ == "__main__":
         model_acc_file = os.getcwd() + '/knowledgebase/' + f
         acc_estimator.import_accuracy_dataset(model_acc_file)
 
-    acc_estimator.import_workload(ml_workload)
+    acc_estimator.prepare_workload(ml_workload)
 
     #######################################################
     # data structures for tracking progress of all jobs
@@ -534,7 +534,7 @@ if __name__ == "__main__":
 
                 running_epoch = running_slot / job_epochtime_dict[job_ins_key]
 
-                next_accuracy_predict = acc_estimator.predict_accuracy(job_ins, running_epoch)
+                next_accuracy_predict, _ = acc_estimator.predict_accuracy(job_ins, running_epoch)
 
                 delta_accuracy = next_accuracy_predict - prev_accuracy if next_accuracy_predict > prev_accuracy else 0
 
