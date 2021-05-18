@@ -4,12 +4,15 @@ import operator
 
 
 class AccuracyEstimator:
-    def __init__(self, topk=5):
+    def __init__(self, topk=5, poly_deg=4):
         # the list for all models' accuracy in the knowledgebase
         self.acc_model_list = list()
 
         # top k for selecting neighbours
         self.top_k = topk
+
+        # the polynomial degree of the accuracy-epoch curve
+        self.deg = poly_deg
 
         # the dict for all jobs data
         # key: str(input_model_dict['id']) + '-' + input_model_dict['model']
@@ -73,7 +76,7 @@ class AccuracyEstimator:
             else:
                 curve_weight_list.append(base_weight)
 
-        coefs = np.polyfit(x=np.asarray(epoch_list), y=np.asarray(accuracy_list), deg=2, w=curve_weight_list)
+        coefs = np.polyfit(x=np.asarray(epoch_list), y=np.asarray(accuracy_list), deg=self.deg, w=curve_weight_list)
 
         acc_estimation = np.polyval(coefs, input_model_epoch)
 
