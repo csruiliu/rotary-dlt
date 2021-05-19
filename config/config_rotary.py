@@ -15,6 +15,9 @@ cv_heavy_ratio = workload_cfg['cv_heavy_ratio']
 nlp_light_ratio = workload_cfg['nlp_light_ratio']
 nlp_med_ratio = workload_cfg['nlp_med_ratio']
 nlp_heavy_ratio = workload_cfg['nlp_heavy_ratio']
+short_ddl_ratio = workload_cfg['short_ddl_ratio']
+med_ddl_ratio = workload_cfg['med_ddl_ratio']
+long_ddl_ratio = workload_cfg['long_ddl_ratio']
 
 objective_cfg = cfg['objective']
 
