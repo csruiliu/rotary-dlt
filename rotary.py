@@ -126,6 +126,11 @@ def train_job_trial(gpu_id):
                     job_attain_dict[job_name] = 1
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
+
+                    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+                    job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
+                    job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
+
                     return msg
 
                 if job_epoch_dict[job_name] > job_data['goal_value_extra']:
@@ -133,6 +138,11 @@ def train_job_trial(gpu_id):
                     job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
+
+                    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+                    job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
+                    job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
+
                     return msg
 
             elif job_data['goal_type'] == 'deadline':
@@ -141,6 +151,11 @@ def train_job_trial(gpu_id):
                     job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
+
+                    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+                    job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
+                    job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
+
                     return msg
 
             elif job_data['goal_type'] == 'convergence':
@@ -151,6 +166,11 @@ def train_job_trial(gpu_id):
                     job_attain_dict[job_name] = 1
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
+
+                    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+                    job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
+                    job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
+
                     return msg
 
                 if job_epoch_dict[job_name] > job_data['goal_value_extra']:
@@ -158,6 +178,11 @@ def train_job_trial(gpu_id):
                     job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
+
+                    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+                    job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
+                    job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
+
                     return msg
 
             elif job_data['goal_type'] == 'runtime':
@@ -166,6 +191,11 @@ def train_job_trial(gpu_id):
                     job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
+
+                    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+                    job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
+                    job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
+
                     return msg
             else:
                 raise ValueError('the job objective type is not supported')
@@ -173,6 +203,11 @@ def train_job_trial(gpu_id):
             saver.save(sess, checkpoint_file)
 
     msg = 'job {} is finished the current running slot'.format(job_data['id'])
+
+    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+    job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
+    job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
+
     return msg
 
 
@@ -334,6 +369,11 @@ def train_job(gpu_id, job_data):
                         job_attain_dict[job_name] = 1
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
+
+                        now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+                        job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
+                        job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
+
                         return msg
 
                     if job_epoch_dict[job_name] > job_data['goal_value_extra']:
@@ -341,6 +381,11 @@ def train_job(gpu_id, job_data):
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
+
+                        now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+                        job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
+                        job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
+
                         return msg
 
                 elif job_data['goal_type'] == 'deadline':
@@ -349,6 +394,11 @@ def train_job(gpu_id, job_data):
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
+
+                        now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+                        job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
+                        job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
+
                         return msg
 
                 elif job_data['goal_type'] == 'convergence':
@@ -359,6 +409,11 @@ def train_job(gpu_id, job_data):
                         job_attain_dict[job_name] = 1
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
+
+                        now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+                        job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
+                        job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
+
                         return msg
 
                     if job_epoch_dict[job_name] > job_data['goal_value_extra']:
@@ -366,6 +421,11 @@ def train_job(gpu_id, job_data):
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
+
+                        now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+                        job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
+                        job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
+
                         return msg
 
                 elif job_data['goal_type'] == 'runtime':
@@ -374,6 +434,11 @@ def train_job(gpu_id, job_data):
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
+
+                        now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+                        job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
+                        job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
+
                         return msg
                 else:
                     raise ValueError('the job objective type is not supported')
@@ -383,6 +448,10 @@ def train_job(gpu_id, job_data):
     # exceed the running slot and haven't achieve goal so put the job back to the queue
     job_list_rotary.append(job_data)
     job_queue_anony.put(job_anony)
+
+    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+    job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
+    job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
 
     msg = 'job {} is finished the current running slot'.format(job_data['id'])
     return msg
@@ -414,6 +483,9 @@ if __name__ == "__main__":
                              cfg_rotary.accuracy_ratio,
                              cfg_rotary.runtime_ratio,
                              cfg_rotary.deadline_ratio,
+                             cfg_rotary.short_ddl_ratio,
+                             cfg_rotary.med_ddl_ratio,
+                             cfg_rotary.long_ddl_ratio,
                              cfg_rotary.random_seed)
 
     ml_workload = wg.generate_workload()
@@ -458,6 +530,10 @@ if __name__ == "__main__":
     job_completion_time_dict = mp.Manager().dict()
     job_attain_dict = mp.Manager().dict()
 
+    job_runtime_history = mp.Manager().dict()
+    job_accuracy_history = mp.Manager().dict()
+    job_convergence_history = mp.Manager().dict()
+
     deadline_max = 0
     deadline_min = float('inf')
 
@@ -476,6 +552,11 @@ if __name__ == "__main__":
         job_attain_dict[job_key] = 0
         job_completion_time_dict[job_key] = 0
 
+        job_runtime_history[job_key] = mp.Manager().list()
+        job_accuracy_history[job_key] = mp.Manager().list()
+        job_convergence_history[job_key] = mp.Manager().list()
+
+        # get the min and max deadline of the workload
         if job['goal_type'] == 'deadline':
             if job['goal_value'] < deadline_min:
                 deadline_min = job['goal_value']
@@ -513,6 +594,9 @@ if __name__ == "__main__":
 
     for key in job_epochtime_dict:
         print(key, '[epoch_time]->', job_epochtime_dict[key])
+
+    for key in job_attain_dict:
+        print(key, '[attainment]->', job_attain_dict[key])
 
     #######################################################
     # start the rotary process
@@ -582,3 +666,14 @@ if __name__ == "__main__":
 
     for key in job_attain_dict:
         print(key, '[attainment]->', job_attain_dict[key])
+
+    print("show the history")
+
+    for key in job_accuracy_history:
+        print(key, '[acc_history]->', job_accuracy_history[key])
+
+    for key in job_runtime_history:
+        print(key, '[runtime_history]->', job_runtime_history[key])
+
+    for key in job_convergence_history:
+        print(key, '[convergence_history]->', job_convergence_history[key])

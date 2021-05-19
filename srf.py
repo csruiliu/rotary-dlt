@@ -16,15 +16,14 @@ def compared_item(item):
     return item['goal_value']
 
 
-def train_job_deadline(gpu_id):
+def train_job_runtime(gpu_id):
     start_time_proc = timer()
     run_time_proc = 0
     run_epoch = 0
 
-    ml_workload_deadline.sort(key=compared_item, reverse=True)
-    print(ml_workload_deadline)
+    ml_workload_runtime.sort(key=compared_item, reverse=True)
 
-    job_data = ml_workload_deadline.pop()
+    job_data = ml_workload_runtime.pop()
     job_name = str(job_data['id']) + '-' + job_data['model']
     print('get job {}'.format(job_name))
 
@@ -116,11 +115,6 @@ def train_job_deadline(gpu_id):
                 job_epoch_dict[job_name] += run_epoch
                 job_accuracy_dict[job_name] = cur_accuracy
 
-                now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
-
-                job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
-                job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
-
                 if round(job_time_dict[job_name]) >= job_data['goal_value']:
                     end_time_overall = timer()
                     job_completion_time_dict[job_name] = end_time_overall - start_time_overall
@@ -137,7 +131,7 @@ def train_job_deadline(gpu_id):
                 saver.save(sess, checkpoint_file)
 
     # exceed the running slot and haven't achieve goal so put the job back to the queue
-    ml_workload_deadline.append(job_data)
+    ml_workload_runtime.append(job_data)
 
     now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
     job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
@@ -279,8 +273,6 @@ def train_job_others(gpu_id):
 
                 elif job_data['goal_type'] == 'convergence':
                     delta = cur_accuracy - pre_accuracy
-                    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
-                    job_convergence_history[job_name].append(str(delta) + ':' + now_time_date)
                     if delta < job_data['goal_value']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
@@ -366,7 +358,7 @@ if __name__ == "__main__":
 
     start_time_overall = timer()
 
-    ml_workload_deadline = mp.Manager().list()
+    ml_workload_runtime = mp.Manager().list()
     ml_workload_others = mp.Manager().list()
 
     job_queue = mp.Manager().Queue()
@@ -386,8 +378,8 @@ if __name__ == "__main__":
 
     # init some dicts to track the progress
     for job in ml_workload:
-        if job['goal_type'] == 'deadline':
-            ml_workload_deadline.append(job)
+        if job['goal_type'] == 'runtime':
+            ml_workload_runtime.append(job)
         else:
             ml_workload_others.append(job)
             job_queue_others.put(job)
@@ -396,18 +388,17 @@ if __name__ == "__main__":
         job_accuracy_dict[job_key] = 0
         job_time_dict[job_key] = 0
         job_epoch_dict[job_key] = 0
-        job_completion_time_dict[job_key] = 0
 
         job_runtime_history[job_key] = mp.Manager().list()
         job_accuracy_history[job_key] = mp.Manager().list()
         job_convergence_history[job_key] = mp.Manager().list()
 
-    while len(ml_workload_deadline) != 0:
+    while len(ml_workload_runtime) != 0:
         results_deadline = list()
-        deadline_num = len(ml_workload_deadline)
+        deadline_num = len(ml_workload_runtime)
         for idx in range(deadline_num):
             gpuid = idx % num_gpu
-            result = proc_pool.apply_async(train_job_deadline, args=(gpuid,))
+            result = proc_pool.apply_async(train_job_runtime, args=(gpuid,))
             results_deadline.append(result)
 
         for i in results_deadline:
