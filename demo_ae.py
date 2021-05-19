@@ -224,24 +224,24 @@ if __name__ == "__main__":
     axs[1, 0].plot(np.arange(1, 16),
                    real_accuracy,
                    color="green",
-                linewidth=5,
-                linestyle='-',
-                label='Ground-truth Acc')
+                   linewidth=5,
+                   linestyle='-',
+                   label='Ground-truth Acc')
 
     axs[1, 0].plot(np.arange(1, 16),
-                np.polyval(coefs, np.arange(1, 16)),
-                color="red",
-                linewidth=5,
-                linestyle='--',
-                label='Estimate Acc')
+                   np.polyval(coefs, np.arange(1, 16)),
+                   color="red",
+                   linewidth=5,
+                   linestyle='--',
+                   label='Estimate Acc')
 
     axs[1, 0].plot(epoch_data,
-                accuracy_data,
-                color='cornflowerblue',
-                marker='o',
-                markersize=10,
-                linestyle='None',
-                label='Archived Job Acc')
+                   accuracy_data,
+                   color='cornflowerblue',
+                   marker='o',
+                   markersize=10,
+                   linestyle='None',
+                   label='Archived Job Acc')
 
     # real data
     axs[1, 0].plot([1], [0.4936999988555908],

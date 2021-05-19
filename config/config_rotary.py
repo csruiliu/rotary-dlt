@@ -9,15 +9,22 @@ with open(current_folder+'/config_rotary.yml', 'r') as ymlfile:
 workload_cfg = cfg['workload']
 
 workload_size = workload_cfg['workload_size']
+
 cv_light_ratio = workload_cfg['cv_light_ratio']
 cv_med_ratio = workload_cfg['cv_med_ratio']
 cv_heavy_ratio = workload_cfg['cv_heavy_ratio']
+
 nlp_light_ratio = workload_cfg['nlp_light_ratio']
 nlp_med_ratio = workload_cfg['nlp_med_ratio']
 nlp_heavy_ratio = workload_cfg['nlp_heavy_ratio']
-short_ddl_ratio = workload_cfg['short_ddl_ratio']
-med_ddl_ratio = workload_cfg['med_ddl_ratio']
-long_ddl_ratio = workload_cfg['long_ddl_ratio']
+
+ddl_cfg = cfg['deadline']
+
+half_ddl_ratio = ddl_cfg['half_ddl_ratio']
+one_ddl_ratio = ddl_cfg['one_ddl_ratio']
+three_ddl_ratio = ddl_cfg['three_ddl_ratio']
+ten_ddl_ratio = ddl_cfg['ten_ddl_ratio']
+day_ddl_ratio = ddl_cfg['day_ddl_ratio']
 
 objective_cfg = cfg['objective']
 

@@ -483,9 +483,11 @@ if __name__ == "__main__":
                              cfg_rotary.accuracy_ratio,
                              cfg_rotary.runtime_ratio,
                              cfg_rotary.deadline_ratio,
-                             cfg_rotary.short_ddl_ratio,
-                             cfg_rotary.med_ddl_ratio,
-                             cfg_rotary.long_ddl_ratio,
+                             cfg_rotary.half_ddl_ratio,
+                             cfg_rotary.one_ddl_ratio,
+                             cfg_rotary.three_ddl_ratio,
+                             cfg_rotary.ten_ddl_ratio,
+                             cfg_rotary.day_ddl_ratio,
                              cfg_rotary.random_seed)
 
     ml_workload = wg.generate_workload()

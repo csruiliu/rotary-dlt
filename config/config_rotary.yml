@@ -1,14 +1,18 @@
 workload:
-  workload_size: 30
+  workload_size: 40
   cv_light_ratio: 0.3
   cv_med_ratio: 0.3
   cv_heavy_ratio: 0.4
   nlp_light_ratio: 0.3
   nlp_med_ratio: 0.3
   nlp_heavy_ratio: 0.4
-  short_ddl_ratio: 0.3
-  med_ddl_ratio: 0.5
-  long_ddl_ratio: 0.2
+
+deadline:
+  half_ddl_ratio: 0.1
+  one_ddl_ratio: 0.2
+  three_ddl_ratio: 0.3
+  ten_ddl_ratio: 0.3
+  day_ddl_ratio: 0.1
 
 objective:
   convergence_ratio: 0.4
