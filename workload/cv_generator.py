@@ -59,6 +59,8 @@ class CVWorkloadGenerator:
 
     @staticmethod
     def _random_selection(item_list, item_num):
+        if item_num == 0:
+            return []
         random_index = np.random.choice(np.arange(len(item_list)), size=item_num)
         res_list = list((itemgetter(*random_index)(item_list)))
         return res_list
