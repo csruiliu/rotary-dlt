@@ -88,25 +88,25 @@ if __name__ == "__main__":
     axs[0, 0].spines["bottom"].set_linewidth(5)
 
     axs[0, 0].plot(epoch_data,
-                accuracy_data,
-                color='cornflowerblue',
-                marker='o',
-                markersize=10,
-                linestyle='None')
+                   accuracy_data,
+                   color='cornflowerblue',
+                   marker='o',
+                   markersize=10,
+                   linestyle='None')
 
     axs[0, 0].plot(np.arange(1, 16),
-                real_accuracy,
-                color="green",
-                linestyle='-',
-                linewidth=5,
-                label='real')
+                   real_accuracy,
+                   color="green",
+                   linestyle='-',
+                   linewidth=5,
+                   label='real')
 
     axs[0, 0].plot(np.arange(1, 16),
-                np.polyval(coefs, np.arange(1, 16)),
-                color="red",
-                linestyle='--',
-                linewidth=5,
-                label='estimate')
+                   np.polyval(coefs, np.arange(1, 16)),
+                   color="red",
+                   linestyle='--',
+                   linewidth=5,
+                   label='estimate')
 
     axs[0, 0].set_xlabel('Epochs\n(a)', fontsize=44, labelpad=12)
     axs[0, 0].set_ylabel('Accuracy', fontsize=44)
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     axs[0, 0].tick_params(axis='x', direction='in', bottom=False, labelsize=38, pad=8)
 
     ###########################################
-    # add two actual point
+    # add 2 actual points
     ###########################################
 
     ae.prepare_workload(test_workload)
@@ -145,25 +145,25 @@ if __name__ == "__main__":
     axs[0, 1].spines["bottom"].set_linewidth(5)
 
     axs[0, 1].plot(epoch_data,
-                accuracy_data,
-                color='cornflowerblue',
-                marker='o',
-                markersize=10,
-                linestyle='None')
+                   accuracy_data,
+                   color='cornflowerblue',
+                   marker='o',
+                   markersize=10,
+                   linestyle='None')
 
     axs[0, 1].plot(np.arange(1, 16),
-                real_accuracy,
-                color="green",
-                linestyle='-',
-                linewidth=5,
-                label='real')
+                   real_accuracy,
+                   color="green",
+                   linestyle='-',
+                   linewidth=5,
+                   label='real')
 
     axs[0, 1].plot(np.arange(1, 16),
-                np.polyval(coefs, np.arange(1, 16)),
-                color="red",
-                linestyle='--',
-                linewidth=5,
-                label='estimate')
+                   np.polyval(coefs, np.arange(1, 16)),
+                   color="red",
+                   linestyle='--',
+                   linewidth=5,
+                   label='estimate')
 
     # read data
     axs[0, 1].plot([1], [0.4936999988555908],
@@ -192,7 +192,7 @@ if __name__ == "__main__":
     axs[0, 1].grid(True, linewidth=2, linestyle='--')
 
     ###########################################
-    # add four actual point
+    # add 4 actual points
     ###########################################
 
     ae.prepare_workload(test_workload)
@@ -222,8 +222,8 @@ if __name__ == "__main__":
     axs[1, 0].spines["bottom"].set_linewidth(5)
 
     axs[1, 0].plot(np.arange(1, 16),
-                real_accuracy,
-                color="green",
+                   real_accuracy,
+                   color="green",
                 linewidth=5,
                 linestyle='-',
                 label='Ground-truth Acc')
@@ -285,7 +285,7 @@ if __name__ == "__main__":
 
 
     ###########################################
-    # add three actual point
+    # add 6 actual points
     ###########################################
 
     ae.prepare_workload(test_workload)
@@ -319,26 +319,26 @@ if __name__ == "__main__":
     axs[1, 1].spines["bottom"].set_linewidth(5)
 
     axs[1, 1].plot(np.arange(1, 16),
-                real_accuracy,
-                color="green",
-                linewidth=5,
-                linestyle='-',
-                label='Ground-truth Acc')
+                   real_accuracy,
+                   color="green",
+                   linewidth=5,
+                   linestyle='-',
+                   label='Ground-truth Acc')
 
     axs[1, 1].plot(np.arange(1, 16),
-                np.polyval(coefs, np.arange(1, 16)),
-                color="red",
-                linewidth=5,
-                linestyle='--',
-                label='Estimate Acc')
+                   np.polyval(coefs, np.arange(1, 16)),
+                   color="red",
+                   linewidth=5,
+                   linestyle='--',
+                   label='Estimate Acc')
 
     axs[1, 1].plot(epoch_data,
-                accuracy_data,
-                color='cornflowerblue',
-                marker='o',
-                markersize=10,
-                linestyle='None',
-                label='Archived Job Acc')
+                   accuracy_data,
+                   color='cornflowerblue',
+                   marker='o',
+                   markersize=10,
+                   linestyle='None',
+                   label='Archived Job Acc')
 
     # real data
     axs[1, 1].plot([1], [0.4936999988555908],
@@ -394,240 +394,3 @@ if __name__ == "__main__":
     plt.legend(loc='upper center', bbox_to_anchor=(-0.16, 2.7), ncol=4, fontsize=38)
 
     plt.savefig(outpath, format='pdf', bbox_inches='tight', pad_inches=0.05)
-
-    '''
-    ###########################################
-    # draw 3 subfigures
-    ###########################################
-    
-    fig, axs = plt.subplots(1, 3, figsize=(20, 5))
-
-    ###########################################
-    # original figure
-    ###########################################
-    
-    ae.prepare_workload(test_workload)
-
-    acc_estimate, coefs = ae.predict_accuracy(test_job, 1)
-
-    predict_dict = ae.get_predict_dict()[job_key]
-    accuracy_data = predict_dict['accuracy']
-    epoch_data = [x + 1 for x in predict_dict['epoch']]
-
-    for i in range(0, 10):
-        epoch_data.pop(10)
-    for i in range(0, 10):
-        epoch_data.pop(20)
-    for i in range(0, 10):
-        epoch_data.pop(30)
-
-    for i in range(0, 10):
-        accuracy_data.pop(10)
-    for i in range(0, 10):
-        accuracy_data.pop(20)
-    for i in range(0, 10):
-        accuracy_data.pop(30)
-
-    # plt.figure(figsize=(6, 4))
-
-    axs[0].spines["top"].set_linewidth(4)
-    axs[0].spines["left"].set_linewidth(4)
-    axs[0].spines["right"].set_linewidth(4)
-    axs[0].spines["bottom"].set_linewidth(4)
-
-    axs[0].plot(epoch_data,
-                accuracy_data,
-                color='cornflowerblue',
-                marker='o',
-                markersize=10,
-                linestyle='None')
-
-    axs[0].plot(np.arange(1, 11),
-                real_accuracy,
-                color="green",
-                linestyle='-',
-                linewidth=4,
-                label='real')
-
-    axs[0].plot(np.arange(1, 11),
-                np.polyval(coefs, np.arange(1, 11)),
-                color="red",
-                linestyle='--',
-                linewidth=4,
-                label='estimate')
-
-    axs[0].tick_params(axis='y', direction='in', labelsize=26)
-    axs[0].tick_params(axis='x', direction='in', bottom=False, labelsize=30)
-
-    axs[0].set_xlabel('Epochs\n(a)', fontsize=32)
-    axs[0].set_ylabel('Accuracy', fontsize=30)
-    axs[0].set_yticks(np.arange(0, 1.01, 0.2))
-    axs[0].set_yticklabels(['0%', '20%', '40%', '60%', '80%', '100%'])
-    axs[0].set_xticks(np.arange(1, 10.1, 1))
-
-    axs[0].grid(True, linewidth=2, linestyle='--')
-
-    ###########################################
-    # add one actual point
-    ###########################################
-
-    ae.prepare_workload(test_workload)
-
-    ae.add_actual_accuracy(job_key, 0.613600004017353, 2)
-
-    acc_estimate, coefs = ae.predict_accuracy(test_job, 1)
-
-    predict_dict = ae.get_predict_dict()[job_key]
-    accuracy_data = predict_dict['accuracy']
-    epoch_data = [x + 1 for x in predict_dict['epoch']]
-
-    for i in range(0, 10):
-        epoch_data.pop(10)
-    for i in range(0, 10):
-        epoch_data.pop(20)
-    for i in range(0, 10):
-        epoch_data.pop(30)
-
-    for i in range(0, 10):
-        accuracy_data.pop(10)
-    for i in range(0, 10):
-        accuracy_data.pop(20)
-    for i in range(0, 10):
-        accuracy_data.pop(30)
-
-    # plt.figure(figsize=(6, 4))
-
-    axs[1].spines["top"].set_linewidth(4)
-    axs[1].spines["left"].set_linewidth(4)
-    axs[1].spines["right"].set_linewidth(4)
-    axs[1].spines["bottom"].set_linewidth(4)
-
-    axs[1].plot(epoch_data,
-                accuracy_data,
-                color='cornflowerblue',
-                marker='o',
-                markersize=10,
-                linestyle='None')
-
-    axs[1].plot(np.arange(1, 11),
-                real_accuracy,
-                color="green",
-                linestyle='-',
-                linewidth=4,
-                label='real')
-
-    axs[1].plot(np.arange(1, 11),
-                np.polyval(coefs, np.arange(1, 11)),
-                color="red",
-                linestyle='--',
-                linewidth=4,
-                label='estimate')
-
-    # read data
-    axs[1].plot([3], [0.613600004017353],
-                color="blueviolet",
-                marker='D',
-                markersize=14,
-                linestyle=None,
-                label='real_one')
-
-    axs[1].set_xlabel('Epochs\n(b)', fontsize=32)
-    axs[1].set_ylabel('Accuracy', fontsize=30)
-    axs[1].set_yticks(np.arange(0, 1.01, 0.2))
-    axs[1].set_yticklabels(['0%', '20%', '40%', '60%', '80%', '100%'])
-    axs[1].set_xticks(np.arange(1, 10.1, 1))
-
-    axs[1].tick_params(axis='y', direction='in', labelsize=26)
-    axs[1].tick_params(axis='x', direction='in', bottom=False, labelsize=30)
-
-    axs[1].grid(True, linewidth=2, linestyle='--')
-
-    ###########################################
-    # add two actual point
-    ###########################################
-
-    ae.prepare_workload(test_workload)
-
-    ae.add_actual_accuracy(job_key, 0.613600004017353, 2)
-    ae.add_actual_accuracy(job_key, 0.700500001758337, 7)
-
-    acc_estimate, coefs = ae.predict_accuracy(test_job, 1)
-
-    predict_dict = ae.get_predict_dict()[job_key]
-    accuracy_data = predict_dict['accuracy']
-    epoch_data = [x + 1 for x in predict_dict['epoch']]
-
-    for i in range(0, 10):
-        epoch_data.pop(10)
-    for i in range(0, 10):
-        epoch_data.pop(20)
-    for i in range(0, 10):
-        epoch_data.pop(30)
-
-    for i in range(0, 10):
-        accuracy_data.pop(10)
-    for i in range(0, 10):
-        accuracy_data.pop(20)
-    for i in range(0, 10):
-        accuracy_data.pop(30)
-
-    axs[2].spines["top"].set_linewidth(4)
-    axs[2].spines["left"].set_linewidth(4)
-    axs[2].spines["right"].set_linewidth(4)
-    axs[2].spines["bottom"].set_linewidth(4)
-
-    axs[2].plot(np.arange(1, 11),
-                real_accuracy,
-                color="green",
-                linewidth=4,
-                linestyle='-',
-                label='Ground-truth Acc')
-
-    axs[2].plot(np.arange(1, 11),
-                np.polyval(coefs, np.arange(1, 11)),
-                color="red",
-                linewidth=4,
-                linestyle='--',
-                label='Estimate Acc')
-
-    axs[2].plot(epoch_data,
-                accuracy_data,
-                color='cornflowerblue',
-                marker='o',
-                markersize=10,
-                linestyle='None',
-                label='Archived Job Acc')
-
-    # real data
-    axs[2].plot([3], [0.613600004017353],
-                color="blueviolet",
-                marker='D',
-                markersize=14,
-                linestyle='None',
-                label='Active Job Acc')
-
-    axs[2].plot([8], [0.700500001758337],
-                color="blueviolet",
-                marker='D',
-                markersize=14,
-                linestyle='None')
-
-
-    axs[2].set_xlabel('Epochs\n(c)', fontsize=32)
-    axs[2].set_ylabel('Accuracy', fontsize=30)
-    axs[2].set_yticks(np.arange(0, 1.01, 0.2))
-    axs[2].set_yticklabels(['0%', '20%', '40%', '60%', '80%', '100%'])
-    axs[2].set_xticks(np.arange(1, 10.1, 1))
-
-    axs[2].tick_params(axis='y', direction='in', labelsize=26)
-    axs[2].tick_params(axis='x', direction='in', bottom=False, labelsize=30)
-
-    axs[2].grid(True, linewidth=2, linestyle='--')
-
-    plt.tight_layout()
-
-    plt.legend(loc='upper center', bbox_to_anchor=(-0.95, 1.32), ncol=4, fontsize=24)
-
-    plt.savefig(outpath, format='pdf', bbox_inches='tight', pad_inches=0.05)
-    
-    '''
