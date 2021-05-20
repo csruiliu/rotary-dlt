@@ -122,6 +122,7 @@ def train_job_runtime(gpu_id):
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
 
+                    now = datetime.now()
                     now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                     job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                     job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -130,9 +131,15 @@ def train_job_runtime(gpu_id):
 
                 saver.save(sess, checkpoint_file)
 
+                now = datetime.now()
+                now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+                job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
+                job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
+
     # exceed the running slot and haven't achieve goal so put the job back to the queue
     ml_workload_runtime.append(job_data)
 
+    now = datetime.now()
     now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
     job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
     job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -253,6 +260,7 @@ def train_job_others(gpu_id):
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
 
+                        now = datetime.now()
                         now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                         job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                         job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -265,6 +273,7 @@ def train_job_others(gpu_id):
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
 
+                        now = datetime.now()
                         now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                         job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                         job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -280,6 +289,7 @@ def train_job_others(gpu_id):
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
 
+                        now = datetime.now()
                         now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                         job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                         job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -292,6 +302,7 @@ def train_job_others(gpu_id):
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
 
+                        now = datetime.now()
                         now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                         job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                         job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -306,6 +317,7 @@ def train_job_others(gpu_id):
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
 
+                        now = datetime.now()
                         now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                         job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                         job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -316,9 +328,15 @@ def train_job_others(gpu_id):
 
                 saver.save(sess, checkpoint_file)
 
+                now = datetime.now()
+                now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+                job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
+                job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
+
     # exceed the running slot and haven't achieve goal so put the job back to the queue
     job_queue_others.put(job_data)
 
+    now = datetime.now()
     now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
     job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
     job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -328,6 +346,10 @@ def train_job_others(gpu_id):
 
 
 if __name__ == "__main__":
+    now = datetime.now()
+    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+    print('============= the whole exp starts at: {}===================='.format(now_time_date))
+
     if not os.path.exists(cfg_path.ckpt_save_path):
         os.makedirs(cfg_path.ckpt_save_path)
 
@@ -344,17 +366,17 @@ if __name__ == "__main__":
                              cfg_rotary.accuracy_ratio,
                              cfg_rotary.runtime_ratio,
                              cfg_rotary.deadline_ratio,
-                             cfg_rotary.short_ddl_ratio,
-                             cfg_rotary.med_ddl_ratio,
-                             cfg_rotary.long_ddl_ratio,
+                             cfg_rotary.half_ddl_ratio,
+                             cfg_rotary.one_ddl_ratio,
+                             cfg_rotary.three_ddl_ratio,
+                             cfg_rotary.ten_ddl_ratio,
+                             cfg_rotary.day_ddl_ratio,
                              cfg_rotary.random_seed)
 
     ml_workload = wg.generate_workload()
 
     for s in ml_workload:
         print(s)
-
-    now = datetime.now()
 
     start_time_overall = timer()
 
@@ -370,9 +392,8 @@ if __name__ == "__main__":
     job_completion_time_dict = mp.Manager().dict()
     job_attain_dict = mp.Manager().dict()
 
-    job_runtime_history = mp.Manager().dict()
-    job_accuracy_history = mp.Manager().dict()
-    job_convergence_history = mp.Manager().dict()
+    job_runtime_history = dict()
+    job_accuracy_history = dict()
 
     proc_pool = mp.Pool(num_gpu, maxtasksperchild=1)
 
@@ -391,7 +412,6 @@ if __name__ == "__main__":
 
         job_runtime_history[job_key] = mp.Manager().list()
         job_accuracy_history[job_key] = mp.Manager().list()
-        job_convergence_history[job_key] = mp.Manager().list()
 
     while len(ml_workload_runtime) != 0:
         results_deadline = list()
@@ -424,6 +444,7 @@ if __name__ == "__main__":
                 if i.successful():
                     print(i.get())
 
+    now = datetime.now()
     print("Start date and time : ")
     print(now.strftime("%Y-%m-%d %H:%M:%S"))
 
@@ -450,5 +471,6 @@ if __name__ == "__main__":
     for key in job_runtime_history:
         print(key, '[runtime_history]->', job_runtime_history[key])
 
-    for key in job_convergence_history:
-        print(key, '[convergence_history]->', job_convergence_history[key])
+    now = datetime.now()
+    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+    print('============= the whole exp finish at: {}===================='.format(now_time_date))

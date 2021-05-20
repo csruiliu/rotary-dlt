@@ -4,7 +4,7 @@ from timeit import default_timer as timer
 import os
 import queue
 import math
-import datetime
+from datetime import datetime
 
 import config.config_rotary as cfg_rotary
 import config.config_path as cfg_path
@@ -63,8 +63,6 @@ def train_job_trial(gpu_id):
         config = tf.ConfigProto()
         config.allow_soft_placement = True
         config.gpu_options.allow_growth = True
-
-
 
         with tf.Session(config=config) as sess:
             checkpoint_file = model_ckpt_save_path + '/model_ckpt'
@@ -127,6 +125,7 @@ def train_job_trial(gpu_id):
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
 
+                    now = datetime.now()
                     now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                     job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                     job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -139,6 +138,7 @@ def train_job_trial(gpu_id):
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
 
+                    now = datetime.now()
                     now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                     job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                     job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -152,6 +152,7 @@ def train_job_trial(gpu_id):
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
 
+                    now = datetime.now()
                     now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                     job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                     job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -167,6 +168,7 @@ def train_job_trial(gpu_id):
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
 
+                    now = datetime.now()
                     now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                     job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                     job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -179,6 +181,7 @@ def train_job_trial(gpu_id):
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
 
+                    now = datetime.now()
                     now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                     job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                     job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -192,6 +195,7 @@ def train_job_trial(gpu_id):
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
 
+                    now = datetime.now()
                     now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                     job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                     job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -202,8 +206,14 @@ def train_job_trial(gpu_id):
 
             saver.save(sess, checkpoint_file)
 
+            now = datetime.now()
+            now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+            job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
+            job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
+
     msg = 'job {} is finished the current running slot'.format(job_data['id'])
 
+    now = datetime.now()
     now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
     job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
     job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -370,6 +380,7 @@ def train_job(gpu_id, job_data):
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
 
+                        now = datetime.now()
                         now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                         job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                         job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -382,6 +393,7 @@ def train_job(gpu_id, job_data):
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
 
+                        now = datetime.now()
                         now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                         job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                         job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -395,6 +407,7 @@ def train_job(gpu_id, job_data):
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
 
+                        now = datetime.now()
                         now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                         job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                         job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -410,6 +423,7 @@ def train_job(gpu_id, job_data):
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
 
+                        now = datetime.now()
                         now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                         job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                         job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -422,6 +436,7 @@ def train_job(gpu_id, job_data):
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
 
+                        now = datetime.now()
                         now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                         job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                         job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -435,6 +450,7 @@ def train_job(gpu_id, job_data):
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
 
+                        now = datetime.now()
                         now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                         job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                         job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -445,10 +461,16 @@ def train_job(gpu_id, job_data):
 
                 saver.save(sess, checkpoint_file)
 
+                now = datetime.now()
+                now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+                job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
+                job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
+
     # exceed the running slot and haven't achieve goal so put the job back to the queue
     job_list_rotary.append(job_data)
     job_queue_anony.put(job_anony)
 
+    now = datetime.now()
     now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
     job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
     job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
@@ -458,6 +480,10 @@ def train_job(gpu_id, job_data):
 
 
 if __name__ == "__main__":
+    now = datetime.now()
+    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+    print('============= the whole exp starts at: {}===================='.format(now_time_date))
+
     # create folder if not exist
     if not os.path.exists(cfg_path.ckpt_save_path):
         os.makedirs(cfg_path.ckpt_save_path)
@@ -499,8 +525,6 @@ if __name__ == "__main__":
     # get time info
     #######################################################
 
-    now = datetime.datetime.now()
-
     start_time_overall = timer()
 
     #######################################################
@@ -532,9 +556,8 @@ if __name__ == "__main__":
     job_completion_time_dict = mp.Manager().dict()
     job_attain_dict = mp.Manager().dict()
 
-    job_runtime_history = mp.Manager().dict()
-    job_accuracy_history = mp.Manager().dict()
-    job_convergence_history = mp.Manager().dict()
+    job_runtime_history = dict()
+    job_accuracy_history = dict()
 
     deadline_max = 0
     deadline_min = float('inf')
@@ -556,7 +579,6 @@ if __name__ == "__main__":
 
         job_runtime_history[job_key] = mp.Manager().list()
         job_accuracy_history[job_key] = mp.Manager().list()
-        job_convergence_history[job_key] = mp.Manager().list()
 
         # get the min and max deadline of the workload
         if job['goal_type'] == 'deadline':
@@ -610,7 +632,7 @@ if __name__ == "__main__":
         for idx in range(job_queue_anony.qsize()):
             gpuid = idx % num_gpu
 
-            epsilon = 3
+            epsilon = 5
             r_score_max = float('-inf')
 
             for job_ins in job_list_rotary:
@@ -677,5 +699,6 @@ if __name__ == "__main__":
     for key in job_runtime_history:
         print(key, '[runtime_history]->', job_runtime_history[key])
 
-    for key in job_convergence_history:
-        print(key, '[convergence_history]->', job_convergence_history[key])
+    now = datetime.now()
+    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
+    print('============= the whole exp finish at: {}===================='.format(now_time_date))
