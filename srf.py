@@ -22,8 +22,8 @@ def train_job_runtime(gpu_id):
     run_epoch = 0
 
     ml_workload_runtime.sort(key=compared_item, reverse=True)
-
     job_data = ml_workload_runtime.pop()
+
     job_name = str(job_data['id']) + '-' + job_data['model']
     print('get job {}'.format(job_name))
 
@@ -77,8 +77,7 @@ def train_job_runtime(gpu_id):
 
             num_batch = train_labels.shape[0] // train_batchsize
 
-            # check if the total runtime is less than running_slot
-            while run_time_proc < running_slot:
+            while True:
                 for i in range(num_batch):
                     #print('step {} / {}'.format(i + 1, num_batch))
                     batch_offset = i * train_batchsize
@@ -119,31 +118,14 @@ def train_job_runtime(gpu_id):
                     end_time_overall = timer()
                     job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                     job_attain_dict[job_name] = 1
-                    saver.save(sess, checkpoint_file)
-                    msg = 'job {} is finished'.format(job_data['id'])
-
-                    now = datetime.now()
-                    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
-                    job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
-                    job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
-
-                    return msg
-
-                saver.save(sess, checkpoint_file)
+                    break
 
                 now = datetime.now()
                 now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
                 job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
                 job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
 
-    # exceed the running slot and haven't achieve goal so put the job back to the queue
-    ml_workload_runtime.append(job_data)
-
-    now = datetime.now()
-    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
-    job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
-    job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
-
+    saver.save(sess, checkpoint_file)
     msg = 'job {} is finished the current running slot'.format(job_data['id'])
     return msg
 
