@@ -81,7 +81,7 @@ def train_job_deadline(gpu_id):
             # check if the total runtime is less than running_slot
             while run_time_proc < running_slot:
                 for i in range(num_batch):
-                    print('step {} / {}'.format(i + 1, num_batch))
+                    #print('step {} / {}'.format(i + 1, num_batch))
                     batch_offset = i * train_batchsize
                     batch_end = (i + 1) * train_batchsize
 
@@ -97,7 +97,7 @@ def train_job_deadline(gpu_id):
                 eval_batch_size = 50
                 num_batch_eval = eval_labels.shape[0] // eval_batch_size
                 for i in range(num_batch_eval):
-                    print('evaluation step %d / %d' % (i + 1, num_batch_eval))
+                    #print('evaluation step %d / %d' % (i + 1, num_batch_eval))
                     batch_offset = i * eval_batch_size
                     batch_end = (i + 1) * eval_batch_size
                     eval_feature_batch = eval_feature[batch_offset:batch_end]
@@ -216,7 +216,7 @@ def train_job_others(gpu_id):
             # check if the total runtime is less than running_slot
             while run_time_proc < running_slot:
                 for i in range(num_batch):
-                    print('step {} / {}'.format(i + 1, num_batch))
+                    #print('step {} / {}'.format(i + 1, num_batch))
                     batch_offset = i * train_batchsize
                     batch_end = (i + 1) * train_batchsize
 
@@ -232,7 +232,7 @@ def train_job_others(gpu_id):
                 eval_batch_size = 50
                 num_batch_eval = eval_labels.shape[0] // eval_batch_size
                 for i in range(num_batch_eval):
-                    print('evaluation step %d / %d' % (i + 1, num_batch_eval))
+                    #print('evaluation step %d / %d' % (i + 1, num_batch_eval))
                     batch_offset = i * eval_batch_size
                     batch_end = (i + 1) * eval_batch_size
                     eval_feature_batch = eval_feature[batch_offset:batch_end]

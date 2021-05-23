@@ -149,6 +149,7 @@ def train_job_trial(gpu_id):
                 if job_time_dict[job_name] > job_data['goal_value']:
                     end_time_overall = timer()
                     job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                    job_attain_dict[job_name] = 1
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
 
@@ -192,6 +193,7 @@ def train_job_trial(gpu_id):
                 if job_epoch_dict[job_name] > job_data['goal_value']:
                     end_time_overall = timer()
                     job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                    job_attain_dict[job_name] = 1
                     saver.save(sess, checkpoint_file)
                     msg = 'job {} is finished'.format(job_data['id'])
 
@@ -205,11 +207,6 @@ def train_job_trial(gpu_id):
                 raise ValueError('the job objective type is not supported')
 
             saver.save(sess, checkpoint_file)
-
-            now = datetime.now()
-            now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
-            job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
-            job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
 
     msg = 'job {} is finished the current running slot'.format(job_data['id'])
 
@@ -404,6 +401,7 @@ def train_job(gpu_id, job_data):
                     if job_time_dict[job_name] > job_data['goal_value']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        job_attain_dict[job_name] = 1
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
 
@@ -447,6 +445,7 @@ def train_job(gpu_id, job_data):
                     if job_epoch_dict[job_name] > job_data['goal_value']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        job_attain_dict[job_name] = 1
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
 
