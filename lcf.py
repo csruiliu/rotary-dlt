@@ -118,7 +118,7 @@ def train_job_convergence(gpu_id):
                 job_accuracy_dict[job_name] = cur_accuracy
 
                 delta = cur_accuracy - pre_accuracy
-                if delta < job_data['goal_value']:
+                if delta <= job_data['goal_value']:
                     end_time_overall = timer()
                     job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                     job_attain_dict[job_name] = 1
@@ -242,7 +242,7 @@ def train_job_others(gpu_id):
                 job_accuracy_dict[job_name] = cur_accuracy
 
                 if job_data['goal_type'] == 'accuracy':
-                    if job_accuracy_dict[job_name] > job_data['goal_value']:
+                    if job_accuracy_dict[job_name] >= job_data['goal_value']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
@@ -270,7 +270,7 @@ def train_job_others(gpu_id):
                         return msg
 
                 elif job_data['goal_type'] == 'deadline':
-                    if job_time_dict[job_name] > job_data['goal_value']:
+                    if job_time_dict[job_name] >= job_data['goal_value']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
@@ -353,7 +353,6 @@ if __name__ == "__main__":
     ml_workload_convergence = mp.Manager().list()
     ml_workload_others = mp.Manager().list()
 
-    job_queue = mp.Manager().Queue()
     job_queue_others = mp.Manager().Queue()
 
     job_accuracy_dict = mp.Manager().dict()
@@ -379,6 +378,8 @@ if __name__ == "__main__":
         job_accuracy_dict[job_key] = 0
         job_time_dict[job_key] = 0
         job_epoch_dict[job_key] = 0
+        job_completion_time_dict[job_key] = 0
+        job_attain_dict[job_key] = 0
 
         job_runtime_history[job_key] = mp.Manager().list()
         job_accuracy_history[job_key] = mp.Manager().list()
@@ -413,10 +414,6 @@ if __name__ == "__main__":
             if i.ready():
                 if i.successful():
                     print(i.get())
-
-    now = datetime.now()
-    print("Start date and time : ")
-    print(now.strftime("%Y-%m-%d %H:%M:%S"))
 
     for key in job_accuracy_dict:
         print(key, '[accuracy]->', job_accuracy_dict[key])

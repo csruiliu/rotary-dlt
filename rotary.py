@@ -118,7 +118,7 @@ def train_job_trial(gpu_id):
             job_accuracy_dict[job_name] = cur_accuracy
 
             if job_data['goal_type'] == 'accuracy':
-                if job_accuracy_dict[job_name] > job_data['goal_value']:
+                if job_accuracy_dict[job_name] >= job_data['goal_value']:
                     end_time_overall = timer()
                     job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                     job_attain_dict[job_name] = 1
@@ -132,7 +132,7 @@ def train_job_trial(gpu_id):
 
                     return msg
 
-                if job_epoch_dict[job_name] > job_data['goal_value_extra']:
+                if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                     end_time_overall = timer()
                     job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                     saver.save(sess, checkpoint_file)
@@ -146,7 +146,7 @@ def train_job_trial(gpu_id):
                     return msg
 
             elif job_data['goal_type'] == 'deadline':
-                if job_time_dict[job_name] > job_data['goal_value']:
+                if job_time_dict[job_name] >= job_data['goal_value']:
                     end_time_overall = timer()
                     job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                     job_attain_dict[job_name] = 1
@@ -162,7 +162,7 @@ def train_job_trial(gpu_id):
 
             elif job_data['goal_type'] == 'convergence':
                 delta = cur_accuracy - pre_accuracy
-                if delta < job_data['goal_value']:
+                if delta <= job_data['goal_value']:
                     end_time_overall = timer()
                     job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                     job_attain_dict[job_name] = 1
@@ -176,7 +176,7 @@ def train_job_trial(gpu_id):
 
                     return msg
 
-                if job_epoch_dict[job_name] > job_data['goal_value_extra']:
+                if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                     end_time_overall = timer()
                     job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                     saver.save(sess, checkpoint_file)
@@ -190,7 +190,7 @@ def train_job_trial(gpu_id):
                     return msg
 
             elif job_data['goal_type'] == 'runtime':
-                if job_epoch_dict[job_name] > job_data['goal_value']:
+                if job_epoch_dict[job_name] >= job_data['goal_value']:
                     end_time_overall = timer()
                     job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                     job_attain_dict[job_name] = 1
@@ -329,7 +329,7 @@ def train_job(gpu_id, job_data):
             # check if the total runtime is less than running_slot
             while run_time_proc < running_slot:
                 for i in range(num_batch):
-                    print('step {} / {}'.format(i + 1, num_batch))
+                    #print('step {} / {}'.format(i + 1, num_batch))
                     batch_offset = i * train_batchsize
                     batch_end = (i + 1) * train_batchsize
 
@@ -345,7 +345,7 @@ def train_job(gpu_id, job_data):
                 eval_batch_size = 50
                 num_batch_eval = eval_labels.shape[0] // eval_batch_size
                 for i in range(num_batch_eval):
-                    print('evaluation step %d / %d' % (i + 1, num_batch_eval))
+                    #print('evaluation step %d / %d' % (i + 1, num_batch_eval))
                     batch_offset = i * eval_batch_size
                     batch_end = (i + 1) * eval_batch_size
                     eval_feature_batch = eval_feature[batch_offset:batch_end]
@@ -370,7 +370,7 @@ def train_job(gpu_id, job_data):
                 job_accuracy_dict[job_name] = cur_accuracy
 
                 if job_data['goal_type'] == 'accuracy':
-                    if job_accuracy_dict[job_name] > job_data['goal_value']:
+                    if job_accuracy_dict[job_name] >= job_data['goal_value']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
@@ -384,7 +384,7 @@ def train_job(gpu_id, job_data):
 
                         return msg
 
-                    if job_epoch_dict[job_name] > job_data['goal_value_extra']:
+                    if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         saver.save(sess, checkpoint_file)
@@ -398,7 +398,7 @@ def train_job(gpu_id, job_data):
                         return msg
 
                 elif job_data['goal_type'] == 'deadline':
-                    if job_time_dict[job_name] > job_data['goal_value']:
+                    if job_time_dict[job_name] >= job_data['goal_value']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
@@ -414,7 +414,7 @@ def train_job(gpu_id, job_data):
 
                 elif job_data['goal_type'] == 'convergence':
                     delta = cur_accuracy - pre_accuracy
-                    if delta < job_data['goal_value']:
+                    if delta <= job_data['goal_value']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
@@ -428,7 +428,7 @@ def train_job(gpu_id, job_data):
 
                         return msg
 
-                    if job_epoch_dict[job_name] > job_data['goal_value_extra']:
+                    if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         saver.save(sess, checkpoint_file)
@@ -442,7 +442,7 @@ def train_job(gpu_id, job_data):
                         return msg
 
                 elif job_data['goal_type'] == 'runtime':
-                    if job_epoch_dict[job_name] > job_data['goal_value']:
+                    if job_epoch_dict[job_name] >= job_data['goal_value']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
@@ -558,7 +558,7 @@ if __name__ == "__main__":
     job_runtime_history = dict()
     job_accuracy_history = dict()
 
-    deadline_max = 0
+    deadline_max = float('-inf')
     deadline_min = float('inf')
 
     # init some dicts to track the progress
@@ -573,8 +573,8 @@ if __name__ == "__main__":
         job_epoch_dict[job_key] = 0
         job_epochtime_dict[job_key] = 0
         job_parameters_dict[job_key] = 0
-        job_attain_dict[job_key] = 0
         job_completion_time_dict[job_key] = 0
+        job_attain_dict[job_key] = 0
 
         job_runtime_history[job_key] = mp.Manager().list()
         job_accuracy_history[job_key] = mp.Manager().list()
@@ -617,9 +617,6 @@ if __name__ == "__main__":
 
     for key in job_epochtime_dict:
         print(key, '[epoch_time]->', job_epochtime_dict[key])
-
-    for key in job_attain_dict:
-        print(key, '[attainment]->', job_attain_dict[key])
 
     #######################################################
     # start the rotary process

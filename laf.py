@@ -203,7 +203,7 @@ def train_job_others(gpu_id):
             # check if the total runtime is less than running_slot
             while run_time_proc < running_slot:
                 for i in range(num_batch):
-                    #print('step {} / {}'.format(i + 1, num_batch))
+                    # print('step {} / {}'.format(i + 1, num_batch))
                     batch_offset = i * train_batchsize
                     batch_end = (i + 1) * train_batchsize
 
@@ -219,7 +219,7 @@ def train_job_others(gpu_id):
                 eval_batch_size = 50
                 num_batch_eval = eval_labels.shape[0] // eval_batch_size
                 for i in range(num_batch_eval):
-                    #print('evaluation step %d / %d' % (i + 1, num_batch_eval))
+                    # print('evaluation step %d / %d' % (i + 1, num_batch_eval))
                     batch_offset = i * eval_batch_size
                     batch_end = (i + 1) * eval_batch_size
                     eval_feature_batch = eval_feature[batch_offset:batch_end]
@@ -360,7 +360,6 @@ if __name__ == "__main__":
     ml_workload_accuracy = mp.Manager().list()
     ml_workload_others = mp.Manager().list()
 
-    job_queue = mp.Manager().Queue()
     job_queue_others = mp.Manager().Queue()
 
     job_accuracy_dict = mp.Manager().dict()
@@ -383,9 +382,12 @@ if __name__ == "__main__":
             job_queue_others.put(job)
 
         job_key = str(job['id']) + '-' + job['model']
+
         job_accuracy_dict[job_key] = 0
         job_time_dict[job_key] = 0
         job_epoch_dict[job_key] = 0
+        job_completion_time_dict[job_key] = 0
+        job_attain_dict[job_key] = 0
 
         job_runtime_history[job_key] = mp.Manager().list()
         job_accuracy_history[job_key] = mp.Manager().list()
@@ -420,9 +422,6 @@ if __name__ == "__main__":
             if i.ready():
                 if i.successful():
                     print(i.get())
-
-    print("Start date and time : ")
-    print(now.strftime("%Y-%m-%d %H:%M:%S"))
 
     for key in job_accuracy_dict:
         print(key, '[accuracy]->', job_accuracy_dict[key])
