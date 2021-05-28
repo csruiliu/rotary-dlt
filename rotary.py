@@ -232,43 +232,7 @@ def train_job(gpu_id, job_data):
         job_anony = job_queue_anony.get_nowait()
     except queue.Empty:
         return
-    '''
-    ################################################################
-    # get the job according to the cost model
-    ################################################################
-    epsilon = 3
-    r_score_max = 0
-    job_data = None
-
-    for job_ins in job_list_rotary:
-        job_ins_key = str(job_ins['id']) + '-' + job_ins['model']
-
-        prev_accuracy = job_accuracy_dict[job_ins_key]
-
-        running_epoch = running_slot / job_epochtime_dict[job_ins_key]
-
-        next_accuracy_predict, _ = acc_estimator.predict_accuracy(job_ins, running_epoch)
-
-        delta_accuracy = next_accuracy_predict - prev_accuracy if next_accuracy_predict > prev_accuracy else 0
-
-        r_score = delta_accuracy / running_slot
-
-        if job_ins['goal_type'] == 'deadline':
-            if deadline_max == deadline_min:
-                r_score += math.exp(epsilon)
-            else:
-                r_score += math.exp(epsilon * (job_ins['goal_value'] - deadline_min) / (deadline_max - deadline_min))
-
-        if r_score > r_score_max:
-            r_score_max = r_score
-            job_data = job_ins
-
-    try:
-        job_list_rotary.remove(job_data)
-    except:
-        msg = 'job has been handled by other GPU'
-        return msg
-    '''
+    
     ################################################################
     # start working on the selected job
     ################################################################
@@ -648,8 +612,7 @@ if __name__ == "__main__":
                     if deadline_max == deadline_min:
                         r_score += math.exp(epsilon)
                     else:
-                        r_score += math.exp(
-                            epsilon * (job_ins['goal_value'] - deadline_min) / (deadline_max - deadline_min))
+                        r_score += math.exp(epsilon * (job_ins['goal_value'] - deadline_min) / (deadline_max - deadline_min))
 
                 if r_score > r_score_max:
                     r_score_max = r_score
