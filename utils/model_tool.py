@@ -24,7 +24,6 @@ def build_model(job_data,
                 feature,
                 label):
 
-    job_id = job_data['id']
     model_type = job_data['model']
     if model_type == 'alexnet':
         model = AlexNet(num_classes=n_class)
@@ -95,6 +94,4 @@ def build_model(job_data,
     prediction = tf.equal(tf.argmax(logit, -1), tf.argmax(label, -1))
     eval_op = tf.reduce_mean(tf.cast(prediction, tf.float32))
 
-    job_name = str(job_id) + '-' + str(model_type)
-
-    return train_op, eval_op, job_name, total_parameters
+    return train_op, eval_op, total_parameters
