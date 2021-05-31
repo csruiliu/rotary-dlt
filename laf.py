@@ -12,17 +12,36 @@ import config.config_path as cfg_path
 from utils.model_tool import build_model
 
 
+def log_time_accuracy(job_instance_key,
+                      current_acc,
+                      shared_time_dict,
+                      shared_accuracy_dict):
+    now_time_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    sub_runtime_list = shared_time_dict[job_instance_key]
+    sub_runtime_list.append(str(job_epoch_dict[job_instance_key]) + ':' + now_time_date)
+    shared_time_dict[job_instance_key] = sub_runtime_list
+
+    sub_accuracy_list = shared_accuracy_dict[job_instance_key]
+    sub_accuracy_list.append(str(current_acc) + ':' + now_time_date)
+    shared_accuracy_dict[job_instance_key] = sub_accuracy_list
+
+
 def compared_item(item):
     return item['goal_value']
 
 
-def train_job_accuracy(gpu_id):
-    start_time_proc = timer()
-    run_time_proc = 0
-    run_epoch = 0
+def train_job_accuracy(gpu_id,
+                       shared_runtime_history,
+                       shared_accuracy_history):
+
+    preparation_start_marker = timer()
 
     ml_workload_accuracy.sort(key=compared_item, reverse=True)
-    job_data = ml_workload_accuracy.pop()
+    try:
+        job_data = ml_workload_accuracy.pop()
+    except IndexError:
+        return
 
     job_name = str(job_data['id']) + '-' + job_data['model']
     print('get job {}'.format(job_name))
@@ -47,18 +66,18 @@ def train_job_accuracy(gpu_id):
     with tf.device(assign_device):
         feature_ph = tf.placeholder(tf.float32, [None, img_w, img_h, num_chn])
         label_ph = tf.placeholder(tf.int64, [None, num_cls])
-        train_op, eval_op, model_name, _ = build_model(job_data,
-                                                       model_opt,
-                                                       model_learn_rate,
-                                                       num_cls,
-                                                       feature_ph,
-                                                       label_ph)
+        train_op, eval_op, total_parameters = build_model(job_data,
+                                                          model_opt,
+                                                          model_learn_rate,
+                                                          num_cls,
+                                                          feature_ph,
+                                                          label_ph)
 
         # init the tf saver for checkpoint
         saver = tf.train.Saver()
 
         # get the path of checkpoint
-        model_ckpt_save_path = cfg_path.ckpt_save_path + '/job_' + model_name
+        model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
 
         if not os.path.exists(model_ckpt_save_path):
             os.makedirs(model_ckpt_save_path)
@@ -77,10 +96,18 @@ def train_job_accuracy(gpu_id):
 
             num_batch = train_labels.shape[0] // train_batchsize
 
+            run_epoch = 0
+
+            preparation_end_marker = timer()
+            # add the preparation time for this process
+            job_runtime_dict[job_name] += preparation_end_marker - preparation_start_marker
+
             # check if the total runtime is less than running_slot
             while True:
+                epoch_start_marker = timer()
+
                 for i in range(num_batch):
-                    #print('step {} / {}'.format(i + 1, num_batch))
+                    # print('step {} / {}'.format(i + 1, num_batch))
                     batch_offset = i * train_batchsize
                     batch_end = (i + 1) * train_batchsize
 
@@ -89,14 +116,12 @@ def train_job_accuracy(gpu_id):
 
                     sess.run(train_op, feed_dict={feature_ph: train_data_batch, label_ph: train_label_batch})
 
-                run_epoch += 1
-
                 print('start evaluation phrase')
                 acc_sum = 0
                 eval_batch_size = 50
                 num_batch_eval = eval_labels.shape[0] // eval_batch_size
                 for i in range(num_batch_eval):
-                    #print('evaluation step %d / %d' % (i + 1, num_batch_eval))
+                    # print('evaluation step %d / %d' % (i + 1, num_batch_eval))
                     batch_offset = i * eval_batch_size
                     batch_end = (i + 1) * eval_batch_size
                     eval_feature_batch = eval_feature[batch_offset:batch_end]
@@ -106,42 +131,46 @@ def train_job_accuracy(gpu_id):
                     acc_sum += acc_batch
 
                 cur_accuracy = acc_sum / num_batch_eval
-                print('evaluation accuracy:{}'.format(cur_accuracy))
+                print('job {} evaluation accuracy:{}'.format(job_name, cur_accuracy))
 
-                end_time_proc = timer()
-                run_time_proc = end_time_proc - start_time_proc
+                epoch_end_marker = timer()
 
-                job_time_dict[job_name] += run_time_proc
-                job_epoch_dict[job_name] += run_epoch
+                # tracking time and accuracy
+                job_runtime_dict[job_name] += epoch_end_marker - epoch_start_marker
+                job_epoch_dict[job_name] += 1
                 job_accuracy_dict[job_name] = cur_accuracy
 
+                # decision phrase
                 if job_accuracy_dict[job_name] >= job_data['goal_value']:
                     end_time_overall = timer()
                     job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                     job_attain_dict[job_name] = 1
-                    break
+                    log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                    saver.save(sess, checkpoint_file)
+                    msg = 'job {} reaches SLO'.format(job_data['id'])
+                    return msg
 
                 if job_epoch_dict[job_name] > job_data['goal_value_extra']:
                     end_time_overall = timer()
                     job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                    break
+                    saver.save(sess, checkpoint_file)
+                    log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                    msg = 'job {} is finished'.format(job_data['id'])
+                    return msg
 
-                now = datetime.now()
-                now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
-                job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
-                job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
-
-    saver.save(sess, checkpoint_file)
-    msg = 'job {} is finished the current running slot'.format(job_data['id'])
-    return msg
+                log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
 
 
-def train_job_others(gpu_id):
-    start_time_proc = timer()
-    run_time_proc = 0
-    run_epoch = 0
+def train_job_others(gpu_id,
+                     shared_runtime_history,
+                     shared_accuracy_history):
+    preparation_start_marker = timer()
+    slot_start_marker = timer()
 
-    # get the job id
+    # count the training time of this slot
+    running_slot_time = 0
+
+    # get the job data from the queue
     try:
         job_data = job_queue_others.get_nowait()
     except queue.Empty:
@@ -170,18 +199,18 @@ def train_job_others(gpu_id):
     with tf.device(assign_device):
         feature_ph = tf.placeholder(tf.float32, [None, img_w, img_h, num_chn])
         label_ph = tf.placeholder(tf.int64, [None, num_cls])
-        train_op, eval_op, model_name, _ = build_model(job_data,
-                                                       model_opt,
-                                                       model_learn_rate,
-                                                       num_cls,
-                                                       feature_ph,
-                                                       label_ph)
+        train_op, eval_op, total_parameters = build_model(job_data,
+                                                          model_opt,
+                                                          model_learn_rate,
+                                                          num_cls,
+                                                          feature_ph,
+                                                          label_ph)
 
         # init the tf saver for checkpoint
         saver = tf.train.Saver()
 
         # get the path of checkpoint
-        model_ckpt_save_path = cfg_path.ckpt_save_path + '/job_' + model_name
+        model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
 
         if not os.path.exists(model_ckpt_save_path):
             os.makedirs(model_ckpt_save_path)
@@ -200,8 +229,15 @@ def train_job_others(gpu_id):
 
             num_batch = train_labels.shape[0] // train_batchsize
 
+            preparation_end_marker = timer()
+            # add the prepare time for this process
+            job_runtime_dict[job_name] += preparation_end_marker - preparation_start_marker
+
             # check if the total runtime is less than running_slot
-            while run_time_proc < running_slot:
+            while running_slot_time < running_slot:
+
+                epoch_start_marker = timer()
+
                 for i in range(num_batch):
                     # print('step {} / {}'.format(i + 1, num_batch))
                     batch_offset = i * train_batchsize
@@ -211,8 +247,6 @@ def train_job_others(gpu_id):
                     train_label_batch = train_labels[batch_offset:batch_end]
 
                     sess.run(train_op, feed_dict={feature_ph: train_data_batch, label_ph: train_label_batch})
-
-                run_epoch += 1
 
                 print('start evaluation phrase')
                 acc_sum = 0
@@ -231,28 +265,24 @@ def train_job_others(gpu_id):
                 cur_accuracy = acc_sum / num_batch_eval
                 print('evaluation accuracy:{}'.format(cur_accuracy))
 
-                end_time_proc = timer()
-                run_time_proc = end_time_proc - start_time_proc
-
                 pre_accuracy = job_accuracy_dict[job_name]
 
-                job_time_dict[job_name] += run_time_proc
-                job_epoch_dict[job_name] += run_epoch
+                epoch_end_marker = timer()
+
+                # tracking the time and accuracy
+                job_runtime_dict[job_name] += epoch_end_marker - epoch_start_marker
+                job_epoch_dict[job_name] += 1
                 job_accuracy_dict[job_name] = cur_accuracy
 
+                # decision phrase
                 if job_data['goal_type'] == 'deadline':
-                    if job_time_dict[job_name] > job_data['goal_value']:
+                    if job_runtime_dict[job_name] > job_data['goal_value']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
+                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
-                        msg = 'job {} is finished'.format(job_data['id'])
-
-                        now = datetime.now()
-                        now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
-                        job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
-                        job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
-
+                        msg = 'job {} reaches SLO'.format(job_data['id'])
                         return msg
 
                 elif job_data['goal_type'] == 'convergence':
@@ -261,27 +291,17 @@ def train_job_others(gpu_id):
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
+                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
-                        msg = 'job {} is finished'.format(job_data['id'])
-
-                        now = datetime.now()
-                        now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
-                        job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
-                        job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
-
+                        msg = 'job {} reaches SLO'.format(job_data['id'])
                         return msg
 
                     if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
-
-                        now = datetime.now()
-                        now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
-                        job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
-                        job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
-
                         return msg
 
                 elif job_data['goal_type'] == 'runtime':
@@ -289,44 +309,38 @@ def train_job_others(gpu_id):
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
+                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
-                        msg = 'job {} is finished'.format(job_data['id'])
-
-                        now = datetime.now()
-                        now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
-                        job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
-                        job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
-
+                        msg = 'job {} reaches SLO'.format(job_data['id'])
                         return msg
                 else:
                     raise ValueError('the job objective type is not supported')
 
-                saver.save(sess, checkpoint_file)
+                log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
 
-                now = datetime.now()
-                now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
-                job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
-                job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
+                slot_end_marker = timer()
+                running_slot_time = slot_end_marker - slot_start_marker
 
     # exceed the running slot and haven't achieve goal so put the job back to the queue
     job_queue_others.put(job_data)
 
-    now = datetime.now()
-    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
-    job_runtime_history[job_name].append(str(job_epoch_dict[job_name]) + ':' + now_time_date)
-    job_accuracy_history[job_name].append(str(cur_accuracy) + ':' + now_time_date)
-
+    # save the model/job since the job has run for the current slot but doesn't achieve SLO
+    saver.save(sess, checkpoint_file)
     msg = 'job {} is finished the current running slot'.format(job_data['id'])
     return msg
 
 
 if __name__ == "__main__":
-    now = datetime.now()
-    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
-    print('============= the whole exp start at: {}===================='.format(now_time_date))
+    proc_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print('============= the whole exp starts at: {}===================='.format(proc_start_time))
 
+    # create folder if not exist
     if not os.path.exists(cfg_path.ckpt_save_path):
         os.makedirs(cfg_path.ckpt_save_path)
+
+    #######################################################
+    # get parameters from configuration
+    #######################################################
 
     num_gpu = cfg_rotary.num_gpu
     running_slot = cfg_rotary.running_slot
@@ -353,27 +367,39 @@ if __name__ == "__main__":
     for s in ml_workload:
         print(s)
 
-    now = datetime.now()
+    #######################################################
+    # prepare everything necessary
+    #######################################################
 
     start_time_overall = timer()
 
+    # list with runtime-slo jobs only
     ml_workload_accuracy = mp.Manager().list()
-    ml_workload_others = mp.Manager().list()
 
+    # list with other slo jobs
+    ml_workload_others = mp.Manager().list()
+    # queue for checking if all jobs are completed
     job_queue_others = mp.Manager().Queue()
 
+    # dict for storing job's current accuracy
     job_accuracy_dict = mp.Manager().dict()
-    job_time_dict = mp.Manager().dict()
+    # dict for storing job's overall running time
+    job_runtime_dict = mp.Manager().dict()
+    # dict for storing job's overall training epochs
     job_epoch_dict = mp.Manager().dict()
+    # dict for storing job's completion time (achieving SLO or being terminated)
     job_completion_time_dict = mp.Manager().dict()
+    # dict for storing if the job achieving the SLO
     job_attain_dict = mp.Manager().dict()
 
+    # dict for tracking epochs with wall-time
     job_runtime_history = dict()
+    # dict for tracking accuracy with wall-time
     job_accuracy_history = dict()
 
     proc_pool = mp.Pool(num_gpu, maxtasksperchild=1)
 
-    # init some dicts to track the progress
+    # init dicts
     for job in ml_workload:
         if job['goal_type'] == 'accuracy':
             ml_workload_accuracy.append(job)
@@ -384,26 +410,30 @@ if __name__ == "__main__":
         job_key = str(job['id']) + '-' + job['model']
 
         job_accuracy_dict[job_key] = 0
-        job_time_dict[job_key] = 0
+        job_runtime_dict[job_key] = 0
         job_epoch_dict[job_key] = 0
         job_completion_time_dict[job_key] = 0
         job_attain_dict[job_key] = 0
 
-        job_runtime_history[job_key] = mp.Manager().list()
-        job_accuracy_history[job_key] = mp.Manager().list()
+        init_sub_accuracy_list = mp.Manager().list()
+        init_sub_accuracy_list.append('0:' + proc_start_time)
+        job_accuracy_history[job_key] = init_sub_accuracy_list
+        init_sub_runtime_list = mp.Manager().list()
+        init_sub_runtime_list.append('0:' + proc_start_time)
+        job_runtime_history[job_key] = init_sub_runtime_list
 
     while len(ml_workload_accuracy) != 0:
-        results_deadline = list()
-        deadline_num = len(ml_workload_accuracy)
-        for idx in range(deadline_num):
+        results_accuracy = list()
+        accuracy_job_num = len(ml_workload_accuracy)
+        for idx in range(accuracy_job_num):
             gpuid = idx % num_gpu
-            result = proc_pool.apply_async(train_job_accuracy, args=(gpuid,))
-            results_deadline.append(result)
+            result = proc_pool.apply_async(train_job_accuracy, args=(gpuid, job_runtime_history, job_accuracy_history))
+            results_accuracy.append(result)
 
-        for i in results_deadline:
+        for i in results_accuracy:
             i.wait()
 
-        for i in results_deadline:
+        for i in results_accuracy:
             if i.ready():
                 if i.successful():
                     print(i.get())
@@ -412,7 +442,7 @@ if __name__ == "__main__":
         results_others = list()
         for idx in range(job_queue_others.qsize()):
             gpuid = idx % num_gpu
-            result = proc_pool.apply_async(train_job_others, args=(gpuid,))
+            result = proc_pool.apply_async(train_job_others, args=(gpuid, job_runtime_history, job_accuracy_history))
             results_others.append(result)
 
         for i in results_others:
@@ -423,29 +453,32 @@ if __name__ == "__main__":
                 if i.successful():
                     print(i.get())
 
-    for key in job_accuracy_dict:
-        print(key, '[accuracy]->', job_accuracy_dict[key])
+    #######################################################
+    # printout the log information
+    #######################################################
 
-    for key in job_time_dict:
-        print(key, '[time]->', job_time_dict[key])
+    for key in job_accuracy_dict:
+        print('{} [accuracy]-> {}'.format(key, job_accuracy_dict[key]))
+
+    for key in job_runtime_dict:
+        print('{} [accuracy]-> {}'.format(key, job_runtime_dict[key]))
 
     for key in job_epoch_dict:
-        print(key, '[epoch]->', job_epoch_dict[key])
+        print('{} [epoch]-> {}'.format(key, job_epoch_dict[key]))
 
     for key in job_completion_time_dict:
-        print(key, '[completion time]->', job_completion_time_dict[key])
+        print('{} [completion time]-> {}'.format(key, job_completion_time_dict[key]))
 
     for key in job_attain_dict:
-        print(key, '[attainment]->', job_attain_dict[key])
+        print('{} [attainment]-> {}'.format(key, job_attain_dict[key]))
 
     print("show the history")
 
     for key in job_accuracy_history:
-        print(key, '[acc_history]->', job_accuracy_history[key])
+        print('{} [acc_history]-> {}'.format(key, job_accuracy_history[key]))
 
     for key in job_runtime_history:
-        print(key, '[runtime_history]->', job_runtime_history[key])
+        print('{} [runtime_history]-> {}'.format(key, job_runtime_history[key]))
 
-    now = datetime.now()
-    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
-    print('============= the whole exp finish at: {}===================='.format(now_time_date))
+    proc_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print('============= the whole exp finish at: {}===================='.format(proc_end_time))
