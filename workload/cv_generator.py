@@ -1,5 +1,4 @@
 import numpy as np
-from operator import itemgetter
 
 
 class CVWorkloadGenerator:
@@ -11,12 +10,6 @@ class CVWorkloadGenerator:
                  convergence_ratio,
                  accuracy_ratio,
                  runtime_ratio,
-                 deadline_ratio,
-                 half_deadline_ratio,
-                 one_deadline_ratio,
-                 three_deadline_ratio,
-                 ten_deadline_ratio,
-                 day_deadline_ratio,
                  random_seed):
 
         # the light, medium, heavy due to the number of parameters
@@ -28,13 +21,6 @@ class CVWorkloadGenerator:
         self._convergence_ratio = convergence_ratio
         self._accuracy_ratio = accuracy_ratio
         self._runtime_ratio = runtime_ratio
-        self._deadline_ratio = deadline_ratio
-
-        self._half_deadline_ratio = half_deadline_ratio
-        self._one_deadline_ratio = one_deadline_ratio
-        self._three_deadline_ratio = three_deadline_ratio
-        self._ten_deadline_ratio = ten_deadline_ratio
-        self._day_deadline_ratio = day_deadline_ratio
 
         self._cv_model_light_list = ['inception', 'mobilenet', 'mobilenet_v2', 'squeezenet']
         self._cv_model_med_list = ['shufflenet', 'shufflenet_v2', 'lenet', 'alexnet']
@@ -53,20 +39,6 @@ class CVWorkloadGenerator:
         self._accuracy_list = [('accuracy', 0.8), ('accuracy', 0.82), ('accuracy', 0.84), ('accuracy', 0.86),
                                ('accuracy', 0.88), ('accuracy', 0.9), ('accuracy', 0.92), ('accuracy', 0.94),
                                ('accuracy', 0.96), ('accuracy', 0.98), ('accuracy', 0.99)]
-
-        # for test
-        self._half_deadline_list = [('deadline', 300)]
-        self._one_deadline_list = [('deadline', 600)]
-        self._three_deadline_list = [('deadline', 900)]
-        self._ten_deadline_list = [('deadline', 1200)]
-        self._day_deadline_list = [('deadline', 1500)]
-
-        # unit of deadline: second
-        self._half_deadline_list = [('deadline', 1800)]
-        self._one_deadline_list = [('deadline', 3600)]
-        self._three_deadline_list = [('deadline', 10800)]
-        self._ten_deadline_list = [('deadline', 36000)]
-        self._day_deadline_list = [('deadline', 86400)]
 
         # unit of runtime: epoch
         self._runtime_list = [('runtime', 1), ('runtime', 5), ('runtime', 10),
@@ -93,7 +65,6 @@ class CVWorkloadGenerator:
         for idx in random_index:
             res_list.append(item_list[idx])
 
-        #res_list = list((itemgetter(*random_index)(item_list)))
         return res_list
 
     def generate_workload(self):
@@ -108,17 +79,8 @@ class CVWorkloadGenerator:
         convergence_num = round(self._convergence_ratio * self._workload_size)
         accuracy_num = round(self._accuracy_ratio * self._workload_size)
         runtime_num = round(self._runtime_ratio * self._workload_size)
-        deadline_num = round(self._deadline_ratio * self._workload_size)
 
-        half_deadline_num = round(self._half_deadline_ratio * deadline_num)
-        one_deadline_num = round(self._one_deadline_ratio * deadline_num)
-        three_deadline_num = round(self._three_deadline_ratio * deadline_num)
-        ten_deadline_num = round(self._ten_deadline_ratio * deadline_num)
-        day_deadline_num = round(self._day_deadline_ratio * deadline_num)
-
-        deadline_num_sum = half_deadline_num + one_deadline_num + three_deadline_num + ten_deadline_num + day_deadline_num
-
-        assert convergence_num + accuracy_num + runtime_num + deadline_num_sum == self._workload_size
+        assert convergence_num + accuracy_num + runtime_num == self._workload_size
 
         cv_light_list = self._random_selection(self._cv_model_light_list, cv_light_num)
         cv_med_list = self._random_selection(self._cv_model_med_list, cv_med_num)
@@ -128,26 +90,11 @@ class CVWorkloadGenerator:
         accuracy_list = self._random_selection(self._accuracy_list, accuracy_num)
         runtime_list = self._random_selection(self._runtime_list, runtime_num)
 
-        half_ddl_list = self._random_selection(self._half_deadline_list, half_deadline_num)
-        one_ddl_list = self._random_selection(self._one_deadline_list, one_deadline_num)
-        three_ddl_list = self._random_selection(self._three_deadline_list, three_deadline_num)
-        ten_ddl_list = self._random_selection(self._ten_deadline_list, ten_deadline_num)
-        day_ddl_list = self._random_selection(self._day_deadline_list, day_deadline_num)
-
-        print(half_ddl_list)
-        print(one_ddl_list)
-
         model_select_list = cv_light_list + cv_med_list + cv_heavy_list
         np.random.shuffle(model_select_list)
 
-        print(len(model_select_list))
-
-        deadline_list = half_ddl_list + one_ddl_list + three_ddl_list + ten_ddl_list + day_ddl_list
-
-        objective_list = convergence_list + accuracy_list + runtime_list + deadline_list
+        objective_list = convergence_list + accuracy_list + runtime_list
         np.random.shuffle(objective_list)
-
-        print(len(objective_list))
 
         workload = list()
         for oidx, obj in enumerate(objective_list):

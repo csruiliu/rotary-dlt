@@ -18,20 +18,11 @@ nlp_light_ratio = workload_cfg['nlp_light_ratio']
 nlp_med_ratio = workload_cfg['nlp_med_ratio']
 nlp_heavy_ratio = workload_cfg['nlp_heavy_ratio']
 
-ddl_cfg = cfg['deadline']
-
-half_ddl_ratio = ddl_cfg['half_ddl_ratio']
-one_ddl_ratio = ddl_cfg['one_ddl_ratio']
-three_ddl_ratio = ddl_cfg['three_ddl_ratio']
-ten_ddl_ratio = ddl_cfg['ten_ddl_ratio']
-day_ddl_ratio = ddl_cfg['day_ddl_ratio']
-
 objective_cfg = cfg['objective']
 
 convergence_ratio = objective_cfg['convergence_ratio']
 accuracy_ratio = objective_cfg['accuracy_ratio']
 runtime_ratio = objective_cfg['runtime_ratio']
-deadline_ratio = objective_cfg['deadline_ratio']
 
 random_seed = cfg['random_seed']
 num_gpu = cfg['num_gpu']

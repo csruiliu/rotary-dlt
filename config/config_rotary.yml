@@ -7,21 +7,13 @@ workload:
   nlp_med_ratio: 0.3
   nlp_heavy_ratio: 0.4
 
-deadline:
-  half_ddl_ratio: 0.1
-  one_ddl_ratio: 0.2
-  three_ddl_ratio: 0.3
-  ten_ddl_ratio: 0.3
-  day_ddl_ratio: 0.1
-
 objective:
-  convergence_ratio: 0.4
+  convergence_ratio: 0.6
   accuracy_ratio: 0.2
-  runtime_ratio: 0.1
-  deadline_ratio: 0.3
+  runtime_ratio: 0.2
 
 num_gpu: 4
-random_seed: 10000
+random_seed: 99
 
 # unit of slot: second
-running_slot: 900
+running_slot: 150

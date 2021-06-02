@@ -301,16 +301,6 @@ def train_job_others(gpu_id,
                         msg = 'job {} is finished'.format(job_data['id'])
                         return msg
 
-                elif job_data['goal_type'] == 'deadline':
-                    if job_runtime_dict[job_name] >= job_data['goal_value']:
-                        end_time_overall = timer()
-                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                        job_attain_dict[job_name] = 1
-                        saver.save(sess, checkpoint_file)
-                        msg = 'job {} reaches the SLO'.format(job_data['id'])
-                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
-                        return msg
-
                 else:
                     raise ValueError('the job objective type is not supported')
 
@@ -359,12 +349,6 @@ if __name__ == "__main__":
                              cfg_rotary.convergence_ratio,
                              cfg_rotary.accuracy_ratio,
                              cfg_rotary.runtime_ratio,
-                             cfg_rotary.deadline_ratio,
-                             cfg_rotary.half_ddl_ratio,
-                             cfg_rotary.one_ddl_ratio,
-                             cfg_rotary.three_ddl_ratio,
-                             cfg_rotary.ten_ddl_ratio,
-                             cfg_rotary.day_ddl_ratio,
                              cfg_rotary.random_seed)
 
     ml_workload = wg.generate_workload()
