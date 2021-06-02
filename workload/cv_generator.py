@@ -36,9 +36,10 @@ class CVWorkloadGenerator:
         self._ten_deadline_ratio = ten_deadline_ratio
         self._day_deadline_ratio = day_deadline_ratio
 
-        self._cv_model_light_list = ['inception', 'mobilenet', 'mobilenet_v2', 'squeezenet']
-        self._cv_model_med_list = ['shufflenet', 'shufflenet_v2', 'lenet', 'alexnet']
-        self._cv_model_heavy_list = ['vgg', 'zfnet', 'densenet']
+        # for test
+        self._cv_model_light_list = ['mobilenet', 'mobilenet_v2' 'squeezenet']
+        self._cv_model_med_list = ['shufflenet', 'lenet', 'alexnet']
+        self._cv_model_heavy_list = ['vgg', 'densenet']
 
         # self._cv_model_light_list = ['inception', 'mobilenet', 'mobilenet_v2', 'squeezenet', 'xception']
         # self._cv_model_med_list = ['shufflenet', 'shufflenet_v2', 'resnet', 'resnext', 'efficientnet']
@@ -46,20 +47,20 @@ class CVWorkloadGenerator:
 
         self._cv_model_list = self._cv_model_light_list + self._cv_model_med_list + self._cv_model_heavy_list
 
-        self._convergence_list = [('convergence', 0.1), ('convergence', 0.05), ('convergence', 0.01),
-                                  ('convergence', 0.005), ('convergence', 0.001),
-                                  ('convergence', 0.0005), ('convergence', 0.0001)]
+        self._convergence_list = [('convergence', 0.05), ('convergence', 0.03), ('convergence', 0.01),
+                                  ('convergence', 0.005), ('convergence', 0.003), ('convergence', 0.001),
+                                  ('convergence', 0.0005), ('convergence', 0.0003), ('convergence', 0.0001)]
 
         self._accuracy_list = [('accuracy', 0.8), ('accuracy', 0.82), ('accuracy', 0.84), ('accuracy', 0.86),
                                ('accuracy', 0.88), ('accuracy', 0.9), ('accuracy', 0.92), ('accuracy', 0.94),
                                ('accuracy', 0.96), ('accuracy', 0.98), ('accuracy', 0.99)]
 
         # for test
-        self._half_deadline_list = [('deadline', 300)]
-        self._one_deadline_list = [('deadline', 600)]
-        self._three_deadline_list = [('deadline', 900)]
-        self._ten_deadline_list = [('deadline', 1200)]
-        self._day_deadline_list = [('deadline', 1500)]
+        self._half_deadline_list = [('deadline', 75)]
+        self._one_deadline_list = [('deadline', 150)]
+        self._three_deadline_list = [('deadline', 450)]
+        self._ten_deadline_list = [('deadline', 1500)]
+        self._day_deadline_list = [('deadline', 3600)]
 
         # unit of deadline: second
         self._half_deadline_list = [('deadline', 1800)]
@@ -70,10 +71,9 @@ class CVWorkloadGenerator:
 
         # unit of runtime: epoch
         self._runtime_list = [('runtime', 1), ('runtime', 5), ('runtime', 10),
-                              ('runtime', 20), ('runtime', 50), ('runtime', 100),
-                              ('runtime', 200), ('runtime', 300), ('runtime', 400)]
+                              ('runtime', 20), ('runtime', 30), ('runtime', 50)]
 
-        self._epoch_list = [10, 20, 30, 40, 50, 100]
+        self._epoch_list = [10, 20, 30, 40, 50]
 
         self._batch_size_list = [25, 32, 50, 64, 100, 128]
 
@@ -93,7 +93,6 @@ class CVWorkloadGenerator:
         for idx in random_index:
             res_list.append(item_list[idx])
 
-        #res_list = list((itemgetter(*random_index)(item_list)))
         return res_list
 
     def generate_workload(self):
@@ -134,20 +133,13 @@ class CVWorkloadGenerator:
         ten_ddl_list = self._random_selection(self._ten_deadline_list, ten_deadline_num)
         day_ddl_list = self._random_selection(self._day_deadline_list, day_deadline_num)
 
-        print(half_ddl_list)
-        print(one_ddl_list)
-
         model_select_list = cv_light_list + cv_med_list + cv_heavy_list
         np.random.shuffle(model_select_list)
-
-        print(len(model_select_list))
 
         deadline_list = half_ddl_list + one_ddl_list + three_ddl_list + ten_ddl_list + day_ddl_list
 
         objective_list = convergence_list + accuracy_list + runtime_list + deadline_list
         np.random.shuffle(objective_list)
-
-        print(len(objective_list))
 
         workload = list()
         for oidx, obj in enumerate(objective_list):
