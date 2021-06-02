@@ -3,7 +3,7 @@ import json
 import operator
 
 
-class AccuracyEstimator:
+class DLEstimator:
     def __init__(self, topk=5, poly_deg=4):
         # the list for all models' accuracy in the knowledgebase
         self.acc_model_list = list()
@@ -82,7 +82,37 @@ class AccuracyEstimator:
 
         return acc_estimation, coefs
 
-    def add_actual_accuracy(self, job_key, accuracy, epoch):
+    def predict_epoch(self, input_model_dict, input_model_accuracy):
+        job_key = str(input_model_dict['id']) + '-' + input_model_dict['model']
+
+        job_predict_info = self.job_predict_dict[job_key]
+        accuracy_list = job_predict_info['accuracy']
+        epoch_list = job_predict_info['epoch']
+        # the list for historical and actual accuracy data, 1 is actual accuracy, 0 is historical data
+        flag_list = job_predict_info['flag']
+
+        # init a new curve weight list for this prediction
+        curve_weight_list = list()
+
+        actual_dp_num = flag_list.count(1)
+        base_dp_num = len(flag_list) - actual_dp_num
+
+        actual_weight = 1 / (actual_dp_num + 1)
+        base_weight = actual_weight / base_dp_num
+
+        for flag in flag_list:
+            if flag:
+                curve_weight_list.append(actual_weight)
+            else:
+                curve_weight_list.append(base_weight)
+
+        coefs = np.polyfit(x=np.asarray(accuracy_list), y=np.asarray(epoch_list), deg=self.deg, w=curve_weight_list)
+
+        epoch_estimation = np.polyval(coefs, input_model_accuracy)
+
+        return epoch_estimation
+
+    def add_actual_data(self, job_key, accuracy, epoch):
         job_predict_info = self.job_predict_dict[job_key]
         job_predict_info['flag'].append(1)
         job_predict_info['accuracy'].append(accuracy)
