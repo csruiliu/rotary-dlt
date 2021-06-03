@@ -96,8 +96,6 @@ def train_job_accuracy(gpu_id,
 
             num_batch = train_labels.shape[0] // train_batchsize
 
-            run_epoch = 0
-
             preparation_end_marker = timer()
             # add the preparation time for this process
             job_runtime_dict[job_name] += preparation_end_marker - preparation_start_marker
