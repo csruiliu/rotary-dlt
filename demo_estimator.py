@@ -2,21 +2,10 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-from estimator.accuracy_estimator import AccuracyEstimator
+from estimator.dl_estimator import DLEstimator
 
 
-if __name__ == "__main__":
-    outpath = '/home/ruiliu/Development/accuracy-estimator.pdf'
-
-    topk = 10
-
-    ae = AccuracyEstimator(topk)
-
-    # read all the accuracy file
-    for f in os.listdir('./knowledgebase'):
-        model_acc_file = os.getcwd() + '/knowledgebase/' + f
-        ae.import_accuracy_dataset(model_acc_file)
-
+def eval_accuracy_prediction():
     test_workload = [{
         "id": "1",
         "model": "mobilenet",
@@ -69,18 +58,18 @@ if __name__ == "__main__":
     # original figure
     ###########################################
 
-    ae.prepare_workload(test_workload)
+    dle.prepare_workload(test_workload)
 
-    acc_estimate, coefs = ae.predict_accuracy(test_job, 1)
+    acc_estimate, coefs = dle.predict_accuracy(test_job, 1)
 
-    predict_dict = ae.get_predict_dict()[job_key]
+    predict_dict = dle.get_predict_dict()[job_key]
     accuracy_data = predict_dict['accuracy']
     epoch_data = [x + 1 for x in predict_dict['epoch']]
 
-    for i in range(1, topk+1):
+    for i in range(1, topk + 1):
         for j in range(0, 5):
-            epoch_data.pop(15*i)
-            accuracy_data.pop(15*i)
+            epoch_data.pop(15 * i)
+            accuracy_data.pop(15 * i)
 
     axs[0, 0].spines["top"].set_linewidth(5)
     axs[0, 0].spines["left"].set_linewidth(5)
@@ -123,21 +112,21 @@ if __name__ == "__main__":
     # add 2 actual points
     ###########################################
 
-    ae.prepare_workload(test_workload)
+    dle.prepare_workload(test_workload)
 
-    ae.add_actual_accuracy(job_key, 0.4936999988555908, 0)
-    ae.add_actual_accuracy(job_key, 0.613600004017353, 2)
+    dle.add_actual_data(job_key, 0.4936999988555908, 0)
+    dle.add_actual_data(job_key, 0.613600004017353, 2)
 
-    acc_estimate, coefs = ae.predict_accuracy(test_job, 2)
+    acc_estimate, coefs = dle.predict_accuracy(test_job, 2)
 
-    predict_dict = ae.get_predict_dict()[job_key]
+    predict_dict = dle.get_predict_dict()[job_key]
     accuracy_data = predict_dict['accuracy']
     epoch_data = [x + 1 for x in predict_dict['epoch']]
 
-    for i in range(1, topk+1):
+    for i in range(1, topk + 1):
         for j in range(0, 5):
-            epoch_data.pop(15*i)
-            accuracy_data.pop(15*i)
+            epoch_data.pop(15 * i)
+            accuracy_data.pop(15 * i)
 
     axs[0, 1].spines["top"].set_linewidth(5)
     axs[0, 1].spines["left"].set_linewidth(5)
@@ -195,26 +184,26 @@ if __name__ == "__main__":
     # add 4 actual points
     ###########################################
 
-    ae.prepare_workload(test_workload)
+    dle.prepare_workload(test_workload)
 
-    ae.add_actual_accuracy(job_key, 0.4936999988555908, 0)
+    dle.add_actual_data(job_key, 0.4936999988555908, 0)
 
-    ae.add_actual_accuracy(job_key, 0.613600004017353, 2)
+    dle.add_actual_data(job_key, 0.613600004017353, 2)
 
-    ae.add_actual_accuracy(job_key, 0.6697000038623809, 4)
+    dle.add_actual_data(job_key, 0.6697000038623809, 4)
 
-    ae.add_actual_accuracy(job_key, 0.701600005030632, 6)
+    dle.add_actual_data(job_key, 0.701600005030632, 6)
 
-    acc_estimate, coefs = ae.predict_accuracy(test_job, 8)
+    acc_estimate, coefs = dle.predict_accuracy(test_job, 8)
 
-    predict_dict = ae.get_predict_dict()[job_key]
+    predict_dict = dle.get_predict_dict()[job_key]
     accuracy_data = predict_dict['accuracy']
     epoch_data = [x + 1 for x in predict_dict['epoch']]
 
-    for i in range(1, topk+1):
+    for i in range(1, topk + 1):
         for j in range(0, 5):
-            epoch_data.pop(15*i)
-            accuracy_data.pop(15*i)
+            epoch_data.pop(15 * i)
+            accuracy_data.pop(15 * i)
 
     axs[1, 0].spines["top"].set_linewidth(5)
     axs[1, 0].spines["left"].set_linewidth(5)
@@ -283,35 +272,34 @@ if __name__ == "__main__":
 
     axs[1, 0].grid(True, linewidth=3, linestyle='--')
 
-
     ###########################################
     # add 6 actual points
     ###########################################
 
-    ae.prepare_workload(test_workload)
+    dle.prepare_workload(test_workload)
 
-    ae.add_actual_accuracy(job_key, 0.4936999988555908, 0)
+    dle.add_actual_data(job_key, 0.4936999988555908, 0)
 
-    ae.add_actual_accuracy(job_key, 0.613600004017353, 2)
+    dle.add_actual_data(job_key, 0.613600004017353, 2)
 
-    ae.add_actual_accuracy(job_key, 0.6697000038623809, 4)
+    dle.add_actual_data(job_key, 0.6697000038623809, 4)
 
-    ae.add_actual_accuracy(job_key, 0.701600005030632, 6)
+    dle.add_actual_data(job_key, 0.701600005030632, 6)
 
-    ae.add_actual_accuracy(job_key, 0.7007000043988227, 8)
+    dle.add_actual_data(job_key, 0.7007000043988227, 8)
 
-    ae.add_actual_accuracy(job_key, 0.704100002348423, 10)
+    dle.add_actual_data(job_key, 0.704100002348423, 10)
 
-    acc_estimate, coefs = ae.predict_accuracy(test_job, 13)
+    acc_estimate, coefs = dle.predict_accuracy(test_job, 13)
 
-    predict_dict = ae.get_predict_dict()[job_key]
+    predict_dict = dle.get_predict_dict()[job_key]
     accuracy_data = predict_dict['accuracy']
     epoch_data = [x + 1 for x in predict_dict['epoch']]
 
-    for i in range(1, topk+1):
+    for i in range(1, topk + 1):
         for j in range(0, 5):
-            epoch_data.pop(15*i)
-            accuracy_data.pop(15*i)
+            epoch_data.pop(15 * i)
+            accuracy_data.pop(15 * i)
 
     axs[1, 1].spines["top"].set_linewidth(5)
     axs[1, 1].spines["left"].set_linewidth(5)
@@ -394,3 +382,68 @@ if __name__ == "__main__":
     plt.legend(loc='upper center', bbox_to_anchor=(-0.16, 2.7), ncol=4, fontsize=38)
 
     plt.savefig(outpath, format='pdf', bbox_inches='tight', pad_inches=0.05)
+
+
+def eval_epoch_prediction():
+    test_workload = [{
+        "id": "1",
+        "model": "mobilenet",
+        "num_parameters": 2141234,
+        "batch_size": 32,
+        "opt": "SGD",
+        "learn_rate": 0.01,
+        "training_data": "cifar",
+        "classes": 10
+    }]
+
+    test_job = {
+        "id": "1",
+        "model": "mobilenet",
+        "num_parameters": 2141234,
+        "batch_size": 32,
+        "opt": "SGD",
+        "learn_rate": 0.01,
+        "training_data": "cifar",
+        "classes": 10
+    }
+
+    real_accuracy = [
+        0.4936999988555908,
+        0.5672000032663346,
+        0.613600004017353,
+        0.6527000042796135,
+        0.6697000038623809,
+        0.6856000030040741,
+        0.701600005030632,
+        0.700500001758337,
+        0.7007000043988227,
+        0.6969000053405762,
+        0.704100002348423,
+        0.7104000025987625,
+        0.7022000008821487,
+        0.7142000058293343,
+        0.711000003516674
+    ]
+
+    job_key = str(test_job['id']) + '-' + test_job['model']
+
+    dle.prepare_workload(test_workload)
+
+    epoch_estimate, coefs = dle.predict_epoch(test_job, 0.613600004017353)
+
+    print(epoch_estimate)
+
+
+if __name__ == "__main__":
+    outpath = '/home/ruiliu/Development/dl-estimator.pdf'
+
+    topk = 10
+
+    dle = DLEstimator(topk)
+
+    # read all the accuracy file
+    for f in os.listdir('./knowledgebase'):
+        model_acc_file = os.getcwd() + '/knowledgebase/' + f
+        dle.import_accuracy_dataset(model_acc_file)
+
+    eval_epoch_prediction()
