@@ -22,9 +22,9 @@ class CVWorkloadGenerator:
         self._accuracy_ratio = accuracy_ratio
         self._runtime_ratio = runtime_ratio
 
-        self._cv_model_light_list = ['inception', 'mobilenet', 'mobilenet_v2', 'squeezenet']
-        self._cv_model_med_list = ['shufflenet', 'shufflenet_v2', 'lenet', 'alexnet']
-        self._cv_model_heavy_list = ['vgg', 'zfnet', 'densenet']
+        self._cv_model_light_list = ['mobilenet', 'mobilenet_v2', 'squeezenet']
+        self._cv_model_med_list = ['shufflenet', 'shufflenet_v2', 'lenet']
+        self._cv_model_heavy_list = ['vgg', 'alexnet', 'densenet']
 
         # self._cv_model_light_list = ['inception', 'mobilenet', 'mobilenet_v2', 'squeezenet', 'xception']
         # self._cv_model_med_list = ['shufflenet', 'shufflenet_v2', 'resnet', 'resnext', 'efficientnet']
@@ -41,13 +41,19 @@ class CVWorkloadGenerator:
                                ('accuracy', 0.96), ('accuracy', 0.98), ('accuracy', 0.99)]
 
         # unit of runtime: epoch
-        self._runtime_list = [('runtime', 1), ('runtime', 5), ('runtime', 10),
-                              ('runtime', 20), ('runtime', 50), ('runtime', 100),
-                              ('runtime', 200), ('runtime', 300), ('runtime', 400)]
+        # self._runtime_list = [('runtime', 1), ('runtime', 5), ('runtime', 10),
+        #                       ('runtime', 20), ('runtime', 50), ('runtime', 100),
+        #                       ('runtime', 200), ('runtime', 300), ('runtime', 400)]
+
+        self._runtime_list = [('runtime', 5),
+                              ('runtime', 10),
+                              ('runtime', 40),
+                              ('runtime', 100),
+                              ('runtime', 300)]
 
         self._epoch_list = [10, 20, 30, 40, 50, 100]
 
-        self._batch_size_list = [25, 32, 50, 64, 100, 128]
+        self._batch_size_list = [25, 32, 50, 64, 100]
 
         self._opt_list = ['SGD', 'Adam', 'Adagrad', 'Momentum']
 
@@ -56,10 +62,14 @@ class CVWorkloadGenerator:
         self._random_seed = random_seed
 
     @staticmethod
-    def _random_selection(item_list, item_num):
+    def _random_selection(item_list, item_num, prob=None):
         if item_num == 0:
             return []
-        random_index = np.random.choice(np.arange(len(item_list)), size=item_num)
+
+        if prob is None:
+            random_index = np.random.choice(np.arange(len(item_list)), size=item_num)
+        else:
+            random_index = np.random.choice(np.arange(len(item_list)), size=item_num, p=prob)
 
         res_list = list()
         for idx in random_index:
@@ -88,7 +98,7 @@ class CVWorkloadGenerator:
 
         convergence_list = self._random_selection(self._convergence_list, convergence_num)
         accuracy_list = self._random_selection(self._accuracy_list, accuracy_num)
-        runtime_list = self._random_selection(self._runtime_list, runtime_num)
+        runtime_list = self._random_selection(self._runtime_list, runtime_num, prob=[0.1, 0.2, 0.3, 0.3, 0.1])
 
         model_select_list = cv_light_list + cv_med_list + cv_heavy_list
         np.random.shuffle(model_select_list)

@@ -13,7 +13,7 @@ objective:
   runtime_ratio: 0.2
 
 num_gpu: 4
-random_seed: 99
+random_seed: 200
 
 # unit of slot: second
 running_slot: 150
