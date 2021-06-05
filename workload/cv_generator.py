@@ -22,17 +22,18 @@ class CVWorkloadGenerator:
         self._accuracy_ratio = accuracy_ratio
         self._runtime_ratio = runtime_ratio
 
-        self._cv_model_light_list = ['mobilenet', 'mobilenet_v2', 'squeezenet']
-        self._cv_model_med_list = ['shufflenet', 'shufflenet_v2', 'lenet']
-        self._cv_model_heavy_list = ['vgg', 'alexnet', 'densenet']
+        # for test
+        # self._cv_model_light_list = ['mobilenet', 'mobilenet_v2', 'squeezenet']
+        # self._cv_model_med_list = ['shufflenet', 'shufflenet_v2', 'lenet']
+        # self._cv_model_heavy_list = ['vgg', 'alexnet', 'densenet']
 
-        # self._cv_model_light_list = ['inception', 'mobilenet', 'mobilenet_v2', 'squeezenet', 'xception']
-        # self._cv_model_med_list = ['shufflenet', 'shufflenet_v2', 'resnet', 'resnext', 'efficientnet']
-        # self._cv_model_heavy_list = ['lenet', 'vgg', 'alexnet', 'zfnet', 'densenet']
+        self._cv_model_light_list = ['inception', 'mobilenet', 'mobilenet_v2', 'squeezenet', 'xception']
+        self._cv_model_med_list = ['shufflenet', 'shufflenet_v2', 'resnet', 'resnext', 'efficientnet']
+        self._cv_model_heavy_list = ['lenet', 'vgg', 'alexnet', 'zfnet', 'densenet']
 
         self._cv_model_list = self._cv_model_light_list + self._cv_model_med_list + self._cv_model_heavy_list
 
-        self._convergence_list = [('convergence', 0.1), ('convergence', 0.05), ('convergence', 0.01),
+        self._convergence_list = [('convergence', 0.05), ('convergence', 0.01),
                                   ('convergence', 0.005), ('convergence', 0.001),
                                   ('convergence', 0.0005), ('convergence', 0.0001)]
 
@@ -49,11 +50,13 @@ class CVWorkloadGenerator:
                               ('runtime', 10),
                               ('runtime', 40),
                               ('runtime', 100),
-                              ('runtime', 300)]
+                              ('runtime', 200)]
 
         self._epoch_list = [10, 20, 30, 40, 50, 100]
 
-        self._batch_size_list = [25, 32, 50, 64, 100]
+        # select small mini-batch due to the paper
+        # "Revisiting Small Batch Training for Deep Neural Networks"
+        self._batch_size_list = [2, 4, 8, 16, 32]
 
         self._opt_list = ['SGD', 'Adam', 'Adagrad', 'Momentum']
 
@@ -98,7 +101,12 @@ class CVWorkloadGenerator:
 
         convergence_list = self._random_selection(self._convergence_list, convergence_num)
         accuracy_list = self._random_selection(self._accuracy_list, accuracy_num)
-        runtime_list = self._random_selection(self._runtime_list, runtime_num, prob=[0.1, 0.2, 0.3, 0.3, 0.1])
+        # runtime_list = self._random_selection(self._runtime_list, runtime_num, prob=[0.1, 0.2, 0.3, 0.3, 0.1])
+        runtime_list_idx = [0, 1, 1, 2, 2, 3, 3, 4]
+        np.random.shuffle(runtime_list_idx)
+        runtime_list = list()
+        for idx in runtime_list_idx:
+            runtime_list.append(self._runtime_list[idx])
 
         model_select_list = cv_light_list + cv_med_list + cv_heavy_list
         np.random.shuffle(model_select_list)
