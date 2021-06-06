@@ -42,13 +42,13 @@ def build_model(job_data,
     elif model_type == 'resnet':
         model = ResNet(residual_layer=18, num_classes=n_class)
     elif model_type == 'resnext':
-        model = ResNeXt(cardinality=8, num_classes=n_class)
+        model = ResNeXt(cardinality=2, num_classes=n_class)
     elif model_type == 'shufflenet':
         model = ShuffleNet(num_groups=2, num_classes=n_class)
     elif model_type == 'squeezenet':
         model = SqueezeNet(num_classes=n_class)
     elif model_type == 'vgg':
-        model = VGG(conv_layer=16, num_classes=n_class)
+        model = VGG(conv_layer=11, num_classes=n_class)
     elif model_type == 'xception':
         model = Xception(num_classes=n_class)
     elif model_type == 'zfnet':
