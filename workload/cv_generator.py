@@ -48,11 +48,18 @@ class CVWorkloadGenerator:
 
         self._runtime_list = [('runtime', 5),
                               ('runtime', 10),
-                              ('runtime', 40),
-                              ('runtime', 100),
-                              ('runtime', 200)]
+                              ('runtime', 20),
+                              ('runtime', 30),
+                              ('runtime', 40)]
 
-        self._epoch_list = [10, 20, 30, 40, 50, 100]
+        # self._runtime_list = [('runtime', 5),
+        #                       ('runtime', 10),
+        #                       ('runtime', 40),
+        #                       ('runtime', 100),
+        #                       ('runtime', 200)]
+
+        self._epoch_list = [5, 10, 15, 20, 25, 30]
+        # self._epoch_list = [10, 20, 30, 40, 50, 100]
 
         # select small mini-batch due to the paper
         # "Revisiting Small Batch Training for Deep Neural Networks"
@@ -69,16 +76,43 @@ class CVWorkloadGenerator:
         if item_num == 0:
             return []
 
-        if prob is None:
-            random_index = np.random.choice(np.arange(len(item_list)), size=item_num)
-        else:
-            random_index = np.random.choice(np.arange(len(item_list)), size=item_num, p=prob)
+        random_index = np.random.choice(np.arange(len(item_list)), size=item_num, p=prob)
 
         res_list = list()
         for idx in random_index:
             res_list.append(item_list[idx])
 
         return res_list
+
+    @staticmethod
+    def _runtime_selection(item_list, item_num):
+        if item_num == 0:
+            return []
+
+        half_runtime = round(item_num * 0.1)
+        one_runtime = round(item_num * 0.2)
+        three_runtime = round(item_num * 0.3)
+        ten_runtime = round(item_num * 0.3)
+        day_runtime = round(item_num * 0.1)
+
+        runtime_list = list()
+
+        for i in range(half_runtime):
+            runtime_list.append(item_list[0])
+
+        for i in range(one_runtime):
+            runtime_list.append(item_list[1])
+
+        for i in range(three_runtime):
+            runtime_list.append(item_list[2])
+
+        for i in range(ten_runtime):
+            runtime_list.append(item_list[3])
+
+        for i in range(day_runtime):
+            runtime_list.append(item_list[4])
+
+        return runtime_list
 
     def generate_workload(self):
         np.random.seed(self._random_seed)
@@ -101,12 +135,7 @@ class CVWorkloadGenerator:
 
         convergence_list = self._random_selection(self._convergence_list, convergence_num)
         accuracy_list = self._random_selection(self._accuracy_list, accuracy_num)
-        # runtime_list = self._random_selection(self._runtime_list, runtime_num, prob=[0.1, 0.2, 0.3, 0.3, 0.1])
-        runtime_list_idx = [0, 1, 1, 2, 2, 3, 3, 4]
-        np.random.shuffle(runtime_list_idx)
-        runtime_list = list()
-        for idx in runtime_list_idx:
-            runtime_list.append(self._runtime_list[idx])
+        runtime_list = self._runtime_selection(self._runtime_list, runtime_num)
 
         model_select_list = cv_light_list + cv_med_list + cv_heavy_list
         np.random.shuffle(model_select_list)
