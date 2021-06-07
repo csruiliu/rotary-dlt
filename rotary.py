@@ -102,7 +102,7 @@ def train_job_trial(gpu_id,
             epochtime_end_marker = timer()
 
             # compute the time of single epoch time for the job
-            job_epochtime_dict[job_name] = epochtime_start_marker - epochtime_end_marker
+            job_epochtime_dict[job_name] = epochtime_end_marker - epochtime_start_marker
 
             # start evaluation phrase
             print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
@@ -385,8 +385,8 @@ if __name__ == "__main__":
     start_time_overall = timer()
 
     # create folder if not exist
-    if not os.path.exists(cfg_path.ckpt_save_path):
-        os.makedirs(cfg_path.ckpt_save_path)
+    #if not os.path.exists(cfg_path.ckpt_save_path):
+    #    os.makedirs(cfg_path.ckpt_save_path)
 
     #######################################################
     # get parameters from configuration
@@ -607,6 +607,5 @@ if __name__ == "__main__":
     for key in job_runtime_history:
         print('{} [runtime_history]-> {}'.format(key, job_runtime_history[key]))
 
-    now = datetime.now()
-    now_time_date = now.strftime("%Y-%m-%d %H:%M:%S")
-    print('============= the whole exp finish at: {}===================='.format(now_time_date))
+    proc_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print('============= the whole exp finish at: {}===================='.format(proc_end_time))

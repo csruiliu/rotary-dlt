@@ -426,7 +426,9 @@ if __name__ == "__main__":
         results_others = list()
         for idx in range(job_queue_others.qsize()):
             gpuid = idx % num_gpu
-            result = proc_pool.apply_async(train_job_others, args=(gpuid, job_runtime_history, job_accuracy_history))
+            result = proc_pool.apply_async(train_job_others, args=(gpuid,
+                                                                   job_runtime_history,
+                                                                   job_accuracy_history))
             results_others.append(result)
 
         for i in results_others:
