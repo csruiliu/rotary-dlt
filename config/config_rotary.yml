@@ -1,11 +1,23 @@
-workload:
+dlt_workload:
   workload_size: 40
   cv_light_ratio: 0.3
   cv_med_ratio: 0.3
-  cv_heavy_ratio: 0.4
-  nlp_light_ratio: 0.3
-  nlp_med_ratio: 0.3
-  nlp_heavy_ratio: 0.4
+  cv_heavy_ratio: 0.2
+  nlp_light_ratio: 0.05
+  nlp_med_ratio: 0.05
+  nlp_heavy_ratio: 0.1
+
+cv_workload:
+  workload_size: 40
+  light_ratio: 0.3
+  med_ratio: 0.3
+  heavy_ratio: 0.4
+
+nlp_workload:
+  workload_size: 40
+  light_ratio: 0.3
+  med_ratio: 0.3
+  heavy_ratio: 0.4
 
 objective:
   convergence_ratio: 0.6
