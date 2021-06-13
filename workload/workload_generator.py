@@ -157,7 +157,8 @@ class WorkloadGenerator:
                 job['batch_size'] = np.random.choice(self._nlp_batch_size_list, size=1)[0]
                 job['training_data'] = 'udtreebank'
             elif job['model'] in self._bert_model_list:
-                job['batch_size'] = np.random.choice(self._nlp_batch_size_list, size=1)[0]
+                # make it to 32 due to GPU memory limitation
+                job['batch_size'] = 32
                 job['training_data'] = 'stanford-lmrd'
             else:
                 raise ValueError('model is not supported')
