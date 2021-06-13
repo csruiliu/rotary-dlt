@@ -1,7 +1,6 @@
 #!/bin/sh
 
 MODEL_LIST="alexnet efficientnet inception lenet mobilenet mobilenetv2 squeezenet xception zfnet"
-#MODEL_LIST="zfnet"
 BATCH_SIZE_LIST="32 64 128 256"
 OPT_LIST="SGD Adam Adagrad Momentum"
 LEARN_RATE_LIST="0.1 0.01 0.001 0.0001 0.00001"
@@ -77,6 +76,56 @@ do
             python3 profile_accuracy.py -p ${PROFILE} -m ${model} -c ${card} -b ${batch} -o ${opt} -r ${lr} -e ${EPOCH}
           done
         fi
+      done
+    done
+  done
+done
+
+
+MODEL_LIST="lstm bilstm"
+BATCH_SIZE_LIST="32 64 128 256"
+OPT_LIST="SGD Adam Adagrad Momentum"
+LEARN_RATE_LIST="0.1 0.01 0.001 0.0001 0.00001"
+EPOCH=20
+
+for batch in ${BATCH_SIZE_LIST}
+do
+  for opt in ${OPT_LIST}
+  do
+    for lr in ${LEARN_RATE_LIST}
+    do
+      for model in ${MODEL_LIST}
+      do
+        rm -rf __pycache__
+        python3 profile_accuracy_keras.py -m ${model} -l 1 -s 1 -b ${batch} -o ${opt} -r ${lr} -e ${EPOCH}
+      done
+    done
+  done
+done
+
+
+MODEL_LIST="bert"
+LAYER_LIST="2 4 6 8 10 12"
+HIDDEN_SIZE_LIST="128 256 512 768"
+OPT_LIST="SGD Adam Adagrad Momentum"
+LEARN_RATE_LIST="0.1 0.01 0.001 0.0001 0.00001"
+EPOCH=20
+
+for model in ${MODEL_LIST}; do
+  for opt in ${OPT_LIST}; do
+    for lr in ${LEARN_RATE_LIST}; do
+      for hidden in ${HIDDEN_SIZE_LIST}; do
+        for layer in ${LAYER_LIST}; do
+          if [ "$layer" = 10 ] || [ "$layer" = 12 ]; then
+            BATCH_SIZE_LIST="32 64 128"
+          else
+            BATCH_SIZE_LIST="32 64 128 256"
+          fi
+          for batch in ${BATCH_SIZE_LIST}; do
+            rm -rf __pycache__
+            python3 profile_accuracy_keras.py -m "$model" -l "$layer" -s "$hidden" -b "$batch" -o "$opt" -r "$lr" -e "$EPOCH"
+          done
+        done
       done
     done
   done
