@@ -16,13 +16,37 @@ from workload.tensorflow_cifar.models.efficientnet import EfficientNet
 from workload.tensorflow_cifar.models.shufflenet import ShuffleNet
 from workload.tensorflow_cifar.models.shufflenet_v2 import ShuffleNetV2
 
+from workload.tensorflow_nlp.models.bert import BERT
+from workload.tensorflow_nlp.models.lstm import LSTMNet
+from workload.tensorflow_nlp.models.bi_lstm import BiLSTM
 
-def build_model(job_data,
-                opt,
-                lr,
-                n_class,
-                feature,
-                label):
+
+def build_nlp_model(model_type,
+                    max_length,
+                    opt,
+                    lr):
+    if model_type == 'bert':
+        # only use bert-tiny
+        model = BERT(max_length=max_length, hidden_size=128, num_hidden_layers=2, learn_rate=lr, optimizer=opt)
+
+    elif model_type == 'lstm':
+        model = LSTMNet(max_length=max_length, learn_rate=lr, optimizer=opt)
+
+    elif model_type == 'bilstm':
+        model = BiLSTM(max_length=max_length, learn_rate=lr, optimizer=opt)
+
+    else:
+        raise ValueError('model type is not support')
+
+    return model
+
+
+def build_cv_model(job_data,
+                   opt,
+                   lr,
+                   n_class,
+                   feature,
+                   label):
 
     model_type = job_data['model']
     if model_type == 'alexnet':
