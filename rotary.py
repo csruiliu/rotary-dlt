@@ -523,13 +523,16 @@ if __name__ == "__main__":
     # start the rotary process
     #######################################################
 
+    threshold = 0.1
+    fairness = True
+
     while not job_queue_anony.empty():
         results_rotary = list()
         job_select = job_list_rotary[0]
         for idx in range(job_queue_anony.qsize()):
             gpuid = idx % num_gpu
 
-            r_score_min = float('inf')
+            r_score_mark = float('inf') if fairness else float('-inf')
 
             for job_ins in job_list_rotary:
                 job_ins_key = str(job_ins['id']) + '-' + job_ins['model']
@@ -556,9 +559,14 @@ if __name__ == "__main__":
                 else:
                     raise ValueError('the job objective type is not supported')
 
-                if r_score_min > r_score:
-                    r_score_min = r_score
-                    job_select = job_ins
+                if fairness:
+                    if r_score_mark > r_score:
+                        r_score_mark = r_score
+                        job_select = job_ins
+                else:
+                    if r_score_mark <= r_score:
+                        r_score_mark = r_score
+                        job_select = job_ins
 
             try:
                 job_list_rotary.remove(job_select)
