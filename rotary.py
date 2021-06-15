@@ -1,17 +1,191 @@
 import tensorflow as tf
+import tensorflow_hub as hub
 import multiprocessing as mp
+import numpy as np
 from timeit import default_timer as timer
 import os
+import re
 import queue
-import math
+import pandas as pd
 from datetime import datetime
+from bert.tokenization import FullTokenizer
+from tensorflow.keras import backend as K
+from keras.preprocessing.sequence import pad_sequences
+import urllib
 
 import config.config_rotary as cfg_rotary
 import config.config_path as cfg_path
-from workload.cv_generator import CVWorkloadGenerator
 from estimator.dl_estimator import DLEstimator
+from workload.workload_generator import WorkloadGenerator
 from workload.tensorflow_cifar.tools.dataset_loader import load_cifar10_keras
-from utils.model_tool import build_model
+import workload.tensorflow_nlp.tools.udtb_reader as udtb_reader
+from utils.model_tool import build_cv_model, build_nlp_model
+
+
+# Load all files from a directory in a DataFrame.
+def load_directory_data(directory):
+    data = {}
+    data["sentence"] = []
+    data["sentiment"] = []
+    for file_path in os.listdir(directory):
+        with tf.gfile.GFile(os.path.join(directory, file_path), "r") as f:
+            data["sentence"].append(f.read())
+            data["sentiment"].append(re.match("\d+_(\d+)\.txt", file_path).group(1))
+    return pd.DataFrame.from_dict(data)
+
+
+# Merge positive and negative examples, add a polarity column and shuffle.
+def load_dataset(directory):
+    pos_df = load_directory_data(os.path.join(directory, "pos"))
+    neg_df = load_directory_data(os.path.join(directory, "neg"))
+    pos_df["polarity"] = 1
+    neg_df["polarity"] = 0
+    return pd.concat([pos_df, neg_df]).sample(frac=1).reset_index(drop=True)
+
+
+# Download and process the dataset files.
+def download_and_load_datasets(force_download=False):
+    if not os.path.exists('/tank/local/ruiliu/datasets/aclImdb.tar.gz'):
+        dataset = tf.keras.utils.get_file(
+            fname="aclImdb.tar.gz",
+            origin="http://ai.stanford.edu/~amaas/data/sentiment/aclImdb_v1.tar.gz",
+            extract=True,
+            cache_dir='/tank/local/ruiliu/'
+        )
+    else:
+        dataset = '/tank/local/ruiliu/datasets/aclImdb.tar.gz'
+
+    train_df = load_dataset(os.path.join(os.path.dirname(dataset), "aclImdb", "train"))
+    test_df = load_dataset(os.path.join(os.path.dirname(dataset), "aclImdb", "test"))
+
+    return train_df, test_df
+
+
+class PaddingInputExample(object):
+    """Fake example so the num input examples is a multiple of the batch size.
+    When running eval/predict on the TPU, we need to pad the number of examples
+    to be a multiple of the batch size, because the TPU requires a fixed batch
+    size. The alternative is to drop the last batch, which is bad because it means
+    the entire output data won't be generated.
+    We use this class instead of `None` because treating `None` as padding
+    batches could cause silent errors.
+    """
+
+
+class InputExample(object):
+    """A single training/test example for simple sequence classification."""
+
+    def __init__(self, guid, text_a, text_b=None, label=None):
+        """Constructs a InputExample.
+            Args:
+            guid: Unique id for the example.
+            text_a: string. The untokenized text of the first sequence.
+                    For single sequence tasks, only this sequence must be specified.
+            text_b: (Optional) string. The untokenized text of the second sequence.
+                    Only must be specified for sequence pair tasks.
+            label: (Optional) string. The label of the example.
+                   This should be specified for train and dev examples, but not for test examples.
+        """
+        self.guid = guid
+        self.text_a = text_a
+        self.text_b = text_b
+        self.label = label
+
+
+def create_tokenizer_from_hub_module(bert_path, sess):
+    """Get the vocab file and casing info from the Hub module."""
+    bert_module = hub.Module(bert_path)
+    tokenization_info = bert_module(signature="tokenization_info", as_dict=True)
+    vocab_file, do_lower_case = sess.run(
+        [tokenization_info["vocab_file"], tokenization_info["do_lower_case"]]
+    )
+
+    return FullTokenizer(vocab_file=vocab_file, do_lower_case=do_lower_case)
+
+
+def convert_single_example(tokenizer, example, max_seq_length=256):
+    """Converts a single `InputExample` into a single `InputFeatures`."""
+
+    if isinstance(example, PaddingInputExample):
+        input_ids = [0] * max_seq_length
+        input_mask = [0] * max_seq_length
+        segment_ids = [0] * max_seq_length
+        label = 0
+        return input_ids, input_mask, segment_ids, label
+
+    tokens_a = tokenizer.tokenize(example.text_a)
+    if len(tokens_a) > max_seq_length - 2:
+        tokens_a = tokens_a[0: (max_seq_length - 2)]
+
+    tokens = []
+    segment_ids = []
+    tokens.append("[CLS]")
+    segment_ids.append(0)
+    for token in tokens_a:
+        tokens.append(token)
+        segment_ids.append(0)
+    tokens.append("[SEP]")
+    segment_ids.append(0)
+
+    input_ids = tokenizer.convert_tokens_to_ids(tokens)
+
+    # The mask has 1 for real tokens and 0 for padding tokens. Only real
+    # tokens are attended to.
+    input_mask = [1] * len(input_ids)
+
+    # Zero-pad up to the sequence length.
+    while len(input_ids) < max_seq_length:
+        input_ids.append(0)
+        input_mask.append(0)
+        segment_ids.append(0)
+
+    assert len(input_ids) == max_seq_length
+    assert len(input_mask) == max_seq_length
+    assert len(segment_ids) == max_seq_length
+
+    return input_ids, input_mask, segment_ids, example.label
+
+
+def convert_examples_to_features(tokenizer, examples, max_seq_length=256):
+    """Convert a set of `InputExample`s to a list of `InputFeatures`."""
+
+    input_ids, input_masks, segment_ids, labels = [], [], [], []
+    # for example in tqdm(examples, desc="Converting examples to features"):
+    for example in examples:
+        input_id, input_mask, segment_id, label = convert_single_example(
+            tokenizer, example, max_seq_length
+        )
+        input_ids.append(input_id)
+        input_masks.append(input_mask)
+        segment_ids.append(segment_id)
+        labels.append(label)
+    return (
+        np.array(input_ids),
+        np.array(input_masks),
+        np.array(segment_ids),
+        np.array(labels).reshape(-1, 1),
+    )
+
+
+def convert_text_to_examples(texts, labels):
+    """Create InputExamples"""
+    InputExamples = []
+    for text, label in zip(texts, labels):
+        InputExamples.append(
+            InputExample(guid=None, text_a=" ".join(text), text_b=None, label=label)
+        )
+    return InputExamples
+
+
+def to_categorical(sequences, categories):
+    cat_sequences = []
+    for s in sequences:
+        cats = []
+        for item in s:
+            cats.append(np.zeros(categories))
+            cats[-1][item] = 1.0
+        cat_sequences.append(cats)
+    return np.array(cat_sequences)
 
 
 def log_time_accuracy(job_instance_key,
@@ -49,278 +223,98 @@ def train_job_trial(gpu_id,
     model_learn_rate = job_data['learn_rate']
     train_batchsize = job_data['batch_size']
 
-    img_w = 32
-    img_h = 32
-    num_chn = 3
-    num_cls = 10
+    if job_data['model'] == 'bert':
+        # Params for bert model and tokenization
+        bert_path = "https://tfhub.dev/google/bert_uncased_L-12_H-768_A-12/1"
+        max_seq_length = 128
 
-    train_feature, train_labels, eval_feature, eval_labels = load_cifar10_keras()
+        train_df, test_df = download_and_load_datasets()
 
-    with tf.device(assign_device):
-        feature_ph = tf.placeholder(tf.float32, [None, img_w, img_h, num_chn])
-        label_ph = tf.placeholder(tf.int64, [None, num_cls])
-        train_op, eval_op, total_parameters = build_model(job_data,
-                                                          model_opt,
-                                                          model_learn_rate,
-                                                          num_cls,
-                                                          feature_ph,
-                                                          label_ph)
+        # Create datasets (Only take up to max_seq_length words for memory)
+        train_text = train_df["sentence"].tolist()
+        train_text = [" ".join(t.split()[0:max_seq_length]) for t in train_text]
+        train_text = np.array(train_text, dtype=object)[:, np.newaxis]
+        train_label = train_df["polarity"].tolist()
 
-        # store the total parameters of the model to dict
-        job_parameters_dict[job_name] = total_parameters
+        # start processing on the assigned device
+        with tf.device(assign_device):
+            model = build_nlp_model(model_type=job_data['model'], max_length=128, opt=model_opt, lr=model_learn_rate)
 
-        # ready to train the job
-        saver = tf.train.Saver()
+            logit, total_parameters = model.build()
 
-        model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
+            # store the total parameters of the model to dict
+            job_parameters_dict[job_name] = total_parameters
 
-        if os.path.exists(model_ckpt_save_path):
-            os.makedirs(model_ckpt_save_path)
+            # init the tf saver to store the model
+            saver = tf.train.Saver()
+            model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
+            if os.path.exists(model_ckpt_save_path):
+                os.makedirs(model_ckpt_save_path)
 
-        config = tf.ConfigProto()
-        config.allow_soft_placement = True
-        config.gpu_options.allow_growth = True
+            # init the config for training
+            config = tf.ConfigProto()
+            config.allow_soft_placement = True
+            config.gpu_options.allow_growth = True
 
-        with tf.Session(config=config) as sess:
-            checkpoint_file = model_ckpt_save_path + '/model_ckpt'
-            sess.run(tf.global_variables_initializer())
-
-            num_batch = train_labels.shape[0] // train_batchsize
-
-            epochtime_start_marker = timer()
-
-            for n in range(num_batch):
-                # print('step {} / {}'.format(n + 1, num_batch))
-                batch_offset = n * train_batchsize
-                batch_end = (n + 1) * train_batchsize
-
-                train_data_batch = train_feature[batch_offset:batch_end]
-                train_label_batch = train_labels[batch_offset:batch_end]
-
-                sess.run(train_op, feed_dict={feature_ph: train_data_batch, label_ph: train_label_batch})
-
-            epochtime_end_marker = timer()
-
-            # compute the time of single epoch time for the job
-            job_epochtime_dict[job_name] = epochtime_end_marker - epochtime_start_marker
-
-            # start evaluation phrase
-            print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
-            acc_sum = 0
-            eval_batch_size = 50
-            num_batch_eval = eval_labels.shape[0] // eval_batch_size
-            for ne in range(num_batch_eval):
-                # print('evaluation step %d / %d' % (ne + 1, num_batch_eval))
-                batch_offset = ne * eval_batch_size
-                batch_end = (ne + 1) * eval_batch_size
-                eval_feature_batch = eval_feature[batch_offset:batch_end]
-                eval_label_batch = eval_labels[batch_offset:batch_end]
-                acc_batch = sess.run(eval_op,
-                                     feed_dict={feature_ph: eval_feature_batch, label_ph: eval_label_batch})
-                acc_sum += acc_batch
-
-            cur_accuracy = acc_sum / num_batch_eval
-            print('evaluation accuracy:{}'.format(cur_accuracy))
-
-            pre_accuracy = job_accuracy_dict[job_name]
-
-            trial_slot_end_marker = timer()
-
-            job_runtime_dict[job_name] += trial_slot_end_marker - trial_slot_start_marker
-            job_epoch_dict[job_name] += 1
-            job_accuracy_dict[job_name] = cur_accuracy
-
-            # add this trial result to estimator
-            dl_estimator.add_actual_data(job_key=job_name, accuracy=cur_accuracy, epoch=1)
-
-            if job_data['goal_type'] == 'accuracy':
-                if job_accuracy_dict[job_name] >= job_data['goal_value']:
-                    end_time_overall = timer()
-                    job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                    job_attain_dict[job_name] = 1
-                    log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
-                    saver.save(sess, checkpoint_file)
-                    msg = 'job {} reaches SLO'.format(job_data['id'])
-                    return msg
-
-                if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
-                    end_time_overall = timer()
-                    job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                    saver.save(sess, checkpoint_file)
-                    log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
-                    msg = 'job {} is finished'.format(job_data['id'])
-                    return msg
-
-            elif job_data['goal_type'] == 'convergence':
-                delta = cur_accuracy - pre_accuracy
-                if delta <= job_data['goal_value']:
-                    end_time_overall = timer()
-                    job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                    job_attain_dict[job_name] = 1
-                    saver.save(sess, checkpoint_file)
-                    log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
-                    msg = 'job {} reaches the SLO'.format(job_data['id'])
-                    return msg
-
-                if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
-                    end_time_overall = timer()
-                    job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                    saver.save(sess, checkpoint_file)
-                    log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
-                    msg = 'job {} is finished'.format(job_data['id'])
-                    return msg
-
-            elif job_data['goal_type'] == 'runtime':
-                if job_epoch_dict[job_name] >= job_data['goal_value']:
-                    end_time_overall = timer()
-                    job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                    job_attain_dict[job_name] = 1
-                    saver.save(sess, checkpoint_file)
-                    msg = 'job {} reaches the SLO'.format(job_data['id'])
-                    log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
-                    return msg
-            else:
-                raise ValueError('the job objective type is not supported')
-
-            # save the model and exit the trial slot
-            saver.save(sess, checkpoint_file)
-            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
-
-    msg = 'job {} is finished the current running slot'.format(job_data['id'])
-    return msg
-
-
-def train_job(gpu_id,
-              job_data,
-              shared_runtime_history,
-              shared_accuracy_history):
-    preparation_start_marker = timer()
-    slot_start_marker = timer()
-
-    # count the training time of this slot
-    running_slot_time = 0
-
-    ################################################################
-    # randomly pop a job key from the queue_anony
-    ################################################################
-    try:
-        job_anony = job_queue_anony.get_nowait()
-    except queue.Empty:
-        return
-
-    ################################################################
-    # start working on the selected job
-    ################################################################
-
-    job_name = str(job_data['id']) + '-' + job_data['model']
-    print('get job {}'.format(job_name))
-
-    # get the device id
-    assign_device = '/gpu:' + str(gpu_id)
-    print('running on device {}'.format(assign_device))
-
-    # get opt, learning rate, batch size and image size for training
-    model_opt = job_data['opt']
-    model_learn_rate = job_data['learn_rate']
-    train_batchsize = job_data['batch_size']
-
-    img_w = 32
-    img_h = 32
-    num_chn = 3
-    num_cls = 10
-
-    # load cifar10 data
-    train_feature, train_labels, eval_feature, eval_labels = load_cifar10_keras()
-
-    with tf.device(assign_device):
-        feature_ph = tf.placeholder(tf.float32, [None, img_w, img_h, num_chn])
-        label_ph = tf.placeholder(tf.int64, [None, num_cls])
-        train_op, eval_op, total_parameters = build_model(job_data,
-                                                          model_opt,
-                                                          model_learn_rate,
-                                                          num_cls,
-                                                          feature_ph,
-                                                          label_ph)
-
-        # init the tf saver for checkpoint
-        saver = tf.train.Saver()
-
-        # get the path of checkpoint
-        model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
-
-        if not os.path.exists(model_ckpt_save_path):
-            os.makedirs(model_ckpt_save_path)
-
-        config = tf.ConfigProto()
-        config.allow_soft_placement = True
-        config.gpu_options.allow_growth = True
-
-        with tf.Session(config=config) as sess:
-            # check if the checkpoint file exist
-            checkpoint_file = model_ckpt_save_path + '/model_ckpt'
-            if os.path.isfile(checkpoint_file + '.meta'):
-                saver.restore(sess, checkpoint_file)
-            else:
+            with tf.Session(config=config) as sess:
+                checkpoint_file = model_ckpt_save_path + '/model_ckpt'
+                # Instantiate variables
+                sess.run(tf.local_variables_initializer())
                 sess.run(tf.global_variables_initializer())
+                sess.run(tf.tables_initializer())
+                K.set_session(sess)
 
-            num_batch = train_labels.shape[0] // train_batchsize
+                # Instantiate tokenizer
+                tokenizer = create_tokenizer_from_hub_module(bert_path, sess)
 
-            preparation_end_marker = timer()
-            # add the prepare time for this process
-            job_runtime_dict[job_name] += preparation_end_marker - preparation_start_marker
+                # Convert data to InputExample format
+                train_examples = convert_text_to_examples(train_text, train_label)
 
-            # check if the total runtime is less than running_slot
-            while running_slot_time < running_slot:
+                # Convert to features
+                (
+                    train_input_ids,
+                    train_input_masks,
+                    train_segment_ids,
+                    train_labels,
+                ) = convert_examples_to_features(tokenizer, train_examples, max_seq_length=max_seq_length)
 
-                epoch_start_marker = timer()
+                epochtime_start_marker = timer()
 
-                for i in range(num_batch):
-                    # print('step {} / {}'.format(i + 1, num_batch))
-                    batch_offset = i * train_batchsize
-                    batch_end = (i + 1) * train_batchsize
+                logit.fit([train_input_ids, train_input_masks, train_segment_ids],
+                          train_labels,
+                          epochs=1,
+                          batch_size=train_batchsize)
 
-                    train_data_batch = train_feature[batch_offset:batch_end]
-                    train_label_batch = train_labels[batch_offset:batch_end]
-
-                    sess.run(train_op, feed_dict={feature_ph: train_data_batch, label_ph: train_label_batch})
-
-                print('start evaluation phrase')
-                acc_sum = 0
-                eval_batch_size = 50
-                num_batch_eval = eval_labels.shape[0] // eval_batch_size
-                for i in range(num_batch_eval):
-                    # print('evaluation step %d / %d' % (i + 1, num_batch_eval))
-                    batch_offset = i * eval_batch_size
-                    batch_end = (i + 1) * eval_batch_size
-                    eval_feature_batch = eval_feature[batch_offset:batch_end]
-                    eval_label_batch = eval_labels[batch_offset:batch_end]
-                    acc_batch = sess.run(eval_op,
-                                         feed_dict={feature_ph: eval_feature_batch, label_ph: eval_label_batch})
-                    acc_sum += acc_batch
-
-                cur_accuracy = acc_sum / num_batch_eval
+                # start evaluation phrase
+                print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
+                cur_accuracy = logit.evaluate([train_input_ids, train_input_masks, train_segment_ids], train_labels)
                 print('evaluation accuracy:{}'.format(cur_accuracy))
 
                 pre_accuracy = job_accuracy_dict[job_name]
 
-                epoch_end_marker = timer()
+                # compute the time of single epoch time for the job
+                epochtime_end_marker = timer()
+                job_epochtime_dict[job_name] = epochtime_end_marker - epochtime_start_marker
 
-                # tracking the time and accuracy
-                job_runtime_dict[job_name] += epoch_end_marker - epoch_start_marker
+                # record the time of training slot
+                trial_slot_end_marker = timer()
+                job_runtime_dict[job_name] += trial_slot_end_marker - trial_slot_start_marker
+
+                # record the meta information
                 job_epoch_dict[job_name] += 1
                 job_accuracy_dict[job_name] = cur_accuracy
 
-                # add current results
-                dl_estimator.add_actual_data(job_name, cur_accuracy, job_epoch_dict[job_name])
+                # add this trial result to estimator
+                dl_estimator.add_actual_data(job_key=job_name, accuracy=cur_accuracy, epoch=1)
 
                 if job_data['goal_type'] == 'accuracy':
                     if job_accuracy_dict[job_name] >= job_data['goal_value']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        saver.save(sess, checkpoint_file)
                         log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
-                        msg = 'job {} reaches the SLO'.format(job_data['id'])
+                        saver.save(sess, checkpoint_file)
+                        msg = 'job {} reaches SLO'.format(job_data['id'])
                         return msg
 
                     if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
@@ -356,16 +350,835 @@ def train_job(gpu_id,
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
                         saver.save(sess, checkpoint_file)
-                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
                         msg = 'job {} reaches the SLO'.format(job_data['id'])
+                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
                         return msg
                 else:
                     raise ValueError('the job objective type is not supported')
 
+                # save the model and exit the trial slot
+                saver.save(sess, checkpoint_file)
                 log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
 
-                slot_end_marker = timer()
-                running_slot_time = slot_end_marker - slot_start_marker
+    elif job_data['model'] == 'lstm' or job_data['model'] == 'lstm':
+        # Download and load the dataset
+        UD_ENGLISH_TRAIN = './dataset/ud_treebank/en_partut-ud-train.conllu'
+        UD_ENGLISH_DEV = './dataset/ud_treebank/en_partut-ud-dev.conllu'
+        UD_ENGLISH_TEST = './dataset/ud_treebank/en_partut-ud-test.conllu'
+
+        if not os.path.exists(UD_ENGLISH_TRAIN):
+            urllib.request.urlretrieve('http://archive.aueb.gr:8085/files/en_partut-ud-train.conllu', UD_ENGLISH_TRAIN)
+        if not os.path.exists(UD_ENGLISH_DEV):
+            urllib.request.urlretrieve('http://archive.aueb.gr:8085/files/en_partut-ud-dev.conllu', UD_ENGLISH_DEV)
+        if not os.path.exists(UD_ENGLISH_TEST):
+            urllib.request.urlretrieve('http://archive.aueb.gr:8085/files/en_partut-ud-test.conllu', UD_ENGLISH_TEST)
+
+        train_sentences = udtb_reader.read_conllu(UD_ENGLISH_TRAIN)
+        val_sentences = udtb_reader.read_conllu(UD_ENGLISH_DEV)
+
+        # read the train and eval text
+        train_text = udtb_reader.text_sequence(train_sentences)
+        val_text = udtb_reader.text_sequence(val_sentences)
+
+        train_label = udtb_reader.tag_sequence(train_sentences)
+        val_label = udtb_reader.tag_sequence(val_sentences)
+
+        # build dictionary with tag vocabulary
+        words, tags = set([]), set([])
+        for s in train_text:
+            for w in s:
+                words.add(w.lower())
+        for ts in train_label:
+            for t in ts:
+                tags.add(t)
+        word2index = {w: i + 2 for i, w in enumerate(list(words))}
+        word2index['-PAD-'] = 0
+        word2index['-OOV-'] = 1
+        tag2index = {t: i + 1 for i, t in enumerate(list(tags))}
+        tag2index['-PAD-'] = 0
+
+        # prepare the training data
+        train_sentences_X, val_sentences_X, train_tags_y, val_tags_y = [], [], [], []
+        for s in train_text:
+            s_int = []
+            for w in s:
+                try:
+                    s_int.append(word2index[w.lower()])
+                except KeyError:
+                    s_int.append(word2index['-OOV-'])
+            train_sentences_X.append(s_int)
+
+        for s in val_text:
+            s_int = []
+            for w in s:
+                try:
+                    s_int.append(word2index[w.lower()])
+                except KeyError:
+                    s_int.append(word2index['-OOV-'])
+            val_sentences_X.append(s_int)
+
+        for s in train_label:
+            train_tags_y.append([tag2index[t] for t in s])
+        for s in val_label:
+            val_tags_y.append([tag2index[t] for t in s])
+
+        MAX_LENGTH = len(max(train_sentences_X, key=len))
+
+        train_sentences_X = pad_sequences(train_sentences_X, maxlen=MAX_LENGTH, padding='post')
+        val_sentences_X = pad_sequences(val_sentences_X, maxlen=MAX_LENGTH, padding='post')
+        train_tags_y = pad_sequences(train_tags_y, maxlen=MAX_LENGTH, padding='post')
+        val_tags_y = pad_sequences(val_tags_y, maxlen=MAX_LENGTH, padding='post')
+
+        # start processing on the assigned device
+        with tf.device(assign_device):
+            # build model
+            model = build_nlp_model(model_type=job_data['model'],
+                                    max_length=MAX_LENGTH,
+                                    opt=model_opt,
+                                    lr=model_learn_rate)
+
+            logit, total_parameters = model.build(word2index, tag2index)
+
+            # store the total parameters of the model to dict
+            job_parameters_dict[job_name] = total_parameters
+
+            # init the tf saver for training model
+            saver = tf.train.Saver()
+
+            model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
+
+            if os.path.exists(model_ckpt_save_path):
+                os.makedirs(model_ckpt_save_path)
+
+            config = tf.ConfigProto()
+            config.allow_soft_placement = True
+            config.gpu_options.allow_growth = True
+
+            with tf.Session(config=config) as sess:
+                checkpoint_file = model_ckpt_save_path + '/model_ckpt'
+
+                epochtime_start_marker = timer()
+
+                logit.fit(train_sentences_X,
+                          to_categorical(train_tags_y, len(tag2index)),
+                          batch_size=train_batchsize,
+                          epochs=1)
+
+                # start evaluation phrase
+                print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
+                cur_accuracy = logit.evaluate(val_sentences_X, to_categorical(val_tags_y, len(tag2index)))
+                print('evaluation accuracy:{}'.format(cur_accuracy))
+
+                pre_accuracy = job_accuracy_dict[job_name]
+
+                # record the time of single epoch time for the job
+                epochtime_end_marker = timer()
+                job_epochtime_dict[job_name] = epochtime_end_marker - epochtime_start_marker
+
+                # record the time of the training slot
+                trial_slot_end_marker = timer()
+                job_runtime_dict[job_name] += trial_slot_end_marker - trial_slot_start_marker
+
+                # record some meta information
+                job_epoch_dict[job_name] += 1
+                job_accuracy_dict[job_name] = cur_accuracy
+
+                # add this trial result to estimator
+                dl_estimator.add_actual_data(job_key=job_name, accuracy=cur_accuracy, epoch=1)
+
+                if job_data['goal_type'] == 'accuracy':
+                    if job_accuracy_dict[job_name] >= job_data['goal_value']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        job_attain_dict[job_name] = 1
+                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                        saver.save(sess, checkpoint_file)
+                        msg = 'job {} reaches SLO'.format(job_data['id'])
+                        return msg
+
+                    if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        saver.save(sess, checkpoint_file)
+                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                        msg = 'job {} is finished'.format(job_data['id'])
+                        return msg
+
+                elif job_data['goal_type'] == 'convergence':
+                    delta = cur_accuracy - pre_accuracy
+                    if delta <= job_data['goal_value']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        job_attain_dict[job_name] = 1
+                        saver.save(sess, checkpoint_file)
+                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                        msg = 'job {} reaches the SLO'.format(job_data['id'])
+                        return msg
+
+                    if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        saver.save(sess, checkpoint_file)
+                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                        msg = 'job {} is finished'.format(job_data['id'])
+                        return msg
+
+                elif job_data['goal_type'] == 'runtime':
+                    if job_epoch_dict[job_name] >= job_data['goal_value']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        job_attain_dict[job_name] = 1
+                        saver.save(sess, checkpoint_file)
+                        msg = 'job {} reaches the SLO'.format(job_data['id'])
+                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                        return msg
+                else:
+                    raise ValueError('the job objective type is not supported')
+
+                # save the model and exit the trial slot
+                saver.save(sess, checkpoint_file)
+                log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+
+    else:
+        img_w = 32
+        img_h = 32
+        num_chn = 3
+        num_cls = 10
+
+        train_feature, train_labels, eval_feature, eval_labels = load_cifar10_keras()
+
+        with tf.device(assign_device):
+            feature_ph = tf.placeholder(tf.float32, [None, img_w, img_h, num_chn])
+            label_ph = tf.placeholder(tf.int64, [None, num_cls])
+            train_op, eval_op, total_parameters = build_cv_model(job_data,
+                                                                 model_opt,
+                                                                 model_learn_rate,
+                                                                 num_cls,
+                                                                 feature_ph,
+                                                                 label_ph)
+
+            # store the total parameters of the model to dict
+            job_parameters_dict[job_name] = total_parameters
+
+            # ready to train the job
+            saver = tf.train.Saver()
+
+            model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
+
+            if os.path.exists(model_ckpt_save_path):
+                os.makedirs(model_ckpt_save_path)
+
+            config = tf.ConfigProto()
+            config.allow_soft_placement = True
+            config.gpu_options.allow_growth = True
+
+            with tf.Session(config=config) as sess:
+                checkpoint_file = model_ckpt_save_path + '/model_ckpt'
+                sess.run(tf.global_variables_initializer())
+
+                num_batch = train_labels.shape[0] // train_batchsize
+
+                epochtime_start_marker = timer()
+
+                for n in range(num_batch):
+                    # print('step {} / {}'.format(n + 1, num_batch))
+                    batch_offset = n * train_batchsize
+                    batch_end = (n + 1) * train_batchsize
+
+                    train_data_batch = train_feature[batch_offset:batch_end]
+                    train_label_batch = train_labels[batch_offset:batch_end]
+
+                    sess.run(train_op, feed_dict={feature_ph: train_data_batch, label_ph: train_label_batch})
+
+                # start evaluation phrase
+                print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
+                acc_sum = 0
+                eval_batch_size = 50
+                num_batch_eval = eval_labels.shape[0] // eval_batch_size
+                for ne in range(num_batch_eval):
+                    # print('evaluation step %d / %d' % (ne + 1, num_batch_eval))
+                    batch_offset = ne * eval_batch_size
+                    batch_end = (ne + 1) * eval_batch_size
+                    eval_feature_batch = eval_feature[batch_offset:batch_end]
+                    eval_label_batch = eval_labels[batch_offset:batch_end]
+                    acc_batch = sess.run(eval_op,
+                                         feed_dict={feature_ph: eval_feature_batch, label_ph: eval_label_batch})
+                    acc_sum += acc_batch
+
+                cur_accuracy = acc_sum / num_batch_eval
+                print('evaluation accuracy:{}'.format(cur_accuracy))
+
+                pre_accuracy = job_accuracy_dict[job_name]
+
+                # record the epoch time
+                epochtime_end_marker = timer()
+                job_epochtime_dict[job_name] = epochtime_end_marker - epochtime_start_marker
+
+                # record the some meta information
+                trial_slot_end_marker = timer()
+                job_runtime_dict[job_name] += trial_slot_end_marker - trial_slot_start_marker
+                job_epoch_dict[job_name] += 1
+                job_accuracy_dict[job_name] = cur_accuracy
+
+                # add this trial result to estimator
+                dl_estimator.add_actual_data(job_key=job_name, accuracy=cur_accuracy, epoch=1)
+
+                if job_data['goal_type'] == 'accuracy':
+                    if job_accuracy_dict[job_name] >= job_data['goal_value']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        job_attain_dict[job_name] = 1
+                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                        saver.save(sess, checkpoint_file)
+                        msg = 'job {} reaches SLO'.format(job_data['id'])
+                        return msg
+
+                    if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        saver.save(sess, checkpoint_file)
+                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                        msg = 'job {} is finished'.format(job_data['id'])
+                        return msg
+
+                elif job_data['goal_type'] == 'convergence':
+                    delta = cur_accuracy - pre_accuracy
+                    if delta <= job_data['goal_value']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        job_attain_dict[job_name] = 1
+                        saver.save(sess, checkpoint_file)
+                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                        msg = 'job {} reaches the SLO'.format(job_data['id'])
+                        return msg
+
+                    if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        saver.save(sess, checkpoint_file)
+                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                        msg = 'job {} is finished'.format(job_data['id'])
+                        return msg
+
+                elif job_data['goal_type'] == 'runtime':
+                    if job_epoch_dict[job_name] >= job_data['goal_value']:
+                        end_time_overall = timer()
+                        job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                        job_attain_dict[job_name] = 1
+                        saver.save(sess, checkpoint_file)
+                        msg = 'job {} reaches the SLO'.format(job_data['id'])
+                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                        return msg
+
+                else:
+                    raise ValueError('the job objective type is not supported')
+
+                # save the model and exit the trial slot
+                saver.save(sess, checkpoint_file)
+                log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+
+    msg = 'job {} is finished the current running slot'.format(job_data['id'])
+    return msg
+
+
+def train_job(gpu_id,
+              job_data,
+              shared_runtime_history,
+              shared_accuracy_history):
+
+    preparation_start_marker = timer()
+    slot_start_marker = timer()
+
+    # count the training time of this slot
+    running_slot_time = 0
+
+    # randomly pop a job key from the queue_anony
+    try:
+        job_anony = job_queue_anony.get_nowait()
+    except queue.Empty:
+        return
+
+    # start working on the selected job
+    job_name = str(job_data['id']) + '-' + job_data['model']
+    print('get job {}'.format(job_name))
+
+    # get the device id
+    assign_device = '/gpu:' + str(gpu_id)
+    print('running on device {}'.format(assign_device))
+
+    # get opt, learning rate, batch size and image size for training
+    model_opt = job_data['opt']
+    model_learn_rate = job_data['learn_rate']
+    train_batchsize = job_data['batch_size']
+
+    # handling different jobs
+    if job_data['model'] == 'bert':
+        # Params for bert model and tokenization
+        bert_path = "https://tfhub.dev/google/bert_uncased_L-12_H-768_A-12/1"
+        max_seq_length = 128
+
+        train_df, test_df = download_and_load_datasets()
+
+        # Create datasets (Only take up to max_seq_length words for memory)
+        train_text = train_df["sentence"].tolist()
+        train_text = [" ".join(t.split()[0:max_seq_length]) for t in train_text]
+        train_text = np.array(train_text, dtype=object)[:, np.newaxis]
+        train_label = train_df["polarity"].tolist()
+
+        # start processing on the assigned device
+        with tf.device(assign_device):
+            model = build_nlp_model(model_type=job_data['model'], max_length=128, opt=model_opt, lr=model_learn_rate)
+
+            logit, total_parameters = model.build()
+
+            # store the total parameters of the model to dict
+            job_parameters_dict[job_name] = total_parameters
+
+            # init the tf saver to store the model
+            saver = tf.train.Saver()
+            model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
+            if os.path.exists(model_ckpt_save_path):
+                os.makedirs(model_ckpt_save_path)
+
+            # init the config for training
+            config = tf.ConfigProto()
+            config.allow_soft_placement = True
+            config.gpu_options.allow_growth = True
+
+            with tf.Session(config=config) as sess:
+                checkpoint_file = model_ckpt_save_path + '/model_ckpt'
+                if os.path.isfile(checkpoint_file + '.meta'):
+                    saver.restore(sess, checkpoint_file)
+                else:
+                    sess.run(tf.global_variables_initializer())
+
+                # Instantiate variables
+                sess.run(tf.local_variables_initializer())
+                sess.run(tf.global_variables_initializer())
+                sess.run(tf.tables_initializer())
+                K.set_session(sess)
+
+                # Instantiate tokenizer
+                tokenizer = create_tokenizer_from_hub_module(bert_path, sess)
+
+                # Convert data to InputExample format
+                train_examples = convert_text_to_examples(train_text, train_label)
+
+                # Convert to features
+                (
+                    train_input_ids,
+                    train_input_masks,
+                    train_segment_ids,
+                    train_labels,
+                ) = convert_examples_to_features(tokenizer, train_examples, max_seq_length=max_seq_length)
+
+                preparation_end_marker = timer()
+                # add the prepare time for this process
+                job_runtime_dict[job_name] += preparation_end_marker - preparation_start_marker
+
+                # check if the total runtime is less than running_slot
+                while running_slot_time < running_slot:
+                    epoch_start_marker = timer()
+
+                    logit.fit([train_input_ids, train_input_masks, train_segment_ids],
+                              train_labels,
+                              epochs=1,
+                              batch_size=train_batchsize)
+
+                    # start evaluation phrase
+                    print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
+                    cur_accuracy = logit.evaluate([train_input_ids, train_input_masks, train_segment_ids], train_labels)
+                    print('evaluation accuracy:{}'.format(cur_accuracy))
+
+                    pre_accuracy = job_accuracy_dict[job_name]
+
+                    epoch_end_marker = timer()
+
+                    # tracking the time and accuracy
+                    job_runtime_dict[job_name] += epoch_end_marker - epoch_start_marker
+                    job_epoch_dict[job_name] += 1
+                    job_accuracy_dict[job_name] = cur_accuracy
+
+                    # add current results
+                    dl_estimator.add_actual_data(job_name, cur_accuracy, job_epoch_dict[job_name])
+
+                    if job_data['goal_type'] == 'accuracy':
+                        if job_accuracy_dict[job_name] >= job_data['goal_value']:
+                            end_time_overall = timer()
+                            job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                            job_attain_dict[job_name] = 1
+                            saver.save(sess, checkpoint_file)
+                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            msg = 'job {} reaches the SLO'.format(job_data['id'])
+                            return msg
+
+                        if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                            end_time_overall = timer()
+                            job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                            saver.save(sess, checkpoint_file)
+                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            msg = 'job {} is finished'.format(job_data['id'])
+                            return msg
+
+                    elif job_data['goal_type'] == 'convergence':
+                        delta = cur_accuracy - pre_accuracy
+                        if delta <= job_data['goal_value']:
+                            end_time_overall = timer()
+                            job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                            job_attain_dict[job_name] = 1
+                            saver.save(sess, checkpoint_file)
+                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            msg = 'job {} reaches the SLO'.format(job_data['id'])
+                            return msg
+
+                        if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                            end_time_overall = timer()
+                            job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                            saver.save(sess, checkpoint_file)
+                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            msg = 'job {} is finished'.format(job_data['id'])
+                            return msg
+
+                    elif job_data['goal_type'] == 'runtime':
+                        if job_epoch_dict[job_name] >= job_data['goal_value']:
+                            end_time_overall = timer()
+                            job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                            job_attain_dict[job_name] = 1
+                            saver.save(sess, checkpoint_file)
+                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            msg = 'job {} reaches the SLO'.format(job_data['id'])
+                            return msg
+                    else:
+                        raise ValueError('the job objective type is not supported')
+
+                    log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+
+                    slot_end_marker = timer()
+                    running_slot_time = slot_end_marker - slot_start_marker
+
+    elif job_data['model'] == 'lstm' or job_data['model'] == 'bilstm':
+        # Download and load the dataset
+        UD_ENGLISH_TRAIN = './dataset/ud_treebank/en_partut-ud-train.conllu'
+        UD_ENGLISH_DEV = './dataset/ud_treebank/en_partut-ud-dev.conllu'
+        UD_ENGLISH_TEST = './dataset/ud_treebank/en_partut-ud-test.conllu'
+
+        if not os.path.exists(UD_ENGLISH_TRAIN):
+            urllib.request.urlretrieve('http://archive.aueb.gr:8085/files/en_partut-ud-train.conllu', UD_ENGLISH_TRAIN)
+        if not os.path.exists(UD_ENGLISH_DEV):
+            urllib.request.urlretrieve('http://archive.aueb.gr:8085/files/en_partut-ud-dev.conllu', UD_ENGLISH_DEV)
+        if not os.path.exists(UD_ENGLISH_TEST):
+            urllib.request.urlretrieve('http://archive.aueb.gr:8085/files/en_partut-ud-test.conllu', UD_ENGLISH_TEST)
+
+        train_sentences = udtb_reader.read_conllu(UD_ENGLISH_TRAIN)
+        val_sentences = udtb_reader.read_conllu(UD_ENGLISH_DEV)
+
+        # read the text from data
+        train_text = udtb_reader.text_sequence(train_sentences)
+        val_text = udtb_reader.text_sequence(val_sentences)
+        train_label = udtb_reader.tag_sequence(train_sentences)
+        val_label = udtb_reader.tag_sequence(val_sentences)
+
+        # build dictionary with tag vocabulary
+        words, tags = set([]), set([])
+        for s in train_text:
+            for w in s:
+                words.add(w.lower())
+        for ts in train_label:
+            for t in ts:
+                tags.add(t)
+        word2index = {w: i + 2 for i, w in enumerate(list(words))}
+        word2index['-PAD-'] = 0
+        word2index['-OOV-'] = 1
+        tag2index = {t: i + 1 for i, t in enumerate(list(tags))}
+        tag2index['-PAD-'] = 0
+
+        train_sentences_X, val_sentences_X, train_tags_y, val_tags_y = [], [], [], []
+        for s in train_text:
+            s_int = []
+            for w in s:
+                try:
+                    s_int.append(word2index[w.lower()])
+                except KeyError:
+                    s_int.append(word2index['-OOV-'])
+            train_sentences_X.append(s_int)
+
+        for s in val_text:
+            s_int = []
+            for w in s:
+                try:
+                    s_int.append(word2index[w.lower()])
+                except KeyError:
+                    s_int.append(word2index['-OOV-'])
+            val_sentences_X.append(s_int)
+
+        for s in train_label:
+            train_tags_y.append([tag2index[t] for t in s])
+        for s in val_label:
+            val_tags_y.append([tag2index[t] for t in s])
+
+        MAX_LENGTH = len(max(train_sentences_X, key=len))
+
+        train_sentences_X = pad_sequences(train_sentences_X, maxlen=MAX_LENGTH, padding='post')
+        val_sentences_X = pad_sequences(val_sentences_X, maxlen=MAX_LENGTH, padding='post')
+        train_tags_y = pad_sequences(train_tags_y, maxlen=MAX_LENGTH, padding='post')
+        val_tags_y = pad_sequences(val_tags_y, maxlen=MAX_LENGTH, padding='post')
+
+        # start processing on the assigned device
+        with tf.device(assign_device):
+            # build model
+            model = build_nlp_model(model_type=job_data['model'],
+                                    max_length=MAX_LENGTH,
+                                    opt=model_opt,
+                                    lr=model_learn_rate)
+
+            logit, total_parameters = model.build(word2index, tag2index)
+
+            # init the tf saver for checkpoint
+            saver = tf.train.Saver()
+
+            # get the path of checkpoint
+            model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
+            if not os.path.exists(model_ckpt_save_path):
+                os.makedirs(model_ckpt_save_path)
+
+            config = tf.ConfigProto()
+            config.allow_soft_placement = True
+            config.gpu_options.allow_growth = True
+
+            with tf.Session(config=config) as sess:
+                checkpoint_file = model_ckpt_save_path + '/model_ckpt'
+                if os.path.isfile(checkpoint_file + '.meta'):
+                    saver.restore(sess, checkpoint_file)
+                else:
+                    sess.run(tf.global_variables_initializer())
+
+                # add the prepare time for this process
+                preparation_end_marker = timer()
+                job_runtime_dict[job_name] += preparation_end_marker - preparation_start_marker
+
+                # check if the total runtime is less than running_slot
+                while running_slot_time < running_slot:
+                    epoch_start_marker = timer()
+
+                    logit.fit(train_sentences_X,
+                              to_categorical(train_tags_y, len(tag2index)),
+                              batch_size=train_batchsize,
+                              epochs=1)
+
+                    # start evaluation phrase
+                    print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
+                    cur_accuracy = logit.evaluate(val_sentences_X, to_categorical(val_tags_y, len(tag2index)))
+                    print('evaluation accuracy:{}'.format(cur_accuracy))
+
+                    pre_accuracy = job_accuracy_dict[job_name]
+
+                    epoch_end_marker = timer()
+
+                    # tracking the time and accuracy
+                    job_runtime_dict[job_name] += epoch_end_marker - epoch_start_marker
+                    job_epoch_dict[job_name] += 1
+                    job_accuracy_dict[job_name] = cur_accuracy
+
+                    # add current results
+                    dl_estimator.add_actual_data(job_name, cur_accuracy, job_epoch_dict[job_name])
+
+                    if job_data['goal_type'] == 'accuracy':
+                        if job_accuracy_dict[job_name] >= job_data['goal_value']:
+                            end_time_overall = timer()
+                            job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                            job_attain_dict[job_name] = 1
+                            saver.save(sess, checkpoint_file)
+                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            msg = 'job {} reaches the SLO'.format(job_data['id'])
+                            return msg
+
+                        if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                            end_time_overall = timer()
+                            job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                            saver.save(sess, checkpoint_file)
+                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            msg = 'job {} is finished'.format(job_data['id'])
+                            return msg
+
+                    elif job_data['goal_type'] == 'convergence':
+                        delta = cur_accuracy - pre_accuracy
+                        if delta <= job_data['goal_value']:
+                            end_time_overall = timer()
+                            job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                            job_attain_dict[job_name] = 1
+                            saver.save(sess, checkpoint_file)
+                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            msg = 'job {} reaches the SLO'.format(job_data['id'])
+                            return msg
+
+                        if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                            end_time_overall = timer()
+                            job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                            saver.save(sess, checkpoint_file)
+                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            msg = 'job {} is finished'.format(job_data['id'])
+                            return msg
+
+                    elif job_data['goal_type'] == 'runtime':
+                        if job_epoch_dict[job_name] >= job_data['goal_value']:
+                            end_time_overall = timer()
+                            job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                            job_attain_dict[job_name] = 1
+                            saver.save(sess, checkpoint_file)
+                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            msg = 'job {} reaches the SLO'.format(job_data['id'])
+                            return msg
+                    else:
+                        raise ValueError('the job objective type is not supported')
+
+                    log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+
+                    slot_end_marker = timer()
+                    running_slot_time = slot_end_marker - slot_start_marker
+
+    else:
+        img_w = 32
+        img_h = 32
+        num_chn = 3
+        num_cls = 10
+
+        # load cifar10 data
+        train_feature, train_labels, eval_feature, eval_labels = load_cifar10_keras()
+
+        with tf.device(assign_device):
+            feature_ph = tf.placeholder(tf.float32, [None, img_w, img_h, num_chn])
+            label_ph = tf.placeholder(tf.int64, [None, num_cls])
+            train_op, eval_op, total_parameters = build_cv_model(job_data,
+                                                                 model_opt,
+                                                                 model_learn_rate,
+                                                                 num_cls,
+                                                                 feature_ph,
+                                                                 label_ph)
+
+            # init the tf saver for checkpoint
+            saver = tf.train.Saver()
+
+            # get the path of checkpoint
+            model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
+
+            if not os.path.exists(model_ckpt_save_path):
+                os.makedirs(model_ckpt_save_path)
+
+            config = tf.ConfigProto()
+            config.allow_soft_placement = True
+            config.gpu_options.allow_growth = True
+
+            with tf.Session(config=config) as sess:
+                # check if the checkpoint file exist
+                checkpoint_file = model_ckpt_save_path + '/model_ckpt'
+                if os.path.isfile(checkpoint_file + '.meta'):
+                    saver.restore(sess, checkpoint_file)
+                else:
+                    sess.run(tf.global_variables_initializer())
+
+                num_batch = train_labels.shape[0] // train_batchsize
+
+                preparation_end_marker = timer()
+                # add the prepare time for this process
+                job_runtime_dict[job_name] += preparation_end_marker - preparation_start_marker
+
+                # check if the total runtime is less than running_slot
+                while running_slot_time < running_slot:
+
+                    epoch_start_marker = timer()
+
+                    for i in range(num_batch):
+                        # print('step {} / {}'.format(i + 1, num_batch))
+                        batch_offset = i * train_batchsize
+                        batch_end = (i + 1) * train_batchsize
+
+                        train_data_batch = train_feature[batch_offset:batch_end]
+                        train_label_batch = train_labels[batch_offset:batch_end]
+
+                        sess.run(train_op, feed_dict={feature_ph: train_data_batch, label_ph: train_label_batch})
+
+                    print('start evaluation phrase')
+                    acc_sum = 0
+                    eval_batch_size = 50
+                    num_batch_eval = eval_labels.shape[0] // eval_batch_size
+                    for i in range(num_batch_eval):
+                        # print('evaluation step %d / %d' % (i + 1, num_batch_eval))
+                        batch_offset = i * eval_batch_size
+                        batch_end = (i + 1) * eval_batch_size
+                        eval_feature_batch = eval_feature[batch_offset:batch_end]
+                        eval_label_batch = eval_labels[batch_offset:batch_end]
+                        acc_batch = sess.run(eval_op,
+                                             feed_dict={feature_ph: eval_feature_batch, label_ph: eval_label_batch})
+                        acc_sum += acc_batch
+
+                    cur_accuracy = acc_sum / num_batch_eval
+                    print('evaluation accuracy:{}'.format(cur_accuracy))
+
+                    pre_accuracy = job_accuracy_dict[job_name]
+
+                    epoch_end_marker = timer()
+
+                    # tracking the time and accuracy
+                    job_runtime_dict[job_name] += epoch_end_marker - epoch_start_marker
+                    job_epoch_dict[job_name] += 1
+                    job_accuracy_dict[job_name] = cur_accuracy
+
+                    # add current results
+                    dl_estimator.add_actual_data(job_name, cur_accuracy, job_epoch_dict[job_name])
+
+                    if job_data['goal_type'] == 'accuracy':
+                        if job_accuracy_dict[job_name] >= job_data['goal_value']:
+                            end_time_overall = timer()
+                            job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                            job_attain_dict[job_name] = 1
+                            saver.save(sess, checkpoint_file)
+                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            msg = 'job {} reaches the SLO'.format(job_data['id'])
+                            return msg
+
+                        if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                            end_time_overall = timer()
+                            job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                            saver.save(sess, checkpoint_file)
+                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            msg = 'job {} is finished'.format(job_data['id'])
+                            return msg
+
+                    elif job_data['goal_type'] == 'convergence':
+                        delta = cur_accuracy - pre_accuracy
+                        if delta <= job_data['goal_value']:
+                            end_time_overall = timer()
+                            job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                            job_attain_dict[job_name] = 1
+                            saver.save(sess, checkpoint_file)
+                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            msg = 'job {} reaches the SLO'.format(job_data['id'])
+                            return msg
+
+                        if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                            end_time_overall = timer()
+                            job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                            saver.save(sess, checkpoint_file)
+                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            msg = 'job {} is finished'.format(job_data['id'])
+                            return msg
+
+                    elif job_data['goal_type'] == 'runtime':
+                        if job_epoch_dict[job_name] >= job_data['goal_value']:
+                            end_time_overall = timer()
+                            job_completion_time_dict[job_name] = end_time_overall - start_time_overall
+                            job_attain_dict[job_name] = 1
+                            saver.save(sess, checkpoint_file)
+                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            msg = 'job {} reaches the SLO'.format(job_data['id'])
+                            return msg
+                    else:
+                        raise ValueError('the job objective type is not supported')
+
+                    log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+
+                    slot_end_marker = timer()
+                    running_slot_time = slot_end_marker - slot_start_marker
 
     # exceed the running slot and haven't achieve goal so put the job back to the queue
     job_list_rotary.append(job_data)
@@ -378,6 +1191,7 @@ def train_job(gpu_id,
 
 
 if __name__ == "__main__":
+
     proc_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print('============= the whole exp starts at: {}===================='.format(proc_start_time))
 
@@ -385,8 +1199,8 @@ if __name__ == "__main__":
     start_time_overall = timer()
 
     # create folder if not exist
-    #if not os.path.exists(cfg_path.ckpt_save_path):
-    #    os.makedirs(cfg_path.ckpt_save_path)
+    if not os.path.exists(cfg_path.ckpt_save_path):
+        os.makedirs(cfg_path.ckpt_save_path)
 
     #######################################################
     # get parameters from configuration
@@ -401,14 +1215,17 @@ if __name__ == "__main__":
     # generate the workload
     #######################################################
 
-    wg = CVWorkloadGenerator(cfg_rotary.workload_size,
-                             cfg_rotary.cv_light_ratio,
-                             cfg_rotary.cv_med_ratio,
-                             cfg_rotary.cv_heavy_ratio,
-                             cfg_rotary.convergence_ratio,
-                             cfg_rotary.accuracy_ratio,
-                             cfg_rotary.runtime_ratio,
-                             cfg_rotary.random_seed)
+    wg = WorkloadGenerator(cfg_rotary.dlt_workload_size,
+                           cfg_rotary.dlt_cv_light_ratio,
+                           cfg_rotary.dlt_cv_med_ratio,
+                           cfg_rotary.dlt_cv_heavy_ratio,
+                           cfg_rotary.dlt_nlp_light_ratio,
+                           cfg_rotary.dlt_nlp_med_ratio,
+                           cfg_rotary.dlt_nlp_heavy_ratio,
+                           cfg_rotary.convergence_ratio,
+                           cfg_rotary.accuracy_ratio,
+                           cfg_rotary.runtime_ratio,
+                           cfg_rotary.random_seed)
 
     ml_workload = wg.generate_workload()
 
@@ -441,6 +1258,8 @@ if __name__ == "__main__":
     # list for rotary phrase
     job_list_rotary = mp.Manager().list()
 
+    # dict for storing job's progress
+    job_progress_dict = mp.Manager().dict()
     # dict for storing job's current accuracy
     job_accuracy_dict = mp.Manager().dict()
     # dict for storing job's overall running time
@@ -471,6 +1290,7 @@ if __name__ == "__main__":
         job_list_rotary.append(job)
         job_queue_anony.put(job_key)
 
+        job_progress_dict[job_key] = 0
         job_accuracy_dict[job_key] = 0
         job_runtime_dict[job_key] = 0
         job_epoch_dict[job_key] = 0
@@ -523,13 +1343,17 @@ if __name__ == "__main__":
     # start the rotary process
     #######################################################
 
+    threshold = 0.1
+    fairness = True
+
     while not job_queue_anony.empty():
         results_rotary = list()
         job_select = job_list_rotary[0]
+
         for idx in range(job_queue_anony.qsize()):
             gpuid = idx % num_gpu
 
-            r_score_min = float('inf')
+            r_score_mark = float('inf') if fairness else float('-inf')
 
             for job_ins in job_list_rotary:
                 job_ins_key = str(job_ins['id']) + '-' + job_ins['model']
@@ -537,6 +1361,8 @@ if __name__ == "__main__":
                 if job_ins['goal_type'] == 'runtime':
                     current_epoch = job_epoch_dict[job_ins_key]
                     r_score = current_epoch / job_ins['goal_value']
+                    job_progress_dict[job_ins_key] = r_score
+
                 elif job_ins['goal_type'] == 'accuracy':
                     current_epoch = job_epoch_dict[job_ins_key]
                     estimate_all_epoch = dl_estimator.predict_epoch(job_ins, job_ins['goal_value'])
@@ -544,6 +1370,8 @@ if __name__ == "__main__":
                         r_score = current_epoch / job_ins['goal_value_extra']
                     else:
                         r_score = current_epoch / estimate_all_epoch
+                    job_progress_dict[job_ins_key] = r_score
+
                 elif job_ins['goal_type'] == 'convergence':
                     current_epoch = job_epoch_dict[job_ins_key]
                     current_accuracy = job_accuracy_dict[job_ins_key]
@@ -553,12 +1381,19 @@ if __name__ == "__main__":
                         r_score = current_epoch / job_ins['goal_value_extra']
                     else:
                         r_score = current_epoch / estimate_all_epoch
+                    job_progress_dict[job_ins_key] = r_score
+
                 else:
                     raise ValueError('the job objective type is not supported')
 
-                if r_score_min > r_score:
-                    r_score_min = r_score
-                    job_select = job_ins
+                if fairness:
+                    if r_score_mark > r_score:
+                        r_score_mark = r_score
+                        job_select = job_ins
+                else:
+                    if r_score_mark <= r_score:
+                        r_score_mark = r_score
+                        job_select = job_ins
 
             try:
                 job_list_rotary.remove(job_select)
@@ -571,6 +1406,11 @@ if __name__ == "__main__":
                                                             job_runtime_history,
                                                             job_accuracy_history))
             results_rotary.append(result)
+
+        for key in job_progress_dict:
+            if job_progress_dict[key] < threshold:
+                break
+            fairness = False
 
         for i in results_rotary:
             i.wait()
