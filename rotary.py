@@ -73,6 +73,7 @@ def train_job_trial(gpu_id,
 
             # store the total parameters of the model to dict
             job_parameters_dict[job_name] = total_parameters
+            ml_workload[job_data['id']]['num_parameters'] = total_parameters
 
             # init the tf saver to store the model
             saver = tf.train.Saver()
@@ -211,6 +212,7 @@ def train_job_trial(gpu_id,
 
             # store the total parameters of the model to dict
             job_parameters_dict[job_name] = total_parameters
+            ml_workload[job_data['id']]['num_parameters'] = total_parameters
 
             # init the tf saver for training model
             saver = tf.train.Saver()
@@ -330,6 +332,7 @@ def train_job_trial(gpu_id,
 
             # store the total parameters of the model to dict
             job_parameters_dict[job_name] = total_parameters
+            ml_workload[job_data['id']]['num_parameters'] = total_parameters
 
             # ready to train the job
             saver = tf.train.Saver()
@@ -947,19 +950,6 @@ if __name__ == "__main__":
         print(i)
 
     #######################################################
-    # init the accuracy estimator
-    #######################################################
-
-    dl_estimator = DLEstimator(topk=5)
-
-    # read all the accuracy file
-    for f in os.listdir('./knowledgebase'):
-        model_acc_file = os.getcwd() + '/knowledgebase/' + f
-        dl_estimator.import_accuracy_dataset(model_acc_file)
-
-    dl_estimator.prepare_workload(ml_workload)
-
-    #######################################################
     # prepare everything necessary
     #######################################################
 
@@ -1052,6 +1042,19 @@ if __name__ == "__main__":
 
     for key in job_epochtime_dict:
         print(key, '[epoch_time]->', job_epochtime_dict[key])
+
+    #######################################################
+    # init the accuracy estimator after trial process
+    #######################################################
+
+    dl_estimator = DLEstimator(topk=5)
+
+    # read all the accuracy file
+    for f in os.listdir('./knowledgebase'):
+        model_acc_file = os.getcwd() + '/knowledgebase/' + f
+        dl_estimator.import_accuracy_dataset(model_acc_file)
+
+    dl_estimator.prepare_workload(ml_workload)
 
     #######################################################
     # start the rotary process
