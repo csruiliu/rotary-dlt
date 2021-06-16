@@ -1,5 +1,5 @@
 import numpy as np
-import relish.config.config_parameter as cfg_para
+import config.config_parameter as cfg_para
 
 
 def generate_workload_slo(job_num, use_seed=False):
