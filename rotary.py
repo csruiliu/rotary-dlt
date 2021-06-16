@@ -1,191 +1,20 @@
 import tensorflow as tf
-import tensorflow_hub as hub
 import multiprocessing as mp
 import numpy as np
 from timeit import default_timer as timer
 import os
-import re
 import queue
-import pandas as pd
 from datetime import datetime
-from bert.tokenization import FullTokenizer
 from tensorflow.keras import backend as K
-from keras.preprocessing.sequence import pad_sequences
-import urllib
 
 import config.config_rotary as cfg_rotary
 import config.config_path as cfg_path
 from estimator.dl_estimator import DLEstimator
 from workload.workload_generator import WorkloadGenerator
 from workload.tensorflow_cifar.tools.dataset_loader import load_cifar10_keras
-import workload.tensorflow_nlp.tools.udtb_reader as udtb_reader
 from utils.model_tool import build_cv_model, build_nlp_model
-
-
-# Load all files from a directory in a DataFrame.
-def load_directory_data(directory):
-    data = {}
-    data["sentence"] = []
-    data["sentiment"] = []
-    for file_path in os.listdir(directory):
-        with tf.gfile.GFile(os.path.join(directory, file_path), "r") as f:
-            data["sentence"].append(f.read())
-            data["sentiment"].append(re.match("\d+_(\d+)\.txt", file_path).group(1))
-    return pd.DataFrame.from_dict(data)
-
-
-# Merge positive and negative examples, add a polarity column and shuffle.
-def load_dataset(directory):
-    pos_df = load_directory_data(os.path.join(directory, "pos"))
-    neg_df = load_directory_data(os.path.join(directory, "neg"))
-    pos_df["polarity"] = 1
-    neg_df["polarity"] = 0
-    return pd.concat([pos_df, neg_df]).sample(frac=1).reset_index(drop=True)
-
-
-# Download and process the dataset files.
-def download_and_load_datasets(force_download=False):
-    if not os.path.exists('/tank/local/ruiliu/datasets/aclImdb.tar.gz'):
-        dataset = tf.keras.utils.get_file(
-            fname="aclImdb.tar.gz",
-            origin="http://ai.stanford.edu/~amaas/data/sentiment/aclImdb_v1.tar.gz",
-            extract=True,
-            cache_dir='/tank/local/ruiliu/'
-        )
-    else:
-        dataset = '/tank/local/ruiliu/datasets/aclImdb.tar.gz'
-
-    train_df = load_dataset(os.path.join(os.path.dirname(dataset), "aclImdb", "train"))
-    test_df = load_dataset(os.path.join(os.path.dirname(dataset), "aclImdb", "test"))
-
-    return train_df, test_df
-
-
-class PaddingInputExample(object):
-    """Fake example so the num input examples is a multiple of the batch size.
-    When running eval/predict on the TPU, we need to pad the number of examples
-    to be a multiple of the batch size, because the TPU requires a fixed batch
-    size. The alternative is to drop the last batch, which is bad because it means
-    the entire output data won't be generated.
-    We use this class instead of `None` because treating `None` as padding
-    batches could cause silent errors.
-    """
-
-
-class InputExample(object):
-    """A single training/test example for simple sequence classification."""
-
-    def __init__(self, guid, text_a, text_b=None, label=None):
-        """Constructs a InputExample.
-            Args:
-            guid: Unique id for the example.
-            text_a: string. The untokenized text of the first sequence.
-                    For single sequence tasks, only this sequence must be specified.
-            text_b: (Optional) string. The untokenized text of the second sequence.
-                    Only must be specified for sequence pair tasks.
-            label: (Optional) string. The label of the example.
-                   This should be specified for train and dev examples, but not for test examples.
-        """
-        self.guid = guid
-        self.text_a = text_a
-        self.text_b = text_b
-        self.label = label
-
-
-def create_tokenizer_from_hub_module(bert_path, sess):
-    """Get the vocab file and casing info from the Hub module."""
-    bert_module = hub.Module(bert_path)
-    tokenization_info = bert_module(signature="tokenization_info", as_dict=True)
-    vocab_file, do_lower_case = sess.run(
-        [tokenization_info["vocab_file"], tokenization_info["do_lower_case"]]
-    )
-
-    return FullTokenizer(vocab_file=vocab_file, do_lower_case=do_lower_case)
-
-
-def convert_single_example(tokenizer, example, max_seq_length=256):
-    """Converts a single `InputExample` into a single `InputFeatures`."""
-
-    if isinstance(example, PaddingInputExample):
-        input_ids = [0] * max_seq_length
-        input_mask = [0] * max_seq_length
-        segment_ids = [0] * max_seq_length
-        label = 0
-        return input_ids, input_mask, segment_ids, label
-
-    tokens_a = tokenizer.tokenize(example.text_a)
-    if len(tokens_a) > max_seq_length - 2:
-        tokens_a = tokens_a[0: (max_seq_length - 2)]
-
-    tokens = []
-    segment_ids = []
-    tokens.append("[CLS]")
-    segment_ids.append(0)
-    for token in tokens_a:
-        tokens.append(token)
-        segment_ids.append(0)
-    tokens.append("[SEP]")
-    segment_ids.append(0)
-
-    input_ids = tokenizer.convert_tokens_to_ids(tokens)
-
-    # The mask has 1 for real tokens and 0 for padding tokens. Only real
-    # tokens are attended to.
-    input_mask = [1] * len(input_ids)
-
-    # Zero-pad up to the sequence length.
-    while len(input_ids) < max_seq_length:
-        input_ids.append(0)
-        input_mask.append(0)
-        segment_ids.append(0)
-
-    assert len(input_ids) == max_seq_length
-    assert len(input_mask) == max_seq_length
-    assert len(segment_ids) == max_seq_length
-
-    return input_ids, input_mask, segment_ids, example.label
-
-
-def convert_examples_to_features(tokenizer, examples, max_seq_length=256):
-    """Convert a set of `InputExample`s to a list of `InputFeatures`."""
-
-    input_ids, input_masks, segment_ids, labels = [], [], [], []
-    # for example in tqdm(examples, desc="Converting examples to features"):
-    for example in examples:
-        input_id, input_mask, segment_id, label = convert_single_example(
-            tokenizer, example, max_seq_length
-        )
-        input_ids.append(input_id)
-        input_masks.append(input_mask)
-        segment_ids.append(segment_id)
-        labels.append(label)
-    return (
-        np.array(input_ids),
-        np.array(input_masks),
-        np.array(segment_ids),
-        np.array(labels).reshape(-1, 1),
-    )
-
-
-def convert_text_to_examples(texts, labels):
-    """Create InputExamples"""
-    InputExamples = []
-    for text, label in zip(texts, labels):
-        InputExamples.append(
-            InputExample(guid=None, text_a=" ".join(text), text_b=None, label=label)
-        )
-    return InputExamples
-
-
-def to_categorical(sequences, categories):
-    cat_sequences = []
-    for s in sequences:
-        cats = []
-        for item in s:
-            cats.append(np.zeros(categories))
-            cats[-1][item] = 1.0
-        cat_sequences.append(cats)
-    return np.array(cat_sequences)
+import workload.tensorflow_nlp.tools.udtb_reader as udtb_reader
+import workload.tensorflow_nlp.tools.lmrd_reader as lmrd_reader
 
 
 def log_time_accuracy(job_instance_key,
@@ -228,7 +57,7 @@ def train_job_trial(gpu_id,
         bert_path = "https://tfhub.dev/google/bert_uncased_L-12_H-768_A-12/1"
         max_seq_length = 128
 
-        train_df, test_df = download_and_load_datasets()
+        train_df, test_df = lmrd_reader.download_and_load_datasets()
 
         # Create datasets (Only take up to max_seq_length words for memory)
         train_text = train_df["sentence"].tolist()
@@ -265,10 +94,10 @@ def train_job_trial(gpu_id,
                 K.set_session(sess)
 
                 # Instantiate tokenizer
-                tokenizer = create_tokenizer_from_hub_module(bert_path, sess)
+                tokenizer = lmrd_reader.create_tokenizer_from_hub_module(bert_path, sess)
 
                 # Convert data to InputExample format
-                train_examples = convert_text_to_examples(train_text, train_label)
+                train_examples = lmrd_reader.convert_text_to_examples(train_text, train_label)
 
                 # Convert to features
                 (
@@ -276,7 +105,7 @@ def train_job_trial(gpu_id,
                     train_input_masks,
                     train_segment_ids,
                     train_labels,
-                ) = convert_examples_to_features(tokenizer, train_examples, max_seq_length=max_seq_length)
+                ) = lmrd_reader.convert_examples_to_features(tokenizer, train_examples, max_seq_length=max_seq_length)
 
                 epochtime_start_marker = timer()
 
@@ -361,73 +190,14 @@ def train_job_trial(gpu_id,
                 log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
 
     elif job_data['model'] == 'lstm' or job_data['model'] == 'lstm':
-        # Download and load the dataset
-        UD_ENGLISH_TRAIN = './dataset/ud_treebank/en_partut-ud-train.conllu'
-        UD_ENGLISH_DEV = './dataset/ud_treebank/en_partut-ud-dev.conllu'
-        UD_ENGLISH_TEST = './dataset/ud_treebank/en_partut-ud-test.conllu'
 
-        if not os.path.exists(UD_ENGLISH_TRAIN):
-            urllib.request.urlretrieve('http://archive.aueb.gr:8085/files/en_partut-ud-train.conllu', UD_ENGLISH_TRAIN)
-        if not os.path.exists(UD_ENGLISH_DEV):
-            urllib.request.urlretrieve('http://archive.aueb.gr:8085/files/en_partut-ud-dev.conllu', UD_ENGLISH_DEV)
-        if not os.path.exists(UD_ENGLISH_TEST):
-            urllib.request.urlretrieve('http://archive.aueb.gr:8085/files/en_partut-ud-test.conllu', UD_ENGLISH_TEST)
-
-        train_sentences = udtb_reader.read_conllu(UD_ENGLISH_TRAIN)
-        val_sentences = udtb_reader.read_conllu(UD_ENGLISH_DEV)
-
-        # read the train and eval text
-        train_text = udtb_reader.text_sequence(train_sentences)
-        val_text = udtb_reader.text_sequence(val_sentences)
-
-        train_label = udtb_reader.tag_sequence(train_sentences)
-        val_label = udtb_reader.tag_sequence(val_sentences)
-
-        # build dictionary with tag vocabulary
-        words, tags = set([]), set([])
-        for s in train_text:
-            for w in s:
-                words.add(w.lower())
-        for ts in train_label:
-            for t in ts:
-                tags.add(t)
-        word2index = {w: i + 2 for i, w in enumerate(list(words))}
-        word2index['-PAD-'] = 0
-        word2index['-OOV-'] = 1
-        tag2index = {t: i + 1 for i, t in enumerate(list(tags))}
-        tag2index['-PAD-'] = 0
-
-        # prepare the training data
-        train_sentences_X, val_sentences_X, train_tags_y, val_tags_y = [], [], [], []
-        for s in train_text:
-            s_int = []
-            for w in s:
-                try:
-                    s_int.append(word2index[w.lower()])
-                except KeyError:
-                    s_int.append(word2index['-OOV-'])
-            train_sentences_X.append(s_int)
-
-        for s in val_text:
-            s_int = []
-            for w in s:
-                try:
-                    s_int.append(word2index[w.lower()])
-                except KeyError:
-                    s_int.append(word2index['-OOV-'])
-            val_sentences_X.append(s_int)
-
-        for s in train_label:
-            train_tags_y.append([tag2index[t] for t in s])
-        for s in val_label:
-            val_tags_y.append([tag2index[t] for t in s])
-
-        MAX_LENGTH = len(max(train_sentences_X, key=len))
-
-        train_sentences_X = pad_sequences(train_sentences_X, maxlen=MAX_LENGTH, padding='post')
-        val_sentences_X = pad_sequences(val_sentences_X, maxlen=MAX_LENGTH, padding='post')
-        train_tags_y = pad_sequences(train_tags_y, maxlen=MAX_LENGTH, padding='post')
-        val_tags_y = pad_sequences(val_tags_y, maxlen=MAX_LENGTH, padding='post')
+        (train_sentences_x,
+         val_sentences_x,
+         train_tags_y,
+         val_tags_y,
+         MAX_LENGTH,
+         word2index,
+         tag2index) = udtb_reader.load_udtb_dataset()
 
         # start processing on the assigned device
         with tf.device(assign_device):
@@ -459,14 +229,15 @@ def train_job_trial(gpu_id,
 
                 epochtime_start_marker = timer()
 
-                logit.fit(train_sentences_X,
-                          to_categorical(train_tags_y, len(tag2index)),
+                logit.fit(train_sentences_x,
+                          udtb_reader.to_categorical(train_tags_y, len(tag2index)),
                           batch_size=train_batchsize,
                           epochs=1)
 
                 # start evaluation phrase
                 print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
-                cur_accuracy = logit.evaluate(val_sentences_X, to_categorical(val_tags_y, len(tag2index)))
+                cur_accuracy = logit.evaluate(val_sentences_x,
+                                              udtb_reader.to_categorical(val_tags_y, len(tag2index)))
                 print('evaluation accuracy:{}'.format(cur_accuracy))
 
                 pre_accuracy = job_accuracy_dict[job_name]
@@ -717,7 +488,7 @@ def train_job(gpu_id,
         bert_path = "https://tfhub.dev/google/bert_uncased_L-12_H-768_A-12/1"
         max_seq_length = 128
 
-        train_df, test_df = download_and_load_datasets()
+        train_df, test_df = lmrd_reader.download_and_load_datasets()
 
         # Create datasets (Only take up to max_seq_length words for memory)
         train_text = train_df["sentence"].tolist()
@@ -759,10 +530,9 @@ def train_job(gpu_id,
                 K.set_session(sess)
 
                 # Instantiate tokenizer
-                tokenizer = create_tokenizer_from_hub_module(bert_path, sess)
-
+                tokenizer = lmrd_reader.create_tokenizer_from_hub_module(bert_path, sess)
                 # Convert data to InputExample format
-                train_examples = convert_text_to_examples(train_text, train_label)
+                train_examples = lmrd_reader.convert_text_to_examples(train_text, train_label)
 
                 # Convert to features
                 (
@@ -770,7 +540,7 @@ def train_job(gpu_id,
                     train_input_masks,
                     train_segment_ids,
                     train_labels,
-                ) = convert_examples_to_features(tokenizer, train_examples, max_seq_length=max_seq_length)
+                ) = lmrd_reader.convert_examples_to_features(tokenizer, train_examples, max_seq_length=max_seq_length)
 
                 preparation_end_marker = timer()
                 # add the prepare time for this process
@@ -857,71 +627,14 @@ def train_job(gpu_id,
                     running_slot_time = slot_end_marker - slot_start_marker
 
     elif job_data['model'] == 'lstm' or job_data['model'] == 'bilstm':
-        # Download and load the dataset
-        UD_ENGLISH_TRAIN = './dataset/ud_treebank/en_partut-ud-train.conllu'
-        UD_ENGLISH_DEV = './dataset/ud_treebank/en_partut-ud-dev.conllu'
-        UD_ENGLISH_TEST = './dataset/ud_treebank/en_partut-ud-test.conllu'
 
-        if not os.path.exists(UD_ENGLISH_TRAIN):
-            urllib.request.urlretrieve('http://archive.aueb.gr:8085/files/en_partut-ud-train.conllu', UD_ENGLISH_TRAIN)
-        if not os.path.exists(UD_ENGLISH_DEV):
-            urllib.request.urlretrieve('http://archive.aueb.gr:8085/files/en_partut-ud-dev.conllu', UD_ENGLISH_DEV)
-        if not os.path.exists(UD_ENGLISH_TEST):
-            urllib.request.urlretrieve('http://archive.aueb.gr:8085/files/en_partut-ud-test.conllu', UD_ENGLISH_TEST)
-
-        train_sentences = udtb_reader.read_conllu(UD_ENGLISH_TRAIN)
-        val_sentences = udtb_reader.read_conllu(UD_ENGLISH_DEV)
-
-        # read the text from data
-        train_text = udtb_reader.text_sequence(train_sentences)
-        val_text = udtb_reader.text_sequence(val_sentences)
-        train_label = udtb_reader.tag_sequence(train_sentences)
-        val_label = udtb_reader.tag_sequence(val_sentences)
-
-        # build dictionary with tag vocabulary
-        words, tags = set([]), set([])
-        for s in train_text:
-            for w in s:
-                words.add(w.lower())
-        for ts in train_label:
-            for t in ts:
-                tags.add(t)
-        word2index = {w: i + 2 for i, w in enumerate(list(words))}
-        word2index['-PAD-'] = 0
-        word2index['-OOV-'] = 1
-        tag2index = {t: i + 1 for i, t in enumerate(list(tags))}
-        tag2index['-PAD-'] = 0
-
-        train_sentences_X, val_sentences_X, train_tags_y, val_tags_y = [], [], [], []
-        for s in train_text:
-            s_int = []
-            for w in s:
-                try:
-                    s_int.append(word2index[w.lower()])
-                except KeyError:
-                    s_int.append(word2index['-OOV-'])
-            train_sentences_X.append(s_int)
-
-        for s in val_text:
-            s_int = []
-            for w in s:
-                try:
-                    s_int.append(word2index[w.lower()])
-                except KeyError:
-                    s_int.append(word2index['-OOV-'])
-            val_sentences_X.append(s_int)
-
-        for s in train_label:
-            train_tags_y.append([tag2index[t] for t in s])
-        for s in val_label:
-            val_tags_y.append([tag2index[t] for t in s])
-
-        MAX_LENGTH = len(max(train_sentences_X, key=len))
-
-        train_sentences_X = pad_sequences(train_sentences_X, maxlen=MAX_LENGTH, padding='post')
-        val_sentences_X = pad_sequences(val_sentences_X, maxlen=MAX_LENGTH, padding='post')
-        train_tags_y = pad_sequences(train_tags_y, maxlen=MAX_LENGTH, padding='post')
-        val_tags_y = pad_sequences(val_tags_y, maxlen=MAX_LENGTH, padding='post')
+        (train_sentences_x,
+         val_sentences_x,
+         train_tags_y,
+         val_tags_y,
+         MAX_LENGTH,
+         word2index,
+         tag2index) = udtb_reader.load_udtb_dataset()
 
         # start processing on the assigned device
         with tf.device(assign_device):
@@ -960,14 +673,15 @@ def train_job(gpu_id,
                 while running_slot_time < running_slot:
                     epoch_start_marker = timer()
 
-                    logit.fit(train_sentences_X,
-                              to_categorical(train_tags_y, len(tag2index)),
+                    logit.fit(train_sentences_x,
+                              udtb_reader.to_categorical(train_tags_y, len(tag2index)),
                               batch_size=train_batchsize,
                               epochs=1)
 
                     # start evaluation phrase
                     print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
-                    cur_accuracy = logit.evaluate(val_sentences_X, to_categorical(val_tags_y, len(tag2index)))
+                    cur_accuracy = logit.evaluate(val_sentences_x,
+                                                  udtb_reader.to_categorical(val_tags_y, len(tag2index)))
                     print('evaluation accuracy:{}'.format(cur_accuracy))
 
                     pre_accuracy = job_accuracy_dict[job_name]
