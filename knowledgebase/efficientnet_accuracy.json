@@ -5,7 +5,7 @@
         "batch_size": 32,
         "opt": "SGD",
         "learn_rate": 0.1,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.3023000004887581,
@@ -36,7 +36,7 @@
         "batch_size": 32,
         "opt": "SGD",
         "learn_rate": 0.01,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.2528999998420477,
@@ -67,7 +67,7 @@
         "batch_size": 32,
         "opt": "SGD",
         "learn_rate": 0.001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.24639999970793725,
@@ -98,7 +98,7 @@
         "batch_size": 32,
         "opt": "SGD",
         "learn_rate": 0.0001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.15099999964237212,
@@ -129,7 +129,7 @@
         "batch_size": 32,
         "opt": "SGD",
         "learn_rate": 1e-05,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.12240000009536743,
@@ -160,7 +160,7 @@
         "batch_size": 32,
         "opt": "Adam",
         "learn_rate": 0.1,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.15199999984353782,
@@ -191,7 +191,7 @@
         "batch_size": 32,
         "opt": "Adam",
         "learn_rate": 0.01,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.13729999983683228,
@@ -222,7 +222,7 @@
         "batch_size": 32,
         "opt": "Adam",
         "learn_rate": 0.001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.2192000000178814,
@@ -253,7 +253,7 @@
         "batch_size": 32,
         "opt": "Adam",
         "learn_rate": 0.0001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.18329999972134828,
@@ -284,7 +284,7 @@
         "batch_size": 32,
         "opt": "Adam",
         "learn_rate": 1e-05,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.15280000064522029,
@@ -315,7 +315,7 @@
         "batch_size": 32,
         "opt": "Adagrad",
         "learn_rate": 0.1,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.12049999935552477,
@@ -346,7 +346,7 @@
         "batch_size": 32,
         "opt": "Adagrad",
         "learn_rate": 0.01,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.3000999989360571,
@@ -377,7 +377,7 @@
         "batch_size": 32,
         "opt": "Adagrad",
         "learn_rate": 0.001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.1597000003606081,
@@ -408,7 +408,7 @@
         "batch_size": 32,
         "opt": "Adagrad",
         "learn_rate": 0.0001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.12489999992772936,
@@ -439,7 +439,7 @@
         "batch_size": 32,
         "opt": "Adagrad",
         "learn_rate": 1e-05,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.11599999964237213,
@@ -470,7 +470,7 @@
         "batch_size": 32,
         "opt": "Momentum",
         "learn_rate": 0.1,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.09999999918043613,
@@ -501,7 +501,7 @@
         "batch_size": 32,
         "opt": "Momentum",
         "learn_rate": 0.01,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.20000000018626451,
@@ -532,7 +532,7 @@
         "batch_size": 32,
         "opt": "Momentum",
         "learn_rate": 0.001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.2753999990224838,
@@ -563,7 +563,7 @@
         "batch_size": 32,
         "opt": "Momentum",
         "learn_rate": 0.0001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.21719999961555003,
@@ -594,7 +594,7 @@
         "batch_size": 32,
         "opt": "Momentum",
         "learn_rate": 1e-05,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.1328999998420477,
@@ -625,7 +625,7 @@
         "batch_size": 64,
         "opt": "SGD",
         "learn_rate": 0.1,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.20759999956935643,
@@ -656,7 +656,7 @@
         "batch_size": 64,
         "opt": "SGD",
         "learn_rate": 0.01,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.22910000009462236,
@@ -687,7 +687,7 @@
         "batch_size": 64,
         "opt": "SGD",
         "learn_rate": 0.001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.22069999998435377,
@@ -718,7 +718,7 @@
         "batch_size": 64,
         "opt": "SGD",
         "learn_rate": 0.0001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.12959999987855553,
@@ -749,7 +749,7 @@
         "batch_size": 64,
         "opt": "SGD",
         "learn_rate": 1e-05,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.11219999941065907,
@@ -780,7 +780,7 @@
         "batch_size": 64,
         "opt": "Adam",
         "learn_rate": 0.1,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.10909999933093786,
@@ -811,7 +811,7 @@
         "batch_size": 64,
         "opt": "Adam",
         "learn_rate": 0.01,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.12509999955072998,
@@ -842,7 +842,7 @@
         "batch_size": 64,
         "opt": "Adam",
         "learn_rate": 0.001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.2500000001862645,
@@ -873,7 +873,7 @@
         "batch_size": 64,
         "opt": "Adam",
         "learn_rate": 0.0001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.19269999962300063,
@@ -904,7 +904,7 @@
         "batch_size": 64,
         "opt": "Adam",
         "learn_rate": 1e-05,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.14160000002011658,
@@ -935,7 +935,7 @@
         "batch_size": 64,
         "opt": "Adagrad",
         "learn_rate": 0.1,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.18230000026524068,
@@ -966,7 +966,7 @@
         "batch_size": 64,
         "opt": "Adagrad",
         "learn_rate": 0.01,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.23009999930858613,
@@ -997,7 +997,7 @@
         "batch_size": 64,
         "opt": "Adagrad",
         "learn_rate": 0.001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.15499999990686775,
@@ -1028,7 +1028,7 @@
         "batch_size": 64,
         "opt": "Adagrad",
         "learn_rate": 0.0001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.12669999951496722,
@@ -1059,7 +1059,7 @@
         "batch_size": 64,
         "opt": "Adagrad",
         "learn_rate": 1e-05,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.10369999922811984,
@@ -1090,7 +1090,7 @@
         "batch_size": 64,
         "opt": "Momentum",
         "learn_rate": 0.1,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.10149999933317304,
@@ -1121,7 +1121,7 @@
         "batch_size": 64,
         "opt": "Momentum",
         "learn_rate": 0.01,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.19770000014454125,
@@ -1152,7 +1152,7 @@
         "batch_size": 64,
         "opt": "Momentum",
         "learn_rate": 0.001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.21199999954551457,
@@ -1183,7 +1183,7 @@
         "batch_size": 64,
         "opt": "Momentum",
         "learn_rate": 0.0001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.21719999888911842,
@@ -1214,7 +1214,7 @@
         "batch_size": 64,
         "opt": "Momentum",
         "learn_rate": 1e-05,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.12779999971389772,
@@ -1245,7 +1245,7 @@
         "batch_size": 128,
         "opt": "SGD",
         "learn_rate": 0.1,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.13899999994784593,
@@ -1276,7 +1276,7 @@
         "batch_size": 128,
         "opt": "SGD",
         "learn_rate": 0.01,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.12279999962076545,
@@ -1307,7 +1307,7 @@
         "batch_size": 128,
         "opt": "SGD",
         "learn_rate": 0.001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.1474999996833503,
@@ -1338,7 +1338,7 @@
         "batch_size": 128,
         "opt": "SGD",
         "learn_rate": 0.0001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.12079999960958958,
@@ -1369,7 +1369,7 @@
         "batch_size": 128,
         "opt": "SGD",
         "learn_rate": 1e-05,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.11069999946281314,
@@ -1400,7 +1400,7 @@
         "batch_size": 128,
         "opt": "Adam",
         "learn_rate": 0.1,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.16969999963417648,
@@ -1431,7 +1431,7 @@
         "batch_size": 128,
         "opt": "Adam",
         "learn_rate": 0.01,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.14749999985098838,
@@ -1462,7 +1462,7 @@
         "batch_size": 128,
         "opt": "Adam",
         "learn_rate": 0.001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.167899999730289,
@@ -1493,7 +1493,7 @@
         "batch_size": 128,
         "opt": "Adam",
         "learn_rate": 0.0001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.17019999992102386,
@@ -1524,7 +1524,7 @@
         "batch_size": 128,
         "opt": "Adam",
         "learn_rate": 1e-05,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.13309999972581862,
@@ -1555,7 +1555,7 @@
         "batch_size": 128,
         "opt": "Adagrad",
         "learn_rate": 0.1,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.18810000006109476,
@@ -1586,7 +1586,7 @@
         "batch_size": 128,
         "opt": "Adagrad",
         "learn_rate": 0.01,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.1830999999307096,
@@ -1617,7 +1617,7 @@
         "batch_size": 128,
         "opt": "Adagrad",
         "learn_rate": 0.001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.14830000003799795,
@@ -1648,7 +1648,7 @@
         "batch_size": 128,
         "opt": "Adagrad",
         "learn_rate": 0.0001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.11519999934360385,
@@ -1679,7 +1679,7 @@
         "batch_size": 128,
         "opt": "Adagrad",
         "learn_rate": 1e-05,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.10999999955296516,
@@ -1710,7 +1710,7 @@
         "batch_size": 128,
         "opt": "Momentum",
         "learn_rate": 0.1,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.11239999933168292,
@@ -1741,7 +1741,7 @@
         "batch_size": 128,
         "opt": "Momentum",
         "learn_rate": 0.01,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.10569999970495701,
@@ -1772,7 +1772,7 @@
         "batch_size": 128,
         "opt": "Momentum",
         "learn_rate": 0.001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.1254999994672835,
@@ -1803,7 +1803,7 @@
         "batch_size": 128,
         "opt": "Momentum",
         "learn_rate": 0.0001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.13100000020116567,
@@ -1834,7 +1834,7 @@
         "batch_size": 128,
         "opt": "Momentum",
         "learn_rate": 1e-05,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.11439999986439943,
@@ -1865,7 +1865,7 @@
         "batch_size": 256,
         "opt": "SGD",
         "learn_rate": 0.1,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.10719999972730875,
@@ -1896,7 +1896,7 @@
         "batch_size": 256,
         "opt": "SGD",
         "learn_rate": 0.01,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.10959999972954393,
@@ -1927,7 +1927,7 @@
         "batch_size": 256,
         "opt": "SGD",
         "learn_rate": 0.001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.12649999966844916,
@@ -1958,7 +1958,7 @@
         "batch_size": 256,
         "opt": "SGD",
         "learn_rate": 0.0001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.11319999953731895,
@@ -1989,7 +1989,7 @@
         "batch_size": 256,
         "opt": "SGD",
         "learn_rate": 1e-05,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.09819999951869249,
@@ -2020,7 +2020,7 @@
         "batch_size": 256,
         "opt": "Adam",
         "learn_rate": 0.1,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.12249999940395355,
@@ -2051,7 +2051,7 @@
         "batch_size": 256,
         "opt": "Adam",
         "learn_rate": 0.01,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.10309999957680702,
@@ -2082,7 +2082,7 @@
         "batch_size": 256,
         "opt": "Adam",
         "learn_rate": 0.001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.1788000002503395,
@@ -2113,7 +2113,7 @@
         "batch_size": 256,
         "opt": "Adam",
         "learn_rate": 0.0001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.14469999976456166,
@@ -2144,7 +2144,7 @@
         "batch_size": 256,
         "opt": "Adam",
         "learn_rate": 1e-05,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.12339999983087183,
@@ -2175,7 +2175,7 @@
         "batch_size": 256,
         "opt": "Adagrad",
         "learn_rate": 0.1,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.11009999940171838,
@@ -2206,7 +2206,7 @@
         "batch_size": 256,
         "opt": "Adagrad",
         "learn_rate": 0.01,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.14039999986067414,
@@ -2237,7 +2237,7 @@
         "batch_size": 256,
         "opt": "Adagrad",
         "learn_rate": 0.001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.12649999959394337,
@@ -2268,7 +2268,7 @@
         "batch_size": 256,
         "opt": "Adagrad",
         "learn_rate": 0.0001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.11009999951347708,
@@ -2299,7 +2299,7 @@
         "batch_size": 256,
         "opt": "Adagrad",
         "learn_rate": 1e-05,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.09869999960064887,
@@ -2330,7 +2330,7 @@
         "batch_size": 256,
         "opt": "Momentum",
         "learn_rate": 0.1,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.14640000008046627,
@@ -2361,7 +2361,7 @@
         "batch_size": 256,
         "opt": "Momentum",
         "learn_rate": 0.01,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.10099999947473406,
@@ -2392,7 +2392,7 @@
         "batch_size": 256,
         "opt": "Momentum",
         "learn_rate": 0.001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.11160000002011657,
@@ -2423,7 +2423,7 @@
         "batch_size": 256,
         "opt": "Momentum",
         "learn_rate": 0.0001,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.12409999946132302,
@@ -2454,7 +2454,7 @@
         "batch_size": 256,
         "opt": "Momentum",
         "learn_rate": 1e-05,
-        "training_data": "cifar",
+        "training_data": "cifar10",
         "classes": 10,
         "accuracy": [
             0.10129999930039048,
