@@ -18,6 +18,13 @@ from utils.model_tool import build_cv_model, build_nlp_model
 from utils.log_func import log_time_accuracy
 
 
+def initialize_vars(sess):
+    sess.run(tf.local_variables_initializer())
+    sess.run(tf.global_variables_initializer())
+    sess.run(tf.tables_initializer())
+    k_backend.set_session(sess)
+
+
 def train_job_trial(gpu_id,
                     shared_runtime_history,
                     shared_accuracy_history):
@@ -42,6 +49,7 @@ def train_job_trial(gpu_id,
         # Params for bert model and tokenization
         bert_path = "https://tfhub.dev/google/bert_uncased_L-12_H-768_A-12/1"
         max_seq_length = 128
+        offset = 500
 
         train_df, test_df = lmrd_reader.download_and_load_datasets()
 
@@ -53,8 +61,11 @@ def train_job_trial(gpu_id,
 
         # start processing on the assigned device
         with tf.device(assign_device):
-            model = build_nlp_model(model_type=job_data['model'], max_length=128, opt=model_opt, lr=model_learn_rate)
-
+            # build the model
+            model = build_nlp_model(model_type=job_data['model'],
+                                    max_length=128,
+                                    opt=model_opt,
+                                    lr=model_learn_rate)
             logit, total_parameters = model.build()
 
             # store the total parameters of the model to dict
@@ -63,10 +74,9 @@ def train_job_trial(gpu_id,
             current_job['num_parameters'] = total_parameters
             ml_workload_shared[int(job_data['id'])] = current_job
 
-            # init the tf saver to store the model
-            saver = tf.train.Saver()
+            # create the folder for saving models
             model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
-            if os.path.exists(model_ckpt_save_path):
+            if not os.path.exists(model_ckpt_save_path):
                 os.makedirs(model_ckpt_save_path)
 
             # init the config for training
@@ -75,12 +85,8 @@ def train_job_trial(gpu_id,
             config.gpu_options.allow_growth = True
 
             with tf.Session(config=config) as sess:
-                checkpoint_file = model_ckpt_save_path + '/model_ckpt'
                 # Instantiate variables
-                sess.run(tf.local_variables_initializer())
-                sess.run(tf.global_variables_initializer())
-                sess.run(tf.tables_initializer())
-                k_backend.set_session(sess)
+                initialize_vars(sess)
 
                 # Instantiate tokenizer
                 tokenizer = lmrd_reader.create_tokenizer_from_hub_module(bert_path, sess)
@@ -105,7 +111,10 @@ def train_job_trial(gpu_id,
 
                 # start evaluation phrase
                 print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
-                cur_accuracy = logit.evaluate([train_input_ids, train_input_masks, train_segment_ids], train_labels)
+                cur_accuracy = logit.evaluate([train_input_ids[0:offset], 
+                                               train_input_masks[0:offset],
+                                               train_segment_ids[0:offset]],
+                                              train_labels[0:offset])
                 print('evaluation accuracy:{}'.format(cur_accuracy))
 
                 pre_accuracy = job_accuracy_dict[job_name]
@@ -135,19 +144,19 @@ def train_job_trial(gpu_id,
                                           shared_runtime_history,
                                           job_epoch_dict,
                                           shared_accuracy_history)
-                        saver.save(sess, checkpoint_file)
+                        logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} reaches SLO'.format(job_data['id'])
                         return msg_trial
 
                     if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                        saver.save(sess, checkpoint_file)
                         log_time_accuracy(job_name,
                                           cur_accuracy,
                                           shared_runtime_history,
                                           job_epoch_dict,
                                           shared_accuracy_history)
+                        logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} is finished'.format(job_data['id'])
                         return msg_trial
 
@@ -157,24 +166,24 @@ def train_job_trial(gpu_id,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        saver.save(sess, checkpoint_file)
                         log_time_accuracy(job_name,
                                           cur_accuracy,
                                           shared_runtime_history,
                                           job_epoch_dict,
                                           shared_accuracy_history)
+                        logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} reaches the SLO'.format(job_data['id'])
                         return msg_trial
 
                     if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                        saver.save(sess, checkpoint_file)
                         log_time_accuracy(job_name,
                                           cur_accuracy,
                                           shared_runtime_history,
                                           job_epoch_dict,
                                           shared_accuracy_history)
+                        logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} is finished'.format(job_data['id'])
                         return msg_trial
 
@@ -183,19 +192,19 @@ def train_job_trial(gpu_id,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        saver.save(sess, checkpoint_file)
                         msg_trial = 'job {} reaches the SLO'.format(job_data['id'])
                         log_time_accuracy(job_name,
                                           cur_accuracy,
                                           shared_runtime_history,
                                           job_epoch_dict,
                                           shared_accuracy_history)
+                        logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         return msg_trial
                 else:
                     raise ValueError('the job objective type is not supported')
 
                 # save the model and exit the trial slot
-                saver.save(sess, checkpoint_file)
+                logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                 log_time_accuracy(job_name,
                                   cur_accuracy,
                                   shared_runtime_history,
@@ -203,7 +212,6 @@ def train_job_trial(gpu_id,
                                   shared_accuracy_history)
 
     elif job_data['model'] == 'lstm' or job_data['model'] == 'lstm':
-
         (train_sentences_x,
          val_sentences_x,
          train_tags_y,
@@ -219,7 +227,6 @@ def train_job_trial(gpu_id,
                                     max_length=MAX_LENGTH,
                                     opt=model_opt,
                                     lr=model_learn_rate)
-
             logit, total_parameters = model.build(word2index, tag2index)
 
             # store the total parameters of the model to dict
@@ -228,10 +235,9 @@ def train_job_trial(gpu_id,
             current_job['num_parameters'] = total_parameters
             ml_workload_shared[int(job_data['id'])] = current_job
 
-            # init the tf saver for training model
-            saver = tf.train.Saver()
+            # create the folder for saving models
             model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
-            if os.path.exists(model_ckpt_save_path):
+            if not os.path.exists(model_ckpt_save_path):
                 os.makedirs(model_ckpt_save_path)
 
             config = tf.ConfigProto()
@@ -239,7 +245,7 @@ def train_job_trial(gpu_id,
             config.gpu_options.allow_growth = True
 
             with tf.Session(config=config) as sess:
-                checkpoint_file = model_ckpt_save_path + '/model_ckpt'
+                sess.run(tf.global_variables_initializer())
 
                 epochtime_start_marker = timer()
 
@@ -281,19 +287,19 @@ def train_job_trial(gpu_id,
                                           shared_runtime_history,
                                           job_epoch_dict,
                                           shared_accuracy_history)
-                        saver.save(sess, checkpoint_file)
+                        logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} reaches SLO'.format(job_data['id'])
                         return msg_trial
 
                     if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                        saver.save(sess, checkpoint_file)
                         log_time_accuracy(job_name,
                                           cur_accuracy,
                                           shared_runtime_history,
                                           job_epoch_dict,
                                           shared_accuracy_history)
+                        logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} is finished'.format(job_data['id'])
                         return msg_trial
 
@@ -303,24 +309,24 @@ def train_job_trial(gpu_id,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        saver.save(sess, checkpoint_file)
                         log_time_accuracy(job_name,
                                           cur_accuracy,
                                           shared_runtime_history,
                                           job_epoch_dict,
                                           shared_accuracy_history)
+                        logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} reaches the SLO'.format(job_data['id'])
                         return msg_trial
 
                     if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                        saver.save(sess, checkpoint_file)
                         log_time_accuracy(job_name,
                                           cur_accuracy,
                                           shared_runtime_history,
                                           job_epoch_dict,
                                           shared_accuracy_history)
+                        logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} is finished'.format(job_data['id'])
                         return msg_trial
 
@@ -329,19 +335,19 @@ def train_job_trial(gpu_id,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        saver.save(sess, checkpoint_file)
-                        msg_trial = 'job {} reaches the SLO'.format(job_data['id'])
                         log_time_accuracy(job_name,
                                           cur_accuracy,
                                           shared_runtime_history,
                                           job_epoch_dict,
                                           shared_accuracy_history)
+                        logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
+                        msg_trial = 'job {} reaches the SLO'.format(job_data['id'])
                         return msg_trial
                 else:
                     raise ValueError('the job objective type is not supported')
 
                 # save the model and exit the trial slot
-                saver.save(sess, checkpoint_file)
+                logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                 log_time_accuracy(job_name,
                                   cur_accuracy,
                                   shared_runtime_history,
@@ -375,15 +381,15 @@ def train_job_trial(gpu_id,
             # ready to train the job
             saver = tf.train.Saver()
             model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
-            if os.path.exists(model_ckpt_save_path):
+            if not os.path.exists(model_ckpt_save_path):
                 os.makedirs(model_ckpt_save_path)
+            checkpoint_file = model_ckpt_save_path + '/model_ckpt'
 
             config = tf.ConfigProto()
             config.allow_soft_placement = True
             config.gpu_options.allow_growth = True
 
             with tf.Session(config=config) as sess:
-                checkpoint_file = model_ckpt_save_path + '/model_ckpt'
                 sess.run(tf.global_variables_initializer())
 
                 num_batch = train_labels.shape[0] // train_batchsize
@@ -450,12 +456,12 @@ def train_job_trial(gpu_id,
                     if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                        saver.save(sess, checkpoint_file)
                         log_time_accuracy(job_name,
                                           cur_accuracy,
                                           shared_runtime_history,
                                           job_epoch_dict,
                                           shared_accuracy_history)
+                        saver.save(sess, checkpoint_file)
                         msg_trial = 'job {} is finished'.format(job_data['id'])
                         return msg_trial
 
@@ -465,24 +471,24 @@ def train_job_trial(gpu_id,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        saver.save(sess, checkpoint_file)
                         log_time_accuracy(job_name,
                                           cur_accuracy,
                                           shared_runtime_history,
                                           job_epoch_dict,
                                           shared_accuracy_history)
+                        saver.save(sess, checkpoint_file)
                         msg_trial = 'job {} reaches the SLO'.format(job_data['id'])
                         return msg_trial
 
                     if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                        saver.save(sess, checkpoint_file)
                         log_time_accuracy(job_name,
                                           cur_accuracy,
                                           shared_runtime_history,
                                           job_epoch_dict,
                                           shared_accuracy_history)
+                        saver.save(sess, checkpoint_file)
                         msg_trial = 'job {} is finished'.format(job_data['id'])
                         return msg_trial
 
@@ -491,13 +497,13 @@ def train_job_trial(gpu_id,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        saver.save(sess, checkpoint_file)
                         msg_trial = 'job {} reaches the SLO'.format(job_data['id'])
                         log_time_accuracy(job_name,
                                           cur_accuracy,
                                           shared_runtime_history,
                                           job_epoch_dict,
                                           shared_accuracy_history)
+                        saver.save(sess, checkpoint_file)
                         return msg_trial
 
                 else:
@@ -550,6 +556,7 @@ def train_job(gpu_id,
         # Params for bert model and tokenization
         bert_path = "https://tfhub.dev/google/bert_uncased_L-12_H-768_A-12/1"
         max_seq_length = 128
+        offset = 500
 
         train_df, test_df = lmrd_reader.download_and_load_datasets()
 
@@ -561,18 +568,14 @@ def train_job(gpu_id,
 
         # start processing on the assigned device
         with tf.device(assign_device):
+            # build the model
             model = build_nlp_model(model_type=job_data['model'], max_length=128, opt=model_opt, lr=model_learn_rate)
+            logit, _ = model.build()
 
-            logit, total_parameters = model.build()
-
-            # store the total parameters of the model to dict
-            job_parameters_dict[job_name] = total_parameters
-
-            # init the tf saver to store the model
-            saver = tf.train.Saver()
+            # load the checkpoint if it exists
             model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
-            if os.path.exists(model_ckpt_save_path):
-                os.makedirs(model_ckpt_save_path)
+            if os.path.exists(model_ckpt_save_path + '/' + job_name + '.h5'):
+                logit.load_weights(model_ckpt_save_path + '/' + job_name + '.h5')
 
             # init the config for training
             config = tf.ConfigProto()
@@ -580,17 +583,8 @@ def train_job(gpu_id,
             config.gpu_options.allow_growth = True
 
             with tf.Session(config=config) as sess:
-                checkpoint_file = model_ckpt_save_path + '/model_ckpt'
-                if os.path.isfile(checkpoint_file + '.meta'):
-                    saver.restore(sess, checkpoint_file)
-                else:
-                    sess.run(tf.global_variables_initializer())
-
                 # Instantiate variables
-                sess.run(tf.local_variables_initializer())
-                sess.run(tf.global_variables_initializer())
-                sess.run(tf.tables_initializer())
-                k_backend.set_session(sess)
+                initialize_vars(sess)
 
                 # Instantiate tokenizer
                 tokenizer = lmrd_reader.create_tokenizer_from_hub_module(bert_path, sess)
@@ -602,7 +596,7 @@ def train_job(gpu_id,
                     train_input_ids,
                     train_input_masks,
                     train_segment_ids,
-                    train_labels,
+                    train_labels
                 ) = lmrd_reader.convert_examples_to_features(tokenizer, train_examples, max_seq_length=max_seq_length)
 
                 preparation_end_marker = timer()
@@ -620,7 +614,10 @@ def train_job(gpu_id,
 
                     # start evaluation phrase
                     print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
-                    cur_accuracy = logit.evaluate([train_input_ids, train_input_masks, train_segment_ids], train_labels)
+                    cur_accuracy = logit.evaluate([train_input_ids[0:offset],
+                                                   train_input_masks[0:offset],
+                                                   train_segment_ids[0:offset]],
+                                                  train_labels[0:offset])
                     print('evaluation accuracy:{}'.format(cur_accuracy))
 
                     pre_accuracy = job_accuracy_dict[job_name]
@@ -640,24 +637,24 @@ def train_job(gpu_id,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
-                            saver.save(sess, checkpoint_file)
                             log_time_accuracy(job_name,
                                               cur_accuracy,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
+                            logit.save(logit.save(model_ckpt_save_path + '/' + job_name + '.h5'))
                             msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
                             return msg_slot
 
                         if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                            saver.save(sess, checkpoint_file)
                             log_time_accuracy(job_name,
                                               cur_accuracy,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
+                            logit.save(logit.save(model_ckpt_save_path + '/' + job_name + '.h5'))
                             msg_slot = 'job {} is finished'.format(job_data['id'])
                             return msg_slot
 
@@ -667,24 +664,24 @@ def train_job(gpu_id,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
-                            saver.save(sess, checkpoint_file)
                             log_time_accuracy(job_name,
                                               cur_accuracy,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
+                            logit.save(logit.save(model_ckpt_save_path + '/' + job_name + '.h5'))
                             msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
                             return msg_slot
 
                         if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                            saver.save(sess, checkpoint_file)
                             log_time_accuracy(job_name,
                                               cur_accuracy,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
+                            logit.save(logit.save(model_ckpt_save_path + '/' + job_name + '.h5'))
                             msg_slot = 'job {} is finished'.format(job_data['id'])
                             return msg_slot
 
@@ -693,12 +690,12 @@ def train_job(gpu_id,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
-                            saver.save(sess, checkpoint_file)
                             log_time_accuracy(job_name,
                                               cur_accuracy,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
+                            logit.save(logit.save(model_ckpt_save_path + '/' + job_name + '.h5'))
                             msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
                             return msg_slot
                     else:
@@ -712,6 +709,8 @@ def train_job(gpu_id,
 
                     slot_end_marker = timer()
                     running_slot_time = slot_end_marker - slot_start_marker
+
+        logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
 
     elif job_data['model'] == 'lstm' or job_data['model'] == 'bilstm':
         (train_sentences_x,
@@ -729,27 +728,19 @@ def train_job(gpu_id,
                                     max_length=MAX_LENGTH,
                                     opt=model_opt,
                                     lr=model_learn_rate)
+            logit, _ = model.build(word2index, tag2index)
 
-            logit, total_parameters = model.build(word2index, tag2index)
-
-            # init the tf saver for checkpoint
-            saver = tf.train.Saver()
-
-            # get the path of checkpoint
+            # load the checkpoint if it exists
             model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
-            if not os.path.exists(model_ckpt_save_path):
-                os.makedirs(model_ckpt_save_path)
+            if os.path.exists(model_ckpt_save_path + '/' + job_name + '.h5'):
+                logit.load_weights(model_ckpt_save_path + '/' + job_name + '.h5')
 
             config = tf.ConfigProto()
             config.allow_soft_placement = True
             config.gpu_options.allow_growth = True
 
             with tf.Session(config=config) as sess:
-                checkpoint_file = model_ckpt_save_path + '/model_ckpt'
-                if os.path.isfile(checkpoint_file + '.meta'):
-                    saver.restore(sess, checkpoint_file)
-                else:
-                    sess.run(tf.global_variables_initializer())
+                sess.run(tf.global_variables_initializer())
 
                 # add the prepare time for this process
                 preparation_end_marker = timer()
@@ -787,24 +778,24 @@ def train_job(gpu_id,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
-                            saver.save(sess, checkpoint_file)
                             log_time_accuracy(job_name,
                                               cur_accuracy,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
+                            logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
                             return msg_slot
 
                         if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                            saver.save(sess, checkpoint_file)
                             log_time_accuracy(job_name,
                                               cur_accuracy,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
+                            logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} is finished'.format(job_data['id'])
                             return msg_slot
 
@@ -814,24 +805,24 @@ def train_job(gpu_id,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
-                            saver.save(sess, checkpoint_file)
                             log_time_accuracy(job_name,
                                               cur_accuracy,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
+                            logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
                             return msg_slot
 
                         if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                            saver.save(sess, checkpoint_file)
                             log_time_accuracy(job_name,
                                               cur_accuracy,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
+                            logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} is finished'.format(job_data['id'])
                             return msg_slot
 
@@ -840,12 +831,12 @@ def train_job(gpu_id,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
-                            saver.save(sess, checkpoint_file)
                             log_time_accuracy(job_name,
                                               cur_accuracy,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
+                            logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
                             return msg_slot
                     else:
@@ -860,6 +851,8 @@ def train_job(gpu_id,
                     slot_end_marker = timer()
                     running_slot_time = slot_end_marker - slot_start_marker
 
+        logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
+
     else:
         img_w = 32
         img_h = 32
@@ -872,21 +865,15 @@ def train_job(gpu_id,
         with tf.device(assign_device):
             feature_ph = tf.placeholder(tf.float32, [None, img_w, img_h, num_chn])
             label_ph = tf.placeholder(tf.int64, [None, num_cls])
-            train_op, eval_op, total_parameters = build_cv_model(job_data,
-                                                                 model_opt,
-                                                                 model_learn_rate,
-                                                                 num_cls,
-                                                                 feature_ph,
-                                                                 label_ph)
+            train_op, eval_op, _ = build_cv_model(job_data,
+                                                  model_opt,
+                                                  model_learn_rate,
+                                                  num_cls,
+                                                  feature_ph,
+                                                  label_ph)
 
             # init the tf saver for checkpoint
             saver = tf.train.Saver()
-
-            # get the path of checkpoint
-            model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
-
-            if not os.path.exists(model_ckpt_save_path):
-                os.makedirs(model_ckpt_save_path)
 
             config = tf.ConfigProto()
             config.allow_soft_placement = True
@@ -894,6 +881,7 @@ def train_job(gpu_id,
 
             with tf.Session(config=config) as sess:
                 # check if the checkpoint file exist
+                model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
                 checkpoint_file = model_ckpt_save_path + '/model_ckpt'
                 if os.path.isfile(checkpoint_file + '.meta'):
                     saver.restore(sess, checkpoint_file)
@@ -908,7 +896,6 @@ def train_job(gpu_id,
 
                 # check if the total runtime is less than running_slot
                 while running_slot_time < running_slot:
-
                     epoch_start_marker = timer()
 
                     for b in range(num_batch):
@@ -955,24 +942,24 @@ def train_job(gpu_id,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
-                            saver.save(sess, checkpoint_file)
                             log_time_accuracy(job_name,
                                               cur_accuracy,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
+                            saver.save(sess, checkpoint_file)
                             msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
                             return msg_slot
 
                         if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                            saver.save(sess, checkpoint_file)
                             log_time_accuracy(job_name,
                                               cur_accuracy,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
+                            saver.save(sess, checkpoint_file)
                             msg_slot = 'job {} is finished'.format(job_data['id'])
                             return msg_slot
 
@@ -982,24 +969,24 @@ def train_job(gpu_id,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
-                            saver.save(sess, checkpoint_file)
                             log_time_accuracy(job_name,
                                               cur_accuracy,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
+                            saver.save(sess, checkpoint_file)
                             msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
                             return msg_slot
 
                         if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                            saver.save(sess, checkpoint_file)
                             log_time_accuracy(job_name,
                                               cur_accuracy,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
+                            saver.save(sess, checkpoint_file)
                             msg_slot = 'job {} is finished'.format(job_data['id'])
                             return msg_slot
 
@@ -1008,12 +995,12 @@ def train_job(gpu_id,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
-                            saver.save(sess, checkpoint_file)
                             log_time_accuracy(job_name,
                                               cur_accuracy,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
+                            saver.save(sess, checkpoint_file)
                             msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
                             return msg_slot
                     else:
@@ -1028,18 +1015,17 @@ def train_job(gpu_id,
                     slot_end_marker = timer()
                     running_slot_time = slot_end_marker - slot_start_marker
 
+        saver.save(sess, checkpoint_file)
+
     # exceed the running slot and haven't achieve goal so put the job back to the queue
     job_list_rotary.append(job_data)
     job_queue_anony.put(job_anony)
 
-    # save the model/job since the job has run for the current slot but doesn't achieve SLO
-    saver.save(sess, checkpoint_file)
     msg_slot = 'job {} is finished the current running slot'.format(job_data['id'])
     return msg_slot
 
 
 if __name__ == "__main__":
-
     proc_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print('============= the whole exp starts at: {}===================='.format(proc_start_time))
 
@@ -1189,7 +1175,7 @@ if __name__ == "__main__":
         model_acc_file = os.getcwd() + '/knowledgebase/' + f
         dl_estimator.import_accuracy_dataset(model_acc_file)
 
-    dl_estimator.prepare_workload(ml_workload)
+    dl_estimator.prepare_workload(ml_workload_shared)
 
     #######################################################
     # start the rotary process
