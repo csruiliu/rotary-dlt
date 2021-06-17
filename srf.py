@@ -5,35 +5,20 @@ import os
 import queue
 import numpy as np
 from datetime import datetime
-from tensorflow.keras import backend as K
+from tensorflow.keras import backend as k_backend
 
 import config.config_rotary as cfg_rotary
 import config.config_path as cfg_path
-from workload.workload_generator import WorkloadGenerator
-from workload.tensorflow_cifar.tools.dataset_loader import load_cifar10_keras
-from utils.model_tool import build_cv_model
-from utils.model_tool import build_nlp_model
+import workload.tensorflow_cifar.tools.cifar_reader as cifar_reader
 import workload.tensorflow_nlp.tools.udtb_reader as udtb_reader
 import workload.tensorflow_nlp.tools.lmrd_reader as lmrd_reader
+from workload.workload_generator import WorkloadGenerator
+from utils.model_tool import build_cv_model, build_nlp_model
+from utils.log_func import log_time_accuracy
 
 
 def compared_item(item):
     return item['goal_value']
-
-
-def log_time_accuracy(job_instance_key,
-                      current_acc,
-                      shared_time_dict,
-                      shared_accuracy_dict):
-    now_time_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    sub_runtime_list = shared_time_dict[job_instance_key]
-    sub_runtime_list.append(str(job_epoch_dict[job_instance_key]) + ':' + now_time_date)
-    shared_time_dict[job_instance_key] = sub_runtime_list
-
-    sub_accuracy_list = shared_accuracy_dict[job_instance_key]
-    sub_accuracy_list.append(str(current_acc) + ':' + now_time_date)
-    shared_accuracy_dict[job_instance_key] = sub_accuracy_list
 
 
 def train_job_runtime(gpu_id,
@@ -102,7 +87,7 @@ def train_job_runtime(gpu_id,
                 sess.run(tf.local_variables_initializer())
                 sess.run(tf.global_variables_initializer())
                 sess.run(tf.tables_initializer())
-                K.set_session(sess)
+                k_backend.set_session(sess)
 
                 # Instantiate tokenizer
                 tokenizer = lmrd_reader.create_tokenizer_from_hub_module(bert_path, sess)
@@ -148,13 +133,21 @@ def train_job_runtime(gpu_id,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                        log_time_accuracy(job_name,
+                                          cur_accuracy,
+                                          shared_runtime_history,
+                                          job_epoch_dict,
+                                          shared_accuracy_history)
                         # save the model as the job achieves SLO and exit the current process
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} reaches SLO'.format(job_data['id'])
                         return msg
 
-                    log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                    log_time_accuracy(job_name,
+                                      cur_accuracy,
+                                      shared_runtime_history,
+                                      job_epoch_dict,
+                                      shared_accuracy_history)
 
     elif job_data['model'] == 'lstm' or job_data['model'] == 'bilstm':
         (train_sentences_x,
@@ -227,13 +220,21 @@ def train_job_runtime(gpu_id,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                        log_time_accuracy(job_name,
+                                          cur_accuracy,
+                                          shared_runtime_history,
+                                          job_epoch_dict,
+                                          shared_accuracy_history)
                         # save the model as the job achieves SLO and exit the current process
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} reaches SLO'.format(job_data['id'])
                         return msg
 
-                    log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                    log_time_accuracy(job_name,
+                                      cur_accuracy,
+                                      shared_runtime_history,
+                                      job_epoch_dict,
+                                      shared_accuracy_history)
     else:
         img_w = 32
         img_h = 32
@@ -241,7 +242,7 @@ def train_job_runtime(gpu_id,
         num_cls = 10
 
         # load cifar10 data
-        train_feature, train_labels, eval_feature, eval_labels = load_cifar10_keras()
+        train_feature, train_labels, eval_feature, eval_labels = cifar_reader.load_cifar10_keras()
 
         with tf.device(assign_device):
             feature_ph = tf.placeholder(tf.float32, [None, img_w, img_h, num_chn])
@@ -283,10 +284,10 @@ def train_job_runtime(gpu_id,
                 while True:
                     epoch_start_marker = timer()
 
-                    for i in range(num_batch):
+                    for b in range(num_batch):
                         # print('step {} / {}'.format(i + 1, num_batch))
-                        batch_offset = i * train_batchsize
-                        batch_end = (i + 1) * train_batchsize
+                        batch_offset = b * train_batchsize
+                        batch_end = (b + 1) * train_batchsize
 
                         train_data_batch = train_feature[batch_offset:batch_end]
                         train_label_batch = train_labels[batch_offset:batch_end]
@@ -297,10 +298,10 @@ def train_job_runtime(gpu_id,
                     acc_sum = 0
                     eval_batch_size = 50
                     num_batch_eval = eval_labels.shape[0] // eval_batch_size
-                    for i in range(num_batch_eval):
+                    for be in range(num_batch_eval):
                         # print('evaluation step %d / %d' % (i + 1, num_batch_eval))
-                        batch_offset = i * eval_batch_size
-                        batch_end = (i + 1) * eval_batch_size
+                        batch_offset = be * eval_batch_size
+                        batch_end = (be + 1) * eval_batch_size
                         eval_feature_batch = eval_feature[batch_offset:batch_end]
                         eval_label_batch = eval_labels[batch_offset:batch_end]
                         acc_batch = sess.run(eval_op,
@@ -321,13 +322,21 @@ def train_job_runtime(gpu_id,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                        log_time_accuracy(job_name,
+                                          cur_accuracy,
+                                          shared_runtime_history,
+                                          job_epoch_dict,
+                                          shared_accuracy_history)
                         # save the model as the job achieves SLO and exit the current process
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} reaches SLO'.format(job_data['id'])
                         return msg
 
-                    log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                    log_time_accuracy(job_name,
+                                      cur_accuracy,
+                                      shared_runtime_history,
+                                      job_epoch_dict,
+                                      shared_accuracy_history)
 
 
 def train_job_others(gpu_id,
@@ -400,7 +409,7 @@ def train_job_others(gpu_id,
                 sess.run(tf.local_variables_initializer())
                 sess.run(tf.global_variables_initializer())
                 sess.run(tf.tables_initializer())
-                K.set_session(sess)
+                k_backend.set_session(sess)
 
                 # Instantiate tokenizer
                 tokenizer = lmrd_reader.create_tokenizer_from_hub_module(bert_path, sess)
@@ -449,7 +458,11 @@ def train_job_others(gpu_id,
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
                             saver.save(sess, checkpoint_file)
-                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            log_time_accuracy(job_name,
+                                              cur_accuracy,
+                                              shared_runtime_history,
+                                              job_epoch_dict,
+                                              shared_accuracy_history)
                             msg = 'job {} reaches the SLO'.format(job_data['id'])
                             return msg
 
@@ -457,7 +470,11 @@ def train_job_others(gpu_id,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             saver.save(sess, checkpoint_file)
-                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            log_time_accuracy(job_name,
+                                              cur_accuracy,
+                                              shared_runtime_history,
+                                              job_epoch_dict,
+                                              shared_accuracy_history)
                             msg = 'job {} is finished'.format(job_data['id'])
                             return msg
 
@@ -469,20 +486,32 @@ def train_job_others(gpu_id,
                             job_attain_dict[job_name] = 1
                             saver.save(sess, checkpoint_file)
                             msg = 'job {} reaches the SLO'.format(job_data['id'])
-                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            log_time_accuracy(job_name,
+                                              cur_accuracy,
+                                              shared_runtime_history,
+                                              job_epoch_dict,
+                                              shared_accuracy_history)
                             return msg
 
                         if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             saver.save(sess, checkpoint_file)
-                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            log_time_accuracy(job_name,
+                                              cur_accuracy,
+                                              shared_runtime_history,
+                                              job_epoch_dict,
+                                              shared_accuracy_history)
                             msg = 'job {} is finished'.format(job_data['id'])
                             return msg
                     else:
                         raise ValueError('the job objective type is not supported')
 
-                    log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                    log_time_accuracy(job_name,
+                                      cur_accuracy,
+                                      shared_runtime_history,
+                                      job_epoch_dict,
+                                      shared_accuracy_history)
 
                     slot_end_marker = timer()
                     running_slot_time = slot_end_marker - slot_start_marker
@@ -562,7 +591,11 @@ def train_job_others(gpu_id,
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
                             saver.save(sess, checkpoint_file)
-                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            log_time_accuracy(job_name,
+                                              cur_accuracy,
+                                              shared_runtime_history,
+                                              job_epoch_dict,
+                                              shared_accuracy_history)
                             msg = 'job {} reaches the SLO'.format(job_data['id'])
                             return msg
 
@@ -570,7 +603,11 @@ def train_job_others(gpu_id,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             saver.save(sess, checkpoint_file)
-                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            log_time_accuracy(job_name,
+                                              cur_accuracy,
+                                              shared_runtime_history,
+                                              job_epoch_dict,
+                                              shared_accuracy_history)
                             msg = 'job {} is finished'.format(job_data['id'])
                             return msg
 
@@ -582,20 +619,32 @@ def train_job_others(gpu_id,
                             job_attain_dict[job_name] = 1
                             saver.save(sess, checkpoint_file)
                             msg = 'job {} reaches the SLO'.format(job_data['id'])
-                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            log_time_accuracy(job_name,
+                                              cur_accuracy,
+                                              shared_runtime_history,
+                                              job_epoch_dict,
+                                              shared_accuracy_history)
                             return msg
 
                         if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             saver.save(sess, checkpoint_file)
-                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            log_time_accuracy(job_name,
+                                              cur_accuracy,
+                                              shared_runtime_history,
+                                              job_epoch_dict,
+                                              shared_accuracy_history)
                             msg = 'job {} is finished'.format(job_data['id'])
                             return msg
                     else:
                         raise ValueError('the job objective type is not supported')
 
-                    log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                    log_time_accuracy(job_name,
+                                      cur_accuracy,
+                                      shared_runtime_history,
+                                      job_epoch_dict,
+                                      shared_accuracy_history)
 
                     slot_end_marker = timer()
                     running_slot_time = slot_end_marker - slot_start_marker
@@ -606,7 +655,7 @@ def train_job_others(gpu_id,
         num_cls = 10
 
         # load cifar10 data
-        train_feature, train_labels, eval_feature, eval_labels = load_cifar10_keras()
+        train_feature, train_labels, eval_feature, eval_labels = cifar_reader.load_cifar10_keras()
 
         with tf.device(assign_device):
             feature_ph = tf.placeholder(tf.float32, [None, img_w, img_h, num_chn])
@@ -650,10 +699,10 @@ def train_job_others(gpu_id,
 
                     epoch_start_marker = timer()
 
-                    for i in range(num_batch):
+                    for b in range(num_batch):
                         # print('step {} / {}'.format(i + 1, num_batch))
-                        batch_offset = i * train_batchsize
-                        batch_end = (i + 1) * train_batchsize
+                        batch_offset = b * train_batchsize
+                        batch_end = (b + 1) * train_batchsize
 
                         train_data_batch = train_feature[batch_offset:batch_end]
                         train_label_batch = train_labels[batch_offset:batch_end]
@@ -664,10 +713,10 @@ def train_job_others(gpu_id,
                     acc_sum = 0
                     eval_batch_size = 50
                     num_batch_eval = eval_labels.shape[0] // eval_batch_size
-                    for i in range(num_batch_eval):
+                    for be in range(num_batch_eval):
                         # print('evaluation step %d / %d' % (i + 1, num_batch_eval))
-                        batch_offset = i * eval_batch_size
-                        batch_end = (i + 1) * eval_batch_size
+                        batch_offset = be * eval_batch_size
+                        batch_end = (be + 1) * eval_batch_size
                         eval_feature_batch = eval_feature[batch_offset:batch_end]
                         eval_label_batch = eval_labels[batch_offset:batch_end]
                         acc_batch = sess.run(eval_op,
@@ -693,7 +742,11 @@ def train_job_others(gpu_id,
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
                             saver.save(sess, checkpoint_file)
-                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            log_time_accuracy(job_name,
+                                              cur_accuracy,
+                                              shared_runtime_history,
+                                              job_epoch_dict,
+                                              shared_accuracy_history)
                             msg = 'job {} reaches the SLO'.format(job_data['id'])
                             return msg
 
@@ -701,7 +754,11 @@ def train_job_others(gpu_id,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             saver.save(sess, checkpoint_file)
-                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            log_time_accuracy(job_name,
+                                              cur_accuracy,
+                                              shared_runtime_history,
+                                              job_epoch_dict,
+                                              shared_accuracy_history)
                             msg = 'job {} is finished'.format(job_data['id'])
                             return msg
 
@@ -713,21 +770,33 @@ def train_job_others(gpu_id,
                             job_attain_dict[job_name] = 1
                             saver.save(sess, checkpoint_file)
                             msg = 'job {} reaches the SLO'.format(job_data['id'])
-                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            log_time_accuracy(job_name,
+                                              cur_accuracy,
+                                              shared_runtime_history,
+                                              job_epoch_dict,
+                                              shared_accuracy_history)
                             return msg
 
                         if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             saver.save(sess, checkpoint_file)
-                            log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                            log_time_accuracy(job_name,
+                                              cur_accuracy,
+                                              shared_runtime_history,
+                                              job_epoch_dict,
+                                              shared_accuracy_history)
                             msg = 'job {} is finished'.format(job_data['id'])
                             return msg
 
                     else:
                         raise ValueError('the job objective type is not supported')
 
-                    log_time_accuracy(job_name, cur_accuracy, shared_runtime_history, shared_accuracy_history)
+                    log_time_accuracy(job_name,
+                                      cur_accuracy,
+                                      shared_runtime_history,
+                                      job_epoch_dict,
+                                      shared_accuracy_history)
 
                     slot_end_marker = timer()
                     running_slot_time = slot_end_marker - slot_start_marker
