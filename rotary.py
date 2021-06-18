@@ -5,7 +5,6 @@ from timeit import default_timer as timer
 import os
 import queue
 from datetime import datetime
-from tensorflow.keras import backend as k_backend
 
 import config.config_rotary as cfg_rotary
 import config.config_path as cfg_path
@@ -22,7 +21,7 @@ def initialize_vars(sess):
     sess.run(tf.local_variables_initializer())
     sess.run(tf.global_variables_initializer())
     sess.run(tf.tables_initializer())
-    k_backend.set_session(sess)
+    tf.keras.backend.set_session(sess)
 
 
 def train_job_trial(gpu_id,
@@ -61,19 +60,6 @@ def train_job_trial(gpu_id,
 
         # start processing on the assigned device
         with tf.device(assign_device):
-            # build the model
-            model = build_nlp_model(model_type=job_data['model'],
-                                    max_length=128,
-                                    opt=model_opt,
-                                    lr=model_learn_rate)
-            logit, total_parameters = model.build()
-
-            # store the total parameters of the model to dict
-            job_parameters_dict[job_name] = total_parameters
-            current_job = ml_workload_shared[int(job_data['id'])]
-            current_job['num_parameters'] = total_parameters
-            ml_workload_shared[int(job_data['id'])] = current_job
-
             # create the folder for saving models
             model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
             if not os.path.exists(model_ckpt_save_path):
@@ -85,15 +71,10 @@ def train_job_trial(gpu_id,
             config.gpu_options.allow_growth = True
 
             with tf.Session(config=config) as sess:
-                # Instantiate variables
-                initialize_vars(sess)
-
                 # Instantiate tokenizer
                 tokenizer = lmrd_reader.create_tokenizer_from_hub_module(bert_path, sess)
-
                 # Convert data to InputExample format
                 train_examples = lmrd_reader.convert_text_to_examples(train_text, train_label)
-
                 # Convert to features
                 (
                     train_input_ids,
@@ -102,19 +83,38 @@ def train_job_trial(gpu_id,
                     train_labels,
                 ) = lmrd_reader.convert_examples_to_features(tokenizer, train_examples, max_seq_length=max_seq_length)
 
+                # build the model
+                model = build_nlp_model(model_type=job_data['model'],
+                                        max_length=128,
+                                        opt=model_opt,
+                                        lr=model_learn_rate)
+                logit, total_parameters = model.build()
+
+                # store the total parameters of the model to dict
+                job_parameters_dict[job_name] = total_parameters
+                current_job = ml_workload_shared[int(job_data['id'])]
+                current_job['num_parameters'] = total_parameters
+                ml_workload_shared[int(job_data['id'])] = current_job
+
+                # Instantiate variables
+                initialize_vars(sess)
+
                 epochtime_start_marker = timer()
 
                 logit.fit([train_input_ids, train_input_masks, train_segment_ids],
                           train_labels,
                           epochs=1,
-                          batch_size=train_batchsize)
+                          batch_size=train_batchsize,
+                          verbose=0)
 
                 # start evaluation phrase
                 print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
-                cur_accuracy = logit.evaluate([train_input_ids[0:offset], 
-                                               train_input_masks[0:offset],
-                                               train_segment_ids[0:offset]],
-                                              train_labels[0:offset])
+                scores = logit.evaluate([train_input_ids[0:offset],
+                                         train_input_masks[0:offset],
+                                         train_segment_ids[0:offset]],
+                                        train_labels[0:offset],
+                                        verbose=0)
+                cur_accuracy = scores[1]
                 print('evaluation accuracy:{}'.format(cur_accuracy))
 
                 pre_accuracy = job_accuracy_dict[job_name]
@@ -192,13 +192,13 @@ def train_job_trial(gpu_id,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        msg_trial = 'job {} reaches the SLO'.format(job_data['id'])
                         log_time_accuracy(job_name,
                                           cur_accuracy,
                                           shared_runtime_history,
                                           job_epoch_dict,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
+                        msg_trial = 'job {} reaches the SLO'.format(job_data['id'])
                         return msg_trial
                 else:
                     raise ValueError('the job objective type is not supported')
@@ -211,7 +211,7 @@ def train_job_trial(gpu_id,
                                   job_epoch_dict,
                                   shared_accuracy_history)
 
-    elif job_data['model'] == 'lstm' or job_data['model'] == 'lstm':
+    elif job_data['model'] == 'lstm' or job_data['model'] == 'bilstm':
         (train_sentences_x,
          val_sentences_x,
          train_tags_y,
@@ -252,12 +252,15 @@ def train_job_trial(gpu_id,
                 logit.fit(train_sentences_x,
                           udtb_reader.to_categorical(train_tags_y, len(tag2index)),
                           batch_size=train_batchsize,
-                          epochs=1)
+                          epochs=1,
+                          verbose=0)
 
                 # start evaluation phrase
                 print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
-                cur_accuracy = logit.evaluate(val_sentences_x,
-                                              udtb_reader.to_categorical(val_tags_y, len(tag2index)))
+                scores = logit.evaluate(val_sentences_x,
+                                        udtb_reader.to_categorical(val_tags_y, len(tag2index)),
+                                        verbose=0)
+                cur_accuracy = scores[1]
                 print('evaluation accuracy:{}'.format(cur_accuracy))
 
                 pre_accuracy = job_accuracy_dict[job_name]
@@ -497,13 +500,13 @@ def train_job_trial(gpu_id,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        msg_trial = 'job {} reaches the SLO'.format(job_data['id'])
                         log_time_accuracy(job_name,
                                           cur_accuracy,
                                           shared_runtime_history,
                                           job_epoch_dict,
                                           shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
+                        msg_trial = 'job {} reaches the SLO'.format(job_data['id'])
                         return msg_trial
 
                 else:
@@ -568,24 +571,12 @@ def train_job(gpu_id,
 
         # start processing on the assigned device
         with tf.device(assign_device):
-            # build the model
-            model = build_nlp_model(model_type=job_data['model'], max_length=128, opt=model_opt, lr=model_learn_rate)
-            logit, _ = model.build()
-
-            # load the checkpoint if it exists
-            model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
-            if os.path.exists(model_ckpt_save_path + '/' + job_name + '.h5'):
-                logit.load_weights(model_ckpt_save_path + '/' + job_name + '.h5')
-
             # init the config for training
             config = tf.ConfigProto()
             config.allow_soft_placement = True
             config.gpu_options.allow_growth = True
 
             with tf.Session(config=config) as sess:
-                # Instantiate variables
-                initialize_vars(sess)
-
                 # Instantiate tokenizer
                 tokenizer = lmrd_reader.create_tokenizer_from_hub_module(bert_path, sess)
                 # Convert data to InputExample format
@@ -599,6 +590,19 @@ def train_job(gpu_id,
                     train_labels
                 ) = lmrd_reader.convert_examples_to_features(tokenizer, train_examples, max_seq_length=max_seq_length)
 
+                # build the model
+                model = build_nlp_model(model_type=job_data['model'], max_length=128, opt=model_opt,
+                                        lr=model_learn_rate)
+                logit, _ = model.build()
+
+                # load the checkpoint if it exists
+                model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
+                if os.path.exists(model_ckpt_save_path + '/' + job_name + '.h5'):
+                    logit.load_weights(model_ckpt_save_path + '/' + job_name + '.h5')
+
+                # Instantiate variables
+                initialize_vars(sess)
+
                 preparation_end_marker = timer()
                 # add the prepare time for this process
                 job_runtime_dict[job_name] += preparation_end_marker - preparation_start_marker
@@ -610,15 +614,20 @@ def train_job(gpu_id,
                     logit.fit([train_input_ids, train_input_masks, train_segment_ids],
                               train_labels,
                               epochs=1,
-                              batch_size=train_batchsize)
+                              batch_size=train_batchsize,
+                              verbose=0)
 
                     # start evaluation phrase
                     print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
-                    cur_accuracy = logit.evaluate([train_input_ids[0:offset],
-                                                   train_input_masks[0:offset],
-                                                   train_segment_ids[0:offset]],
-                                                  train_labels[0:offset])
-                    print('evaluation accuracy:{}'.format(cur_accuracy))
+                    scores = logit.evaluate([train_input_ids[0:offset],
+                                             train_input_masks[0:offset],
+                                             train_segment_ids[0:offset]],
+                                            train_labels[0:offset],
+                                            verbose=0)
+                    cur_accuracy = scores[1]
+                    print('############### bert evaluation accuracy:{} ###############'.format(cur_accuracy))
+
+                    # print('evaluation accuracy:{}'.format(cur_accuracy))
 
                     pre_accuracy = job_accuracy_dict[job_name]
 
@@ -631,7 +640,6 @@ def train_job(gpu_id,
 
                     # add current results
                     dl_estimator.add_actual_data(job_name, cur_accuracy, job_epoch_dict[job_name])
-
                     if job_data['goal_type'] == 'accuracy':
                         if job_accuracy_dict[job_name] >= job_data['goal_value']:
                             end_time_overall = timer()
@@ -753,12 +761,15 @@ def train_job(gpu_id,
                     logit.fit(train_sentences_x,
                               udtb_reader.to_categorical(train_tags_y, len(tag2index)),
                               batch_size=train_batchsize,
-                              epochs=1)
+                              epochs=1,
+                              verbose=0)
 
                     # start evaluation phrase
                     print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
-                    cur_accuracy = logit.evaluate(val_sentences_x,
-                                                  udtb_reader.to_categorical(val_tags_y, len(tag2index)))
+                    scores = logit.evaluate(val_sentences_x,
+                                            udtb_reader.to_categorical(val_tags_y, len(tag2index)),
+                                            verbose=0)
+                    cur_accuracy = scores[1]
                     print('evaluation accuracy:{}'.format(cur_accuracy))
 
                     pre_accuracy = job_accuracy_dict[job_name]
@@ -1104,6 +1115,13 @@ if __name__ == "__main__":
     # dict for tracking accuracy with wall-time
     job_accuracy_history = dict()
 
+    # init the estimator
+    # read all the model-accuracy files
+    dl_estimator = DLEstimator(topk=5)
+    for f in os.listdir('./knowledgebase'):
+        model_acc_file = os.getcwd() + '/knowledgebase/' + f
+        dl_estimator.import_accuracy_dataset(model_acc_file)
+
     # init process pool
     proc_pool = mp.Pool(num_gpu, maxtasksperchild=1)
 
@@ -1164,16 +1182,12 @@ if __name__ == "__main__":
     for key in job_epochtime_dict:
         print(key, '[epoch_time]->', job_epochtime_dict[key])
 
-    #######################################################
-    # init the accuracy estimator after trial process
-    #######################################################
+    for ml_job in ml_workload_shared:
+        print('Job:'.format(ml_job))
 
-    dl_estimator = DLEstimator(topk=5)
-
-    # read all the accuracy file
-    for f in os.listdir('./knowledgebase'):
-        model_acc_file = os.getcwd() + '/knowledgebase/' + f
-        dl_estimator.import_accuracy_dataset(model_acc_file)
+    #######################################################
+    # prepare estimation for the workload
+    #######################################################
 
     dl_estimator.prepare_workload(ml_workload_shared)
 
