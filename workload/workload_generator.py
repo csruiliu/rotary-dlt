@@ -52,13 +52,13 @@ class WorkloadGenerator:
                               ('runtime', 30),
                               ('runtime', 40)]
 
-        self._pretrain_runtime_list = [1, 2, 3]
+        self._pretrain_runtime_list = [1, 2, 3, 4, 5]
 
         self._max_epoch_list = [5, 10, 15, 20, 25, 30]
 
         self._cv_batch_size_list = [2, 4, 8, 16, 32]
         self._nlp_batch_size_list = [32, 64, 128, 256]
-        self._bert_batch_size_list = [32, 64, 128]
+        self._bert_batch_size_list = [32, 64]
 
         self._opt_list = ['SGD', 'Adam', 'Adagrad', 'Momentum']
 
@@ -158,7 +158,6 @@ class WorkloadGenerator:
                 job['batch_size'] = np.random.choice(self._nlp_batch_size_list, size=1)[0]
                 job['training_data'] = 'udtreebank'
             elif job['model'] in self._bert_model_list:
-                # make it to 32 due to GPU memory limitation
                 job['batch_size'] = np.random.choice(self._bert_batch_size_list, size=1)[0]
                 job['training_data'] = 'stanford-lmrd'
             else:
@@ -173,13 +172,13 @@ class WorkloadGenerator:
                 if job['model'] in self._bert_model_list:
                     job['goal_value'] = np.random.choice(self._pretrain_runtime_list,
                                                          size=1,
-                                                         p=[0.3, 0.4, 0.3])[0]
+                                                         p=[0.1, 0.2, 0.3, 0.3, 0.1])[0]
                 else:
                     job['goal_value'] = obj[1]
-
-            if job['goal_type'] == 'convergence' or job['goal_type'] == 'accuracy':
+            else:
+                job['goal_value'] = obj[1]
                 if job['model'] in self._bert_model_list:
-                    job['goal_value_extra'] = 3
+                    job['goal_value_extra'] = 5
                 else:
                     job['goal_value_extra'] = np.random.choice(self._max_epoch_list)
 

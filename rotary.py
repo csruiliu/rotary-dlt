@@ -1183,7 +1183,7 @@ if __name__ == "__main__":
         print(key, '[epoch_time]->', job_epochtime_dict[key])
 
     for ml_job in ml_workload_shared:
-        print('Job:'.format(ml_job))
+        print('Job {}: {} parameters'.format(ml_job['id'], ml_job['num_parameters']))
 
     #######################################################
     # prepare estimation for the workload
