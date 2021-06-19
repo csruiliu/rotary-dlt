@@ -56,8 +56,8 @@ class WorkloadGenerator:
 
         self._max_epoch_list = [5, 10, 15, 20, 25, 30]
 
-        self._cv_batch_size_list = [2, 4, 8, 16, 32]
-        self._nlp_batch_size_list = [32, 64, 128, 256]
+        self._cv_batch_size_list = [2, 4, 8, 16]
+        self._nlp_batch_size_list = [32, 64, 128]
         self._bert_batch_size_list = [32, 64]
 
         self._opt_list = ['SGD', 'Adam', 'Adagrad', 'Momentum']
