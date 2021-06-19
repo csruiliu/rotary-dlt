@@ -1122,6 +1122,8 @@ if __name__ == "__main__":
         model_acc_file = os.getcwd() + '/knowledgebase/' + f
         dl_estimator.import_accuracy_dataset(model_acc_file)
 
+    dl_estimator.import_workload(ml_workload)
+
     # init process pool
     proc_pool = mp.Pool(num_gpu, maxtasksperchild=1)
 

@@ -30,6 +30,11 @@ class DLEstimator:
     def get_predict_dict(self):
         return self.job_predict_dict
 
+    def import_workload(self, ml_workload):
+        for m in ml_workload:
+            m_key = str(m['id']) + '-' + m['model']
+            self.job_predict_dict[m_key] = list()
+
     def prepare_workload(self, ml_workload):
         for m in ml_workload:
             m_key = str(m['id']) + '-' + m['model']
