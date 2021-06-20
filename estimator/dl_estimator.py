@@ -121,7 +121,7 @@ class DLEstimator:
 
         epoch_estimation = np.polyval(coefs, input_model_accuracy)
 
-        return epoch_estimation, coefs
+        return epoch_estimation
 
     def add_actual_data(self, job_key, accuracy, epoch):
         job_predict_info = self.job_predict_dict[job_key]
