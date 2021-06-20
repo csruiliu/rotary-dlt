@@ -389,6 +389,9 @@ def train_job_others(gpu_id,
     preparation_start_marker = timer()
     slot_start_marker = timer()
 
+    # count the training time of this slot
+    running_slot_time = 0
+
     # get the job data from the queue
     try:
         job_data = job_queue_others.get_nowait()
@@ -685,7 +688,6 @@ def train_job_others(gpu_id,
 
             # get the path of checkpoint
             model_ckpt_save_path = cfg_path.ckpt_save_path + '/' + job_name
-
             if not os.path.exists(model_ckpt_save_path):
                 os.makedirs(model_ckpt_save_path)
 
