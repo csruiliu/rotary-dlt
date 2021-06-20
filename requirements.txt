@@ -1,0 +1,14 @@
+bert-tensorflow==1.0.1
+tensorflow-gpu==1.15.4
+tensorflow-hub==0.12.0
+Keras==2.3.1
+numpy>=1.16.4
+torch>=1.8.1
+opencv-python>=4.4
+igpu==0.1.2
+numba>=0.52
+pandas>=1.2.4
+PyYAML~=5.3.1
+scipy~=1.1.0
+pyconll==3.1.0
+matplotlib~=3.0.3
