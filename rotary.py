@@ -625,9 +625,7 @@ def train_job(gpu_id,
                                             train_labels[0:offset],
                                             verbose=0)
                     cur_accuracy = scores[1]
-                    print('############### bert evaluation accuracy:{} ###############'.format(cur_accuracy))
-
-                    # print('evaluation accuracy:{}'.format(cur_accuracy))
+                    print('evaluation accuracy:{}'.format(cur_accuracy))
 
                     pre_accuracy = job_accuracy_dict[job_name]
 
@@ -650,7 +648,7 @@ def train_job(gpu_id,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
-                            logit.save(logit.save(model_ckpt_save_path + '/' + job_name + '.h5'))
+                            logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
                             return msg_slot
 
@@ -662,7 +660,7 @@ def train_job(gpu_id,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
-                            logit.save(logit.save(model_ckpt_save_path + '/' + job_name + '.h5'))
+                            logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} is finished'.format(job_data['id'])
                             return msg_slot
 
@@ -677,7 +675,7 @@ def train_job(gpu_id,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
-                            logit.save(logit.save(model_ckpt_save_path + '/' + job_name + '.h5'))
+                            logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
                             return msg_slot
 
@@ -689,7 +687,7 @@ def train_job(gpu_id,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
-                            logit.save(logit.save(model_ckpt_save_path + '/' + job_name + '.h5'))
+                            logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} is finished'.format(job_data['id'])
                             return msg_slot
 
@@ -703,7 +701,7 @@ def train_job(gpu_id,
                                               shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
-                            logit.save(logit.save(model_ckpt_save_path + '/' + job_name + '.h5'))
+                            logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
                             return msg_slot
                     else:
