@@ -14,7 +14,7 @@ import workload.tensorflow_nlp.tools.lmrd_reader as lmrd_reader
 from estimator.dl_estimator import DLEstimator
 from workload.workload_generator import WorkloadGenerator
 from utils.model_tool import build_cv_model, build_nlp_model
-from utils.log_func import log_time_accuracy
+from utils.log_func import log_time_accuracy, log_start_eval, log_end_eval, log_get_job
 from utils.tf_func import initialize_config, initialize_vars
 
 
@@ -28,17 +28,21 @@ def train_job_trial(gpu_id,
     except queue.Empty:
         return
 
-    job_name = str(job_data['id']) + '-' + job_data['model']
-    print('get job {}'.format(job_name))
-
+    job_id = job_data['id']
+    job_model = job_data['model']
+    job_name = str(job_id) + '-' + job_model
     assign_device = '/gpu:' + str(gpu_id)
-    print('running job {} on device {} at process {}'.format(job_name, assign_device, os.getpid()))
+    log_get_job(job_name, os.getpid(), assign_device)
 
     model_opt = job_data['opt']
     model_learn_rate = job_data['learn_rate']
     train_batchsize = job_data['batch_size']
 
-    if job_data['model'] == 'bert':
+    job_slo = job_data['goal_type']
+    job_slo_value = job_data['goal_value']
+    job_slo_max_time = job_data['goal_value_extra']
+
+    if job_model == 'bert':
         # Params for bert model and tokenization
         bert_path = "https://tfhub.dev/google/bert_uncased_L-12_H-768_A-12/1"
         max_seq_length = 128
@@ -73,7 +77,7 @@ def train_job_trial(gpu_id,
                 ) = lmrd_reader.convert_examples_to_features(tokenizer, train_examples, max_seq_length=max_seq_length)
 
                 # build the model
-                model = build_nlp_model(model_type=job_data['model'],
+                model = build_nlp_model(model_type=job_model,
                                         max_length=128,
                                         opt=model_opt,
                                         lr=model_learn_rate)
@@ -81,9 +85,9 @@ def train_job_trial(gpu_id,
 
                 # store the total parameters of the model to dict
                 job_parameters_dict[job_name] = total_parameters
-                current_job = ml_workload_shared[int(job_data['id'])]
+                current_job = ml_workload_shared[int(job_id)]
                 current_job['num_parameters'] = total_parameters
-                ml_workload_shared[int(job_data['id'])] = current_job
+                ml_workload_shared[int(job_id)] = current_job
 
                 # Instantiate variables
                 initialize_vars(sess)
@@ -97,14 +101,14 @@ def train_job_trial(gpu_id,
                           verbose=0)
 
                 # start evaluation phrase
-                print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
+                log_start_eval(job_name, os.getpid())
                 scores = logit.evaluate([train_input_ids[0:offset],
                                          train_input_masks[0:offset],
                                          train_segment_ids[0:offset]],
                                         train_labels[0:offset],
                                         verbose=0)
                 cur_accuracy = scores[1]
-                print('job {} evaluation accuracy:{}'.format(job_name, cur_accuracy))
+                log_end_eval(job_name, cur_accuracy)
 
                 pre_accuracy = job_accuracy_dict[job_name]
 
@@ -123,8 +127,8 @@ def train_job_trial(gpu_id,
                 # add this trial result to estimator
                 dl_estimator.add_actual_data(job_key=job_name, accuracy=cur_accuracy, epoch=1)
 
-                if job_data['goal_type'] == 'accuracy':
-                    if job_accuracy_dict[job_name] >= job_data['goal_value']:
+                if job_slo == 'accuracy':
+                    if job_accuracy_dict[job_name] >= job_slo_value:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
@@ -134,10 +138,10 @@ def train_job_trial(gpu_id,
                                           job_epoch_dict,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                        msg_trial = 'job {} reaches SLO'.format(job_data['id'])
+                        msg_trial = 'job {} reaches SLO'.format(job_id)
                         return msg_trial
 
-                    if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                    if job_epoch_dict[job_name] >= job_slo_max_time:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         log_time_accuracy(job_name,
@@ -146,12 +150,12 @@ def train_job_trial(gpu_id,
                                           job_epoch_dict,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                        msg_trial = 'job {} is finished'.format(job_data['id'])
+                        msg_trial = 'job {} is finished'.format(job_id)
                         return msg_trial
 
-                elif job_data['goal_type'] == 'convergence':
+                elif job_slo == 'convergence':
                     delta = round(abs(cur_accuracy - pre_accuracy), 4)
-                    if delta <= job_data['goal_value']:
+                    if delta <= job_slo_value:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
@@ -161,10 +165,10 @@ def train_job_trial(gpu_id,
                                           job_epoch_dict,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                        msg_trial = 'job {} reaches the SLO'.format(job_data['id'])
+                        msg_trial = 'job {} reaches the SLO'.format(job_id)
                         return msg_trial
 
-                    if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                    if job_epoch_dict[job_name] >= job_slo_max_time:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         log_time_accuracy(job_name,
@@ -173,11 +177,11 @@ def train_job_trial(gpu_id,
                                           job_epoch_dict,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                        msg_trial = 'job {} is finished'.format(job_data['id'])
+                        msg_trial = 'job {} is finished'.format(job_id)
                         return msg_trial
 
-                elif job_data['goal_type'] == 'runtime':
-                    if job_epoch_dict[job_name] >= job_data['goal_value']:
+                elif job_slo == 'runtime':
+                    if job_epoch_dict[job_name] >= job_slo_value:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
@@ -187,7 +191,7 @@ def train_job_trial(gpu_id,
                                           job_epoch_dict,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                        msg_trial = 'job {} reaches the SLO'.format(job_data['id'])
+                        msg_trial = 'job {} reaches the SLO'.format(job_id)
                         return msg_trial
                 else:
                     raise ValueError('the job objective type is not supported')
@@ -200,7 +204,7 @@ def train_job_trial(gpu_id,
                                   job_epoch_dict,
                                   shared_accuracy_history)
 
-    elif job_data['model'] == 'lstm' or job_data['model'] == 'bilstm':
+    elif job_model == 'lstm' or job_model == 'bilstm':
         (train_sentences_x,
          val_sentences_x,
          train_tags_y,
@@ -217,7 +221,7 @@ def train_job_trial(gpu_id,
                 os.makedirs(model_ckpt_save_path)
 
             # build model
-            model = build_nlp_model(model_type=job_data['model'],
+            model = build_nlp_model(model_type=job_model,
                                     max_length=MAX_LENGTH,
                                     opt=model_opt,
                                     lr=model_learn_rate)
@@ -225,9 +229,9 @@ def train_job_trial(gpu_id,
 
             # store the total parameters of the model to dict
             job_parameters_dict[job_name] = total_parameters
-            current_job = ml_workload_shared[int(job_data['id'])]
+            current_job = ml_workload_shared[int(job_id)]
             current_job['num_parameters'] = total_parameters
-            ml_workload_shared[int(job_data['id'])] = current_job
+            ml_workload_shared[int(job_id)] = current_job
 
             with tf.Session(config=initialize_config()) as sess:
                 sess.run(tf.global_variables_initializer())
@@ -241,12 +245,12 @@ def train_job_trial(gpu_id,
                           verbose=0)
 
                 # start evaluation phrase
-                print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
+                log_start_eval(job_name, os.getpid())
                 scores = logit.evaluate(val_sentences_x,
                                         udtb_reader.to_categorical(val_tags_y, len(tag2index)),
                                         verbose=0)
                 cur_accuracy = scores[1]
-                print('job {} evaluation accuracy:{}'.format(job_name, cur_accuracy))
+                log_end_eval(job_name, cur_accuracy)
 
                 pre_accuracy = job_accuracy_dict[job_name]
 
@@ -265,8 +269,8 @@ def train_job_trial(gpu_id,
                 # add this trial result to estimator
                 dl_estimator.add_actual_data(job_key=job_name, accuracy=cur_accuracy, epoch=1)
 
-                if job_data['goal_type'] == 'accuracy':
-                    if job_accuracy_dict[job_name] >= job_data['goal_value']:
+                if job_slo == 'accuracy':
+                    if job_accuracy_dict[job_name] >= job_slo_value:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
@@ -276,10 +280,10 @@ def train_job_trial(gpu_id,
                                           job_epoch_dict,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                        msg_trial = 'job {} reaches SLO'.format(job_data['id'])
+                        msg_trial = 'job {} reaches SLO'.format(job_id)
                         return msg_trial
 
-                    if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                    if job_epoch_dict[job_name] >= job_slo_max_time:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         log_time_accuracy(job_name,
@@ -288,12 +292,12 @@ def train_job_trial(gpu_id,
                                           job_epoch_dict,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                        msg_trial = 'job {} is finished'.format(job_data['id'])
+                        msg_trial = 'job {} is finished'.format(job_id)
                         return msg_trial
 
-                elif job_data['goal_type'] == 'convergence':
+                elif job_slo == 'convergence':
                     delta = round(abs(cur_accuracy - pre_accuracy), 4)
-                    if delta <= job_data['goal_value']:
+                    if delta <= job_slo_value:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
@@ -303,10 +307,10 @@ def train_job_trial(gpu_id,
                                           job_epoch_dict,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                        msg_trial = 'job {} reaches the SLO'.format(job_data['id'])
+                        msg_trial = 'job {} reaches the SLO'.format(job_id)
                         return msg_trial
 
-                    if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                    if job_epoch_dict[job_name] >= job_slo_max_time:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         log_time_accuracy(job_name,
@@ -315,11 +319,11 @@ def train_job_trial(gpu_id,
                                           job_epoch_dict,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                        msg_trial = 'job {} is finished'.format(job_data['id'])
+                        msg_trial = 'job {} is finished'.format(job_id)
                         return msg_trial
 
-                elif job_data['goal_type'] == 'runtime':
-                    if job_epoch_dict[job_name] >= job_data['goal_value']:
+                elif job_slo == 'runtime':
+                    if job_epoch_dict[job_name] >= job_slo_value:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
@@ -329,7 +333,7 @@ def train_job_trial(gpu_id,
                                           job_epoch_dict,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                        msg_trial = 'job {} reaches the SLO'.format(job_data['id'])
+                        msg_trial = 'job {} reaches the SLO'.format(job_id)
                         return msg_trial
                 else:
                     raise ValueError('the job objective type is not supported')
@@ -362,9 +366,9 @@ def train_job_trial(gpu_id,
 
             # store the total parameters of the model to dict
             job_parameters_dict[job_name] = total_parameters
-            current_job = ml_workload_shared[int(job_data['id'])]
+            current_job = ml_workload_shared[int(job_id)]
             current_job['num_parameters'] = total_parameters
-            ml_workload_shared[int(job_data['id'])] = current_job
+            ml_workload_shared[int(job_id)] = current_job
 
             # ready to train the job
             saver = tf.train.Saver()
@@ -391,7 +395,7 @@ def train_job_trial(gpu_id,
                     sess.run(train_op, feed_dict={feature_ph: train_data_batch, label_ph: train_label_batch})
 
                 # start evaluation phrase
-                print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
+                log_start_eval(job_name, os.getpid())
                 acc_sum = 0
                 eval_batch_size = 50
                 num_batch_eval = eval_labels.shape[0] // eval_batch_size
@@ -406,7 +410,7 @@ def train_job_trial(gpu_id,
                     acc_sum += acc_batch
 
                 cur_accuracy = acc_sum / num_batch_eval
-                print('job {} evaluation accuracy:{}'.format(job_name, cur_accuracy))
+                log_end_eval(job_name, cur_accuracy)
 
                 pre_accuracy = job_accuracy_dict[job_name]
 
@@ -423,8 +427,8 @@ def train_job_trial(gpu_id,
                 # add this trial result to estimator
                 dl_estimator.add_actual_data(job_key=job_name, accuracy=cur_accuracy, epoch=1)
 
-                if job_data['goal_type'] == 'accuracy':
-                    if job_accuracy_dict[job_name] >= job_data['goal_value']:
+                if job_slo == 'accuracy':
+                    if job_accuracy_dict[job_name] >= job_slo_value:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
@@ -434,10 +438,10 @@ def train_job_trial(gpu_id,
                                           job_epoch_dict,
                                           shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
-                        msg_trial = 'job {} reaches SLO'.format(job_data['id'])
+                        msg_trial = 'job {} reaches SLO'.format(job_id)
                         return msg_trial
 
-                    if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                    if job_epoch_dict[job_name] >= job_slo_max_time:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         log_time_accuracy(job_name,
@@ -446,12 +450,12 @@ def train_job_trial(gpu_id,
                                           job_epoch_dict,
                                           shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
-                        msg_trial = 'job {} is finished'.format(job_data['id'])
+                        msg_trial = 'job {} is finished'.format(job_id)
                         return msg_trial
 
-                elif job_data['goal_type'] == 'convergence':
+                elif job_slo == 'convergence':
                     delta = round(abs(cur_accuracy - pre_accuracy), 4)
-                    if delta <= job_data['goal_value']:
+                    if delta <= job_slo_value:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
@@ -461,10 +465,10 @@ def train_job_trial(gpu_id,
                                           job_epoch_dict,
                                           shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
-                        msg_trial = 'job {} reaches the SLO'.format(job_data['id'])
+                        msg_trial = 'job {} reaches the SLO'.format(job_id)
                         return msg_trial
 
-                    if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                    if job_epoch_dict[job_name] >= job_slo_max_time:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         log_time_accuracy(job_name,
@@ -473,11 +477,11 @@ def train_job_trial(gpu_id,
                                           job_epoch_dict,
                                           shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
-                        msg_trial = 'job {} is finished'.format(job_data['id'])
+                        msg_trial = 'job {} is finished'.format(job_id)
                         return msg_trial
 
-                elif job_data['goal_type'] == 'runtime':
-                    if job_epoch_dict[job_name] >= job_data['goal_value']:
+                elif job_slo == 'runtime':
+                    if job_epoch_dict[job_name] >= job_slo_value:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
@@ -487,7 +491,7 @@ def train_job_trial(gpu_id,
                                           job_epoch_dict,
                                           shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
-                        msg_trial = 'job {} reaches the SLO'.format(job_data['id'])
+                        msg_trial = 'job {} reaches the SLO'.format(job_id)
                         return msg_trial
 
                 else:
@@ -501,7 +505,7 @@ def train_job_trial(gpu_id,
                                   job_epoch_dict,
                                   shared_accuracy_history)
 
-    msg_trial = 'job {} is finished the current running slot'.format(job_data['id'])
+    msg_trial = 'job {} is finished the current running slot'.format(job_id)
     return msg_trial
 
 
@@ -522,21 +526,22 @@ def train_job(gpu_id,
     except queue.Empty:
         return
 
-    # start working on the selected job
-    job_name = str(job_data['id']) + '-' + job_data['model']
-    print('get job {}'.format(job_name))
-
-    # get the device id
+    job_id = job_data['id']
+    job_model = job_data['model']
+    job_name = str(job_id) + '-' + job_model
     assign_device = '/gpu:' + str(gpu_id)
-    print('running on device {}'.format(assign_device))
+    log_get_job(job_name, os.getpid(), assign_device)
 
-    # get opt, learning rate, batch size and image size for training
     model_opt = job_data['opt']
     model_learn_rate = job_data['learn_rate']
     train_batchsize = job_data['batch_size']
 
+    job_slo = job_data['goal_type']
+    job_slo_value = job_data['goal_value']
+    job_slo_max_time = job_data['goal_value_extra']
+
     # handling different jobs
-    if job_data['model'] == 'bert':
+    if job_model == 'bert':
         # Params for bert model and tokenization
         bert_path = "https://tfhub.dev/google/bert_uncased_L-12_H-768_A-12/1"
         max_seq_length = 128
@@ -566,7 +571,7 @@ def train_job(gpu_id,
                 ) = lmrd_reader.convert_examples_to_features(tokenizer, train_examples, max_seq_length=max_seq_length)
 
                 # build the model
-                model = build_nlp_model(model_type=job_data['model'],
+                model = build_nlp_model(model_type=job_model,
                                         max_length=128,
                                         opt=model_opt,
                                         lr=model_learn_rate)
@@ -595,14 +600,14 @@ def train_job(gpu_id,
                               verbose=0)
 
                     # start evaluation phrase
-                    print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
+                    log_start_eval(job_name, os.getpid())
                     scores = logit.evaluate([train_input_ids[0:offset],
                                              train_input_masks[0:offset],
                                              train_segment_ids[0:offset]],
                                             train_labels[0:offset],
                                             verbose=0)
                     cur_accuracy = scores[1]
-                    print('job {} evaluation accuracy:{}'.format(job_name, cur_accuracy))
+                    log_end_eval(job_name, cur_accuracy)
 
                     pre_accuracy = job_accuracy_dict[job_name]
 
@@ -618,8 +623,8 @@ def train_job(gpu_id,
                                                  accuracy=cur_accuracy,
                                                  epoch=job_epoch_dict[job_name])
 
-                    if job_data['goal_type'] == 'accuracy':
-                        if job_accuracy_dict[job_name] >= job_data['goal_value']:
+                    if job_slo == 'accuracy':
+                        if job_accuracy_dict[job_name] >= job_slo_value:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
@@ -629,10 +634,10 @@ def train_job(gpu_id,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                            msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
+                            msg_slot = 'job {} reaches the SLO'.format(job_id)
                             return msg_slot
 
-                        if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                        if job_epoch_dict[job_name] >= job_slo_max_time:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             log_time_accuracy(job_name,
@@ -641,12 +646,12 @@ def train_job(gpu_id,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                            msg_slot = 'job {} is finished'.format(job_data['id'])
+                            msg_slot = 'job {} is finished'.format(job_id)
                             return msg_slot
 
-                    elif job_data['goal_type'] == 'convergence':
+                    elif job_slo == 'convergence':
                         delta = round(abs(cur_accuracy - pre_accuracy), 4)
-                        if delta <= job_data['goal_value']:
+                        if delta <= job_slo_value:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
@@ -656,10 +661,10 @@ def train_job(gpu_id,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                            msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
+                            msg_slot = 'job {} reaches the SLO'.format(job_id)
                             return msg_slot
 
-                        if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                        if job_epoch_dict[job_name] >= job_slo_max_time:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             log_time_accuracy(job_name,
@@ -668,11 +673,11 @@ def train_job(gpu_id,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                            msg_slot = 'job {} is finished'.format(job_data['id'])
+                            msg_slot = 'job {} is finished'.format(job_id)
                             return msg_slot
 
-                    elif job_data['goal_type'] == 'runtime':
-                        if job_epoch_dict[job_name] >= job_data['goal_value']:
+                    elif job_slo == 'runtime':
+                        if job_epoch_dict[job_name] >= job_slo_value:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
@@ -682,7 +687,7 @@ def train_job(gpu_id,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                            msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
+                            msg_slot = 'job {} reaches the SLO'.format(job_id)
                             return msg_slot
                     else:
                         raise ValueError('the job objective type is not supported')
@@ -698,7 +703,7 @@ def train_job(gpu_id,
 
         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
 
-    elif job_data['model'] == 'lstm' or job_data['model'] == 'bilstm':
+    elif job_model == 'lstm' or job_model == 'bilstm':
         (train_sentences_x,
          val_sentences_x,
          train_tags_y,
@@ -710,7 +715,7 @@ def train_job(gpu_id,
         # start processing on the assigned device
         with tf.device(assign_device):
             # build model
-            model = build_nlp_model(model_type=job_data['model'],
+            model = build_nlp_model(model_type=job_model,
                                     max_length=MAX_LENGTH,
                                     opt=model_opt,
                                     lr=model_learn_rate)
@@ -739,12 +744,12 @@ def train_job(gpu_id,
                               verbose=0)
 
                     # start evaluation phrase
-                    print('start evaluating job {} at process {}'.format(job_name, os.getpid()))
+                    log_start_eval(job_name, os.getpid())
                     scores = logit.evaluate(val_sentences_x,
                                             udtb_reader.to_categorical(val_tags_y, len(tag2index)),
                                             verbose=0)
                     cur_accuracy = scores[1]
-                    print('job {} evaluation accuracy:{}'.format(job_name, cur_accuracy))
+                    log_end_eval(job_name, cur_accuracy)
 
                     pre_accuracy = job_accuracy_dict[job_name]
 
@@ -760,8 +765,8 @@ def train_job(gpu_id,
                                                  accuracy=cur_accuracy,
                                                  epoch=job_epoch_dict[job_name])
 
-                    if job_data['goal_type'] == 'accuracy':
-                        if job_accuracy_dict[job_name] >= job_data['goal_value']:
+                    if job_slo == 'accuracy':
+                        if job_accuracy_dict[job_name] >= job_slo_value:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
@@ -771,10 +776,10 @@ def train_job(gpu_id,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                            msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
+                            msg_slot = 'job {} reaches the SLO'.format(job_id)
                             return msg_slot
 
-                        if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                        if job_epoch_dict[job_name] >= job_slo_max_time:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             log_time_accuracy(job_name,
@@ -783,12 +788,12 @@ def train_job(gpu_id,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                            msg_slot = 'job {} is finished'.format(job_data['id'])
+                            msg_slot = 'job {} is finished'.format(job_id)
                             return msg_slot
 
-                    elif job_data['goal_type'] == 'convergence':
+                    elif job_slo == 'convergence':
                         delta = round(abs(cur_accuracy - pre_accuracy), 4)
-                        if delta <= job_data['goal_value']:
+                        if delta <= job_slo_value:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
@@ -798,10 +803,10 @@ def train_job(gpu_id,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                            msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
+                            msg_slot = 'job {} reaches the SLO'.format(job_id)
                             return msg_slot
 
-                        if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                        if job_epoch_dict[job_name] >= job_slo_max_time:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             log_time_accuracy(job_name,
@@ -810,11 +815,11 @@ def train_job(gpu_id,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                            msg_slot = 'job {} is finished'.format(job_data['id'])
+                            msg_slot = 'job {} is finished'.format(job_id)
                             return msg_slot
 
-                    elif job_data['goal_type'] == 'runtime':
-                        if job_epoch_dict[job_name] >= job_data['goal_value']:
+                    elif job_slo == 'runtime':
+                        if job_epoch_dict[job_name] >= job_slo_value:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
@@ -824,7 +829,7 @@ def train_job(gpu_id,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                            msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
+                            msg_slot = 'job {} reaches the SLO'.format(job_id)
                             return msg_slot
                     else:
                         raise ValueError('the job objective type is not supported')
@@ -891,7 +896,7 @@ def train_job(gpu_id,
 
                         sess.run(train_op, feed_dict={feature_ph: train_data_batch, label_ph: train_label_batch})
 
-                    print('start evaluation phrase')
+                    log_start_eval(job_name, os.getpid())
                     acc_sum = 0
                     eval_batch_size = 50
                     num_batch_eval = eval_labels.shape[0] // eval_batch_size
@@ -906,7 +911,7 @@ def train_job(gpu_id,
                         acc_sum += acc_batch
 
                     cur_accuracy = acc_sum / num_batch_eval
-                    print('job {} evaluation accuracy:{}'.format(job_name, cur_accuracy))
+                    log_end_eval(job_name, cur_accuracy)
 
                     pre_accuracy = job_accuracy_dict[job_name]
 
@@ -922,8 +927,8 @@ def train_job(gpu_id,
                                                  accuracy=cur_accuracy,
                                                  epoch=job_epoch_dict[job_name])
 
-                    if job_data['goal_type'] == 'accuracy':
-                        if job_accuracy_dict[job_name] >= job_data['goal_value']:
+                    if job_slo == 'accuracy':
+                        if job_accuracy_dict[job_name] >= job_slo_value:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
@@ -933,10 +938,10 @@ def train_job(gpu_id,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
-                            msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
+                            msg_slot = 'job {} reaches the SLO'.format(job_id)
                             return msg_slot
 
-                        if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                        if job_epoch_dict[job_name] >= job_slo_max_time:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             log_time_accuracy(job_name,
@@ -945,12 +950,12 @@ def train_job(gpu_id,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
-                            msg_slot = 'job {} is finished'.format(job_data['id'])
+                            msg_slot = 'job {} is finished'.format(job_id)
                             return msg_slot
 
-                    elif job_data['goal_type'] == 'convergence':
+                    elif job_slo == 'convergence':
                         delta = round(abs(cur_accuracy - pre_accuracy), 4)
-                        if delta <= job_data['goal_value']:
+                        if delta <= job_slo_value:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
@@ -960,10 +965,10 @@ def train_job(gpu_id,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
-                            msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
+                            msg_slot = 'job {} reaches the SLO'.format(job_id)
                             return msg_slot
 
-                        if job_epoch_dict[job_name] >= job_data['goal_value_extra']:
+                        if job_epoch_dict[job_name] >= job_slo_max_time:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             log_time_accuracy(job_name,
@@ -972,11 +977,11 @@ def train_job(gpu_id,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
-                            msg_slot = 'job {} is finished'.format(job_data['id'])
+                            msg_slot = 'job {} is finished'.format(job_id)
                             return msg_slot
 
-                    elif job_data['goal_type'] == 'runtime':
-                        if job_epoch_dict[job_name] >= job_data['goal_value']:
+                    elif job_slo == 'runtime':
+                        if job_epoch_dict[job_name] >= job_slo_value:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
@@ -986,7 +991,7 @@ def train_job(gpu_id,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
-                            msg_slot = 'job {} reaches the SLO'.format(job_data['id'])
+                            msg_slot = 'job {} reaches the SLO'.format(job_id)
                             return msg_slot
                     else:
                         raise ValueError('the job objective type is not supported')
@@ -1006,7 +1011,7 @@ def train_job(gpu_id,
     job_list_rotary.append(job_data)
     job_queue_anony.put(job_anony)
 
-    msg_slot = 'job {} is finished the current running slot'.format(job_data['id'])
+    msg_slot = 'job {} is finished the current running slot'.format(job_id)
     return msg_slot
 
 
@@ -1186,27 +1191,31 @@ if __name__ == "__main__":
             for job_ins in job_list_rotary:
                 job_ins_key = str(job_ins['id']) + '-' + job_ins['model']
 
-                if job_ins['goal_type'] == 'runtime':
+                job_ins_slo = job_ins['goal_type']
+                job_ins_slo_value = job_ins['goal_value']
+                job_ins_slo_max_time = job_ins['goal_value_extra']
+
+                if job_ins_slo == 'runtime':
                     current_epoch = job_epoch_dict[job_ins_key]
-                    r_score = current_epoch / job_ins['goal_value']
+                    r_score = current_epoch / job_ins_slo_value
                     job_progress_dict[job_ins_key] = r_score
 
-                elif job_ins['goal_type'] == 'accuracy':
+                elif job_ins_slo == 'accuracy':
                     current_epoch = job_epoch_dict[job_ins_key]
-                    estimate_all_epoch = dl_estimator.predict_epoch(job_ins, job_ins['goal_value'])
-                    if estimate_all_epoch > job_ins['goal_value_extra']:
-                        r_score = current_epoch / job_ins['goal_value_extra']
+                    estimate_all_epoch = dl_estimator.predict_epoch(job_ins, job_ins_slo_value)
+                    if estimate_all_epoch > job_ins_slo_max_time:
+                        r_score = current_epoch / job_ins_slo_max_time
                     else:
                         r_score = current_epoch / estimate_all_epoch if estimate_all_epoch != 0 else 0
                     job_progress_dict[job_ins_key] = r_score
 
-                elif job_ins['goal_type'] == 'convergence':
+                elif job_ins_slo == 'convergence':
                     current_epoch = job_epoch_dict[job_ins_key]
                     current_accuracy = job_accuracy_dict[job_ins_key]
-                    expected_accuracy = current_accuracy + job_ins['goal_value']
+                    expected_accuracy = current_accuracy + job_ins_slo_value
                     estimate_all_epoch = dl_estimator.predict_epoch(job_ins, expected_accuracy)
-                    if estimate_all_epoch > job_ins['goal_value_extra']:
-                        r_score = current_epoch / job_ins['goal_value_extra']
+                    if estimate_all_epoch > job_ins_slo_max_time:
+                        r_score = current_epoch / job_ins_slo_max_time
                     else:
                         r_score = current_epoch / estimate_all_epoch if estimate_all_epoch != 0 else 0
                     job_progress_dict[job_ins_key] = r_score
