@@ -18,9 +18,11 @@ from utils.log_func import log_time_accuracy, log_start_eval, log_end_eval, log_
 from utils.tf_func import initialize_config, initialize_vars
 
 
-def train_job_trial(gpu_id,
+def train_job_trial(semaphore,
+                    gpu_id,
                     shared_runtime_history,
                     shared_accuracy_history):
+    semaphore.acquire()
     trial_slot_start_marker = timer()
 
     try:
@@ -506,14 +508,16 @@ def train_job_trial(gpu_id,
                                   shared_accuracy_history)
 
     msg_trial = 'job {} is finished the current running slot'.format(job_id)
+    semaphore.release()
     return msg_trial
 
 
-def train_job(gpu_id,
+def train_job(semaphore,
+              gpu_id,
               job_data,
               shared_runtime_history,
               shared_accuracy_history):
-
+    semaphore.acquire()
     preparation_start_marker = timer()
     slot_start_marker = timer()
 
@@ -1012,6 +1016,7 @@ def train_job(gpu_id,
     job_queue_anony.put(job_anony)
 
     msg_slot = 'job {} is finished the current running slot'.format(job_id)
+    semaphore.release()
     return msg_slot
 
 
@@ -1105,6 +1110,8 @@ if __name__ == "__main__":
 
     # init process pool
     proc_pool = mp.Pool(num_gpu, maxtasksperchild=1)
+    sem_trial = mp.Semaphore(num_gpu)
+    sem_rotary = mp.Semaphore(num_gpu)
 
     # init some dicts to track the progress
     for job in ml_workload:
@@ -1138,7 +1145,8 @@ if __name__ == "__main__":
     results_trial = list()
     for idx in range(len(ml_workload)):
         gpuid = idx % num_gpu
-        result = proc_pool.apply_async(train_job_trial, args=(gpuid,
+        result = proc_pool.apply_async(train_job_trial, args=(sem_trial,
+                                                              gpuid,
                                                               job_runtime_history,
                                                               job_accuracy_history))
         results_trial.append(result)
@@ -1238,7 +1246,8 @@ if __name__ == "__main__":
                 msg = 'job has been handled by other GPU'
                 continue
 
-            result = proc_pool.apply_async(train_job, args=(gpuid,
+            result = proc_pool.apply_async(train_job, args=(sem_rotary,
+                                                            gpuid,
                                                             job_select,
                                                             job_runtime_history,
                                                             job_accuracy_history))
