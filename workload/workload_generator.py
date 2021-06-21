@@ -200,8 +200,8 @@ class WorkloadGenerator:
                        {'id': 5, 'model': 'lstm', 'batch_size': 32, 'training_data': 'udtreebank', 'opt': 'Adagrad',
                         'learn_rate': 0.001, 'goal_type': 'accuracy', 'goal_value': 0.96, 'goal_value_extra': 5},
                        {'id': 6, 'model': 'resnet', 'batch_size': 4, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 15},
+                        'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 5},
                        {'id': 7, 'model': 'vgg', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 10}]
+                        'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 5}]
 
         return ml_workload
