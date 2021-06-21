@@ -18,11 +18,14 @@ from utils.log_func import log_time_accuracy, log_start_eval, log_end_eval, log_
 from utils.tf_func import initialize_config, initialize_vars
 
 
-def train_job_trial(semaphore,
-                    gpu_id,
+sem_trial = mp.Semaphore(cfg_rotary.num_gpu)
+sem_rotary = mp.Semaphore(cfg_rotary.num_gpu)
+
+
+def train_job_trial(gpu_id,
                     shared_runtime_history,
                     shared_accuracy_history):
-    semaphore.acquire()
+    sem_trial.acquire()
     trial_slot_start_marker = timer()
 
     try:
@@ -508,16 +511,15 @@ def train_job_trial(semaphore,
                                   shared_accuracy_history)
 
     msg_trial = 'job {} is finished the current running slot'.format(job_id)
-    semaphore.release()
+    sem_trial.release()
     return msg_trial
 
 
-def train_job(semaphore,
-              gpu_id,
+def train_job(gpu_id,
               job_data,
               shared_runtime_history,
               shared_accuracy_history):
-    semaphore.acquire()
+    sem_rotary.acquire()
     preparation_start_marker = timer()
     slot_start_marker = timer()
 
@@ -1016,7 +1018,7 @@ def train_job(semaphore,
     job_queue_anony.put(job_anony)
 
     msg_slot = 'job {} is finished the current running slot'.format(job_id)
-    semaphore.release()
+    sem_rotary.release()
     return msg_slot
 
 
@@ -1145,8 +1147,7 @@ if __name__ == "__main__":
     results_trial = list()
     for idx in range(len(ml_workload)):
         gpuid = idx % num_gpu
-        result = proc_pool.apply_async(train_job_trial, args=(sem_trial,
-                                                              gpuid,
+        result = proc_pool.apply_async(train_job_trial, args=(gpuid,
                                                               job_runtime_history,
                                                               job_accuracy_history))
         results_trial.append(result)
@@ -1246,8 +1247,7 @@ if __name__ == "__main__":
                 msg = 'job has been handled by other GPU'
                 continue
 
-            result = proc_pool.apply_async(train_job, args=(sem_rotary,
-                                                            gpuid,
+            result = proc_pool.apply_async(train_job, args=(gpuid,
                                                             job_select,
                                                             job_runtime_history,
                                                             job_accuracy_history))
