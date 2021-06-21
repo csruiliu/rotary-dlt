@@ -17,16 +17,21 @@ from utils.model_tool import build_cv_model, build_nlp_model
 from utils.log_func import log_time_accuracy, log_start_eval, log_end_eval, log_get_job
 from utils.tf_func import initialize_config, initialize_vars
 
-
 sem_trial = mp.Semaphore(cfg_rotary.num_gpu)
 sem_rotary = mp.Semaphore(cfg_rotary.num_gpu)
 
 
-def train_job_trial(gpu_id,
+def train_job_trial(gpu_slot,
                     shared_runtime_history,
                     shared_accuracy_history):
     sem_trial.acquire()
     trial_slot_start_marker = timer()
+
+    gpu_device = -1
+    for sidx, slot in enumerate(gpu_slot):
+        if slot == 0:
+            gpu_device = sidx
+            gpu_slot[sidx] = 1
 
     try:
         job_data = job_queue_trial.get_nowait()
@@ -36,7 +41,8 @@ def train_job_trial(gpu_id,
     job_id = job_data['id']
     job_model = job_data['model']
     job_name = str(job_id) + '-' + job_model
-    assign_device = '/gpu:' + str(gpu_id)
+
+    assign_device = '/gpu:' + str(gpu_device)
     log_get_job(job_name, os.getpid(), assign_device)
 
     model_opt = job_data['opt']
@@ -106,14 +112,14 @@ def train_job_trial(gpu_id,
                           verbose=0)
 
                 # start evaluation phrase
-                log_start_eval(job_name, os.getpid())
+                log_start_eval(job_name, os.getpid(), assign_device)
                 scores = logit.evaluate([train_input_ids[0:offset],
                                          train_input_masks[0:offset],
                                          train_segment_ids[0:offset]],
                                         train_labels[0:offset],
                                         verbose=0)
                 cur_accuracy = scores[1]
-                log_end_eval(job_name, cur_accuracy)
+                log_end_eval(job_name, cur_accuracy, assign_device)
 
                 pre_accuracy = job_accuracy_dict[job_name]
 
@@ -250,12 +256,12 @@ def train_job_trial(gpu_id,
                           verbose=0)
 
                 # start evaluation phrase
-                log_start_eval(job_name, os.getpid())
+                log_start_eval(job_name, os.getpid(), assign_device)
                 scores = logit.evaluate(val_sentences_x,
                                         udtb_reader.to_categorical(val_tags_y, len(tag2index)),
                                         verbose=0)
                 cur_accuracy = scores[1]
-                log_end_eval(job_name, cur_accuracy)
+                log_end_eval(job_name, cur_accuracy, assign_device)
 
                 pre_accuracy = job_accuracy_dict[job_name]
 
@@ -400,7 +406,7 @@ def train_job_trial(gpu_id,
                     sess.run(train_op, feed_dict={feature_ph: train_data_batch, label_ph: train_label_batch})
 
                 # start evaluation phrase
-                log_start_eval(job_name, os.getpid())
+                log_start_eval(job_name, os.getpid(), assign_device)
                 acc_sum = 0
                 eval_batch_size = 50
                 num_batch_eval = eval_labels.shape[0] // eval_batch_size
@@ -415,7 +421,7 @@ def train_job_trial(gpu_id,
                     acc_sum += acc_batch
 
                 cur_accuracy = acc_sum / num_batch_eval
-                log_end_eval(job_name, cur_accuracy)
+                log_end_eval(job_name, cur_accuracy, assign_device)
 
                 pre_accuracy = job_accuracy_dict[job_name]
 
@@ -511,17 +517,24 @@ def train_job_trial(gpu_id,
                                   shared_accuracy_history)
 
     msg_trial = 'job {} is finished the current running slot'.format(job_id)
+    gpu_slot[gpu_device] = 0
     sem_trial.release()
     return msg_trial
 
 
-def train_job(gpu_id,
+def train_job(gpu_slot,
               job_data,
               shared_runtime_history,
               shared_accuracy_history):
     sem_rotary.acquire()
     preparation_start_marker = timer()
     slot_start_marker = timer()
+
+    gpu_device = -1
+    for sidx, slot in enumerate(gpu_slot):
+        if slot == 0:
+            gpu_device = sidx
+            gpu_slot[sidx] = 1
 
     # count the training time of this slot
     running_slot_time = 0
@@ -535,7 +548,7 @@ def train_job(gpu_id,
     job_id = job_data['id']
     job_model = job_data['model']
     job_name = str(job_id) + '-' + job_model
-    assign_device = '/gpu:' + str(gpu_id)
+    assign_device = '/gpu:' + str(gpu_device)
     log_get_job(job_name, os.getpid(), assign_device)
 
     model_opt = job_data['opt']
@@ -606,14 +619,14 @@ def train_job(gpu_id,
                               verbose=0)
 
                     # start evaluation phrase
-                    log_start_eval(job_name, os.getpid())
+                    log_start_eval(job_name, os.getpid(), assign_device)
                     scores = logit.evaluate([train_input_ids[0:offset],
                                              train_input_masks[0:offset],
                                              train_segment_ids[0:offset]],
                                             train_labels[0:offset],
                                             verbose=0)
                     cur_accuracy = scores[1]
-                    log_end_eval(job_name, cur_accuracy)
+                    log_end_eval(job_name, cur_accuracy, assign_device)
 
                     pre_accuracy = job_accuracy_dict[job_name]
 
@@ -750,12 +763,12 @@ def train_job(gpu_id,
                               verbose=0)
 
                     # start evaluation phrase
-                    log_start_eval(job_name, os.getpid())
+                    log_start_eval(job_name, os.getpid(), assign_device)
                     scores = logit.evaluate(val_sentences_x,
                                             udtb_reader.to_categorical(val_tags_y, len(tag2index)),
                                             verbose=0)
                     cur_accuracy = scores[1]
-                    log_end_eval(job_name, cur_accuracy)
+                    log_end_eval(job_name, cur_accuracy, assign_device)
 
                     pre_accuracy = job_accuracy_dict[job_name]
 
@@ -902,7 +915,7 @@ def train_job(gpu_id,
 
                         sess.run(train_op, feed_dict={feature_ph: train_data_batch, label_ph: train_label_batch})
 
-                    log_start_eval(job_name, os.getpid())
+                    log_start_eval(job_name, os.getpid(), assign_device)
                     acc_sum = 0
                     eval_batch_size = 50
                     num_batch_eval = eval_labels.shape[0] // eval_batch_size
@@ -917,7 +930,7 @@ def train_job(gpu_id,
                         acc_sum += acc_batch
 
                     cur_accuracy = acc_sum / num_batch_eval
-                    log_end_eval(job_name, cur_accuracy)
+                    log_end_eval(job_name, cur_accuracy, assign_device)
 
                     pre_accuracy = job_accuracy_dict[job_name]
 
@@ -1018,6 +1031,7 @@ def train_job(gpu_id,
     job_queue_anony.put(job_anony)
 
     msg_slot = 'job {} is finished the current running slot'.format(job_id)
+    gpu_slot[gpu_device] = 0
     sem_rotary.release()
     return msg_slot
 
@@ -1079,6 +1093,10 @@ if __name__ == "__main__":
     # list for getting the total parameters of each job
     ml_workload_shared = mp.Manager().list()
 
+    # shared array for marking gpu slot
+    gpu_slot_trial = mp.Array('i', [0]*num_gpu)
+    gpu_slot_rotary = mp.Array('i', [0] * num_gpu)
+
     # dict for storing job's progress
     job_progress_dict = mp.Manager().dict()
     # dict for storing job's current accuracy
@@ -1112,8 +1130,6 @@ if __name__ == "__main__":
 
     # init process pool
     proc_pool = mp.Pool(num_gpu, maxtasksperchild=1)
-    sem_trial = mp.Semaphore(num_gpu)
-    sem_rotary = mp.Semaphore(num_gpu)
 
     # init some dicts to track the progress
     for job in ml_workload:
@@ -1144,21 +1160,10 @@ if __name__ == "__main__":
     # start the trial process
     #######################################################
 
-    results_trial = list()
     for idx in range(len(ml_workload)):
-        gpuid = idx % num_gpu
-        result = proc_pool.apply_async(train_job_trial, args=(gpuid,
+        result = proc_pool.apply_async(train_job_trial, args=(gpu_slot_trial,
                                                               job_runtime_history,
                                                               job_accuracy_history))
-        results_trial.append(result)
-
-    for i in results_trial:
-        i.wait()
-
-    for i in results_trial:
-        if i.ready():
-            if i.successful():
-                print(i.get())
 
     for key in job_accuracy_dict:
         print(key, '[accuracy]->', job_accuracy_dict[key])
@@ -1247,24 +1252,17 @@ if __name__ == "__main__":
                 msg = 'job has been handled by other GPU'
                 continue
 
-            result = proc_pool.apply_async(train_job, args=(gpuid,
-                                                            job_select,
-                                                            job_runtime_history,
-                                                            job_accuracy_history))
-            results_rotary.append(result)
+            proc_pool.apply_async(train_job, args=(gpu_slot_rotary,
+                                                   job_select,
+                                                   job_runtime_history,
+                                                   job_accuracy_history))
 
         for key in job_progress_dict:
             if job_progress_dict[key] < threshold:
                 break
             fairness = False
 
-        for i in results_rotary:
-            i.wait()
 
-        for i in results_rotary:
-            if i.ready():
-                if i.successful():
-                    print(i.get())
 
     #######################################################
     # printout the log information
