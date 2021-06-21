@@ -14,13 +14,7 @@ import workload.tensorflow_nlp.tools.lmrd_reader as lmrd_reader
 from workload.workload_generator import WorkloadGenerator
 from utils.model_tool import build_cv_model, build_nlp_model
 from utils.log_func import log_time_accuracy
-
-
-def initialize_vars(sess):
-    sess.run(tf.local_variables_initializer())
-    sess.run(tf.global_variables_initializer())
-    sess.run(tf.tables_initializer())
-    tf.keras.backend.set_session(sess)
+from utils.tf_func import initialize_config, initialize_vars
 
 
 def compared_item(item):
@@ -56,7 +50,7 @@ def train_job_runtime(gpu_id,
         max_seq_length = 128
         offset = 500
 
-        train_df, test_df = lmrd_reader.download_and_load_datasets()
+        train_df = lmrd_reader.download_and_load_datasets()
 
         # Create datasets (Only take up to max_seq_length words for memory)
         train_text = train_df["sentence"].tolist()
@@ -72,18 +66,11 @@ def train_job_runtime(gpu_id,
             if not os.path.exists(model_ckpt_save_path):
                 os.makedirs(model_ckpt_save_path)
 
-            # init the config for training
-            config = tf.ConfigProto()
-            config.allow_soft_placement = True
-            config.gpu_options.allow_growth = True
-
-            with tf.Session(config=config) as sess:
+            with tf.Session(config=initialize_config()) as sess:
                 # Instantiate tokenizer
                 tokenizer = lmrd_reader.create_tokenizer_from_hub_module(bert_path, sess)
-
                 # Convert data to InputExample format
                 train_examples = lmrd_reader.convert_text_to_examples(train_text, train_label)
-
                 # Convert to features
                 (
                     train_input_ids,
@@ -106,8 +93,8 @@ def train_job_runtime(gpu_id,
                 # Instantiate variables
                 initialize_vars(sess)
 
-                preparation_end_marker = timer()
                 # add the preparation time for this process
+                preparation_end_marker = timer()
                 job_runtime_dict[job_name] += preparation_end_marker - preparation_start_marker
 
                 # check if the total runtime is less than running_slot
@@ -128,7 +115,7 @@ def train_job_runtime(gpu_id,
                                             train_labels[0:offset],
                                             verbose=0)
                     cur_accuracy = scores[1]
-                    print('evaluation accuracy:{}'.format(cur_accuracy))
+                    print('job {} evaluation accuracy:{}'.format(job_name, cur_accuracy))
 
                     epoch_end_marker = timer()
 
@@ -182,23 +169,11 @@ def train_job_runtime(gpu_id,
 
             logit, _ = model.build(word2index, tag2index)
 
-            # build model
-            model = build_nlp_model(model_type=job_data['model'],
-                                    max_length=MAX_LENGTH,
-                                    opt=model_opt,
-                                    lr=model_learn_rate)
-
-            logit, _ = model.build(word2index, tag2index)
-
             # load the checkpoint if it exists
             if os.path.exists(model_ckpt_save_path + '/' + job_name + '.h5'):
                 logit.load_weights(model_ckpt_save_path + '/' + job_name + '.h5')
 
-            config = tf.ConfigProto()
-            config.allow_soft_placement = True
-            config.gpu_options.allow_growth = True
-
-            with tf.Session(config=config) as sess:
+            with tf.Session(config=initialize_config()) as sess:
                 sess.run(tf.global_variables_initializer())
 
                 # add the preparation time for this process
@@ -278,11 +253,7 @@ def train_job_runtime(gpu_id,
             if not os.path.exists(model_ckpt_save_path):
                 os.makedirs(model_ckpt_save_path)
 
-            config = tf.ConfigProto()
-            config.allow_soft_placement = True
-            config.gpu_options.allow_growth = True
-
-            with tf.Session(config=config) as sess:
+            with tf.Session(config=initialize_config()) as sess:
                 # check if the checkpoint file exist
                 checkpoint_file = model_ckpt_save_path + '/model_ckpt'
                 if os.path.isfile(checkpoint_file + '.meta'):
@@ -292,8 +263,8 @@ def train_job_runtime(gpu_id,
 
                 num_batch = train_labels.shape[0] // train_batchsize
 
-                preparation_end_marker = timer()
                 # add the preparation time for this process
+                preparation_end_marker = timer()
                 job_runtime_dict[job_name] += preparation_end_marker - preparation_start_marker
 
                 while True:
@@ -387,7 +358,7 @@ def train_job_others(gpu_id,
         max_seq_length = 128
         offset = 500
 
-        train_df, test_df = lmrd_reader.download_and_load_datasets()
+        train_df = lmrd_reader.download_and_load_datasets()
 
         # Create datasets (Only take up to max_seq_length words for memory)
         train_text = train_df["sentence"].tolist()
@@ -402,17 +373,11 @@ def train_job_others(gpu_id,
             if not os.path.exists(model_ckpt_save_path):
                 os.makedirs(model_ckpt_save_path)
 
-            # init the config for training
-            config = tf.ConfigProto()
-            config.allow_soft_placement = True
-            config.gpu_options.allow_growth = True
-
-            with tf.Session(config=config) as sess:
+            with tf.Session(config=initialize_config()) as sess:
                 # Instantiate tokenizer
                 tokenizer = lmrd_reader.create_tokenizer_from_hub_module(bert_path, sess)
                 # Convert data to InputExample format
                 train_examples = lmrd_reader.convert_text_to_examples(train_text, train_label)
-
                 # Convert to features
                 (
                     train_input_ids,
@@ -456,7 +421,7 @@ def train_job_others(gpu_id,
                                             train_labels[0:offset],
                                             verbose=0)
                     cur_accuracy = scores[1]
-                    print('evaluation accuracy:{}'.format(cur_accuracy))
+                    print('job {} evaluation accuracy:{}'.format(job_name, cur_accuracy))
 
                     pre_accuracy = job_accuracy_dict[job_name]
 
@@ -495,7 +460,7 @@ def train_job_others(gpu_id,
                             return msg
 
                     elif job_data['goal_type'] == 'convergence':
-                        delta = cur_accuracy - pre_accuracy
+                        delta = round(abs(cur_accuracy - pre_accuracy), 4)
                         if delta <= job_data['goal_value']:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
@@ -531,8 +496,9 @@ def train_job_others(gpu_id,
 
                     slot_end_marker = timer()
                     running_slot_time = slot_end_marker - slot_start_marker
-                    # save the model/job since the job has run for the current slot but doesn't achieve SLO
-                    logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
+
+                # save the model/job since the job has run for the current slot but doesn't achieve SLO
+                logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
 
     elif job_data['model'] == 'lstm' or job_data['model'] == 'bilstm':
         (train_sentences_x,
@@ -562,11 +528,7 @@ def train_job_others(gpu_id,
             if os.path.exists(model_ckpt_save_path + '/' + job_name + '.h5'):
                 logit.load_weights(model_ckpt_save_path + '/' + job_name + '.h5')
 
-            config = tf.ConfigProto()
-            config.allow_soft_placement = True
-            config.gpu_options.allow_growth = True
-
-            with tf.Session(config=config) as sess:
+            with tf.Session(config=initialize_config()) as sess:
                 sess.run(tf.global_variables_initializer())
 
                 # add the preparation time for this process
@@ -589,7 +551,7 @@ def train_job_others(gpu_id,
                                             udtb_reader.to_categorical(val_tags_y, len(tag2index)),
                                             verbose=0)
                     cur_accuracy = scores[1]
-                    print('evaluation accuracy:{}'.format(cur_accuracy))
+                    print('job {} evaluation accuracy:{}'.format(job_name, cur_accuracy))
 
                     pre_accuracy = job_accuracy_dict[job_name]
 
@@ -628,7 +590,7 @@ def train_job_others(gpu_id,
                             return msg
 
                     elif job_data['goal_type'] == 'convergence':
-                        delta = cur_accuracy - pre_accuracy
+                        delta = round(abs(cur_accuracy - pre_accuracy), 4)
                         if delta <= job_data['goal_value']:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
@@ -664,8 +626,9 @@ def train_job_others(gpu_id,
 
                     slot_end_marker = timer()
                     running_slot_time = slot_end_marker - slot_start_marker
-                    # save the model/job since the job has run for the current slot but doesn't achieve SLO
-                    logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
+
+                # save the model/job since the job has run for the current slot but doesn't achieve SLO
+                logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
     else:
         img_w = 32
         img_h = 32
@@ -694,11 +657,7 @@ def train_job_others(gpu_id,
             if not os.path.exists(model_ckpt_save_path):
                 os.makedirs(model_ckpt_save_path)
 
-            config = tf.ConfigProto()
-            config.allow_soft_placement = True
-            config.gpu_options.allow_growth = True
-
-            with tf.Session(config=config) as sess:
+            with tf.Session(config=initialize_config()) as sess:
                 # check if the checkpoint file exist
                 checkpoint_file = model_ckpt_save_path + '/model_ckpt'
                 if os.path.isfile(checkpoint_file + '.meta'):
@@ -708,13 +667,12 @@ def train_job_others(gpu_id,
 
                 num_batch = train_labels.shape[0] // train_batchsize
 
-                preparation_end_marker = timer()
                 # add the prepare time for this process
+                preparation_end_marker = timer()
                 job_runtime_dict[job_name] += preparation_end_marker - preparation_start_marker
 
                 # check if the total runtime is less than running_slot
                 while running_slot_time < running_slot:
-
                     epoch_start_marker = timer()
 
                     for b in range(num_batch):
@@ -781,7 +739,7 @@ def train_job_others(gpu_id,
                             return msg
 
                     elif job_data['goal_type'] == 'convergence':
-                        delta = cur_accuracy - pre_accuracy
+                        delta = round(abs(cur_accuracy - pre_accuracy), 4)
                         if delta <= job_data['goal_value']:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
@@ -818,8 +776,9 @@ def train_job_others(gpu_id,
 
                     slot_end_marker = timer()
                     running_slot_time = slot_end_marker - slot_start_marker
-                    # save the model/job since the job has run for the current slot but doesn't achieve SLO
-                    saver.save(sess, checkpoint_file)
+
+                # save the model/job since the job has run for the current slot but doesn't achieve SLO
+                saver.save(sess, checkpoint_file)
 
     # exceed the running slot and haven't achieve goal so put the job back to the queue
     job_queue_others.put(job_data)
@@ -961,7 +920,7 @@ if __name__ == "__main__":
         print('{} [accuracy]-> {}'.format(key, job_accuracy_dict[key]))
 
     for key in job_runtime_dict:
-        print('{} [accuracy]-> {}'.format(key, job_runtime_dict[key]))
+        print('{} [runtime]-> {}'.format(key, job_runtime_dict[key]))
 
     for key in job_epoch_dict:
         print('{} [epoch]-> {}'.format(key, job_epoch_dict[key]))
