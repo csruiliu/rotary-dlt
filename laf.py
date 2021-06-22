@@ -835,7 +835,7 @@ def train_job_others(shared_runtime_history,
                 saver.save(sess, checkpoint_file)
 
     # exceed the running slot and haven't achieve goal so put the job back to the queue
-    ml_workload_others.append(job_data)
+    job_queue_others.put(job_data)
 
     msg = 'job {} is finished the current running slot'.format(job_data['id'])
     gpu_slot_others[gpu_device] = 0
