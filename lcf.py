@@ -875,8 +875,8 @@ if __name__ == "__main__":
                            cfg_rotary.runtime_ratio,
                            cfg_rotary.random_seed)
 
-    # ml_workload = wg.generate_workload()
-    ml_workload = wg.generate_test_workload()
+    ml_workload = wg.generate_workload()
+
     for s in ml_workload:
         print(s)
 
