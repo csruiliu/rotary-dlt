@@ -150,6 +150,7 @@ def train_job_accuracy(shared_runtime_history,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg = 'job {} reaches SLO'.format(job_data['id'])
+                        gpu_slot_accuracy[gpu_device] = 0
                         sem_accuracy.release()
                         return msg
 
@@ -163,6 +164,7 @@ def train_job_accuracy(shared_runtime_history,
                                           job_epoch_dict,
                                           shared_accuracy_history)
                         msg = 'job {} is finished'.format(job_data['id'])
+                        gpu_slot_accuracy[gpu_device] = 0
                         sem_accuracy.release()
                         return msg
 
@@ -244,6 +246,7 @@ def train_job_accuracy(shared_runtime_history,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg = 'job {} reaches SLO'.format(job_data['id'])
+                        gpu_slot_accuracy[gpu_device] = 0
                         sem_accuracy.release()
                         return msg
 
@@ -257,6 +260,7 @@ def train_job_accuracy(shared_runtime_history,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg = 'job {} is finished'.format(job_data['id'])
+                        gpu_slot_accuracy[gpu_device] = 0
                         sem_accuracy.release()
                         return msg
 
@@ -358,6 +362,7 @@ def train_job_accuracy(shared_runtime_history,
                                           shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} reaches SLO'.format(job_data['id'])
+                        gpu_slot_accuracy[gpu_device] = 0
                         sem_accuracy.release()
                         return msg
 
@@ -371,6 +376,7 @@ def train_job_accuracy(shared_runtime_history,
                                           shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
                         msg = 'job {} is finished'.format(job_data['id'])
+                        gpu_slot_accuracy[gpu_device] = 0
                         sem_accuracy.release()
                         return msg
 
@@ -401,8 +407,8 @@ def train_job_others(shared_runtime_history,
 
     # get the job data from the queue
     try:
-        job_data = job_queue_others.get_nowait()
-    except queue.Empty:
+        job_data = ml_workload_others.pop()
+    except IndexError:
         return
 
     job_id = job_data['id']
@@ -515,6 +521,7 @@ def train_job_others(shared_runtime_history,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg = 'job {} reaches SLO'.format(job_data['id'])
+                            gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
 
@@ -528,6 +535,7 @@ def train_job_others(shared_runtime_history,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg = 'job {} is finished'.format(job_data['id'])
+                            gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
 
@@ -543,6 +551,7 @@ def train_job_others(shared_runtime_history,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg = 'job {} reaches SLO'.format(job_data['id'])
+                            gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
                     else:
@@ -635,6 +644,7 @@ def train_job_others(shared_runtime_history,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg = 'job {} reaches SLO'.format(job_data['id'])
+                            gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
 
@@ -648,6 +658,7 @@ def train_job_others(shared_runtime_history,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg = 'job {} is finished'.format(job_data['id'])
+                            gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
 
@@ -663,6 +674,7 @@ def train_job_others(shared_runtime_history,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg = 'job {} reaches SLO'.format(job_data['id'])
+                            gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
                     else:
@@ -774,6 +786,7 @@ def train_job_others(shared_runtime_history,
                                               shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
                             msg = 'job {} reaches SLO'.format(job_data['id'])
+                            gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
 
@@ -787,6 +800,7 @@ def train_job_others(shared_runtime_history,
                                               shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
                             msg = 'job {} is finished'.format(job_data['id'])
+                            gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
 
@@ -802,6 +816,7 @@ def train_job_others(shared_runtime_history,
                                               shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
                             msg = 'job {} reaches SLO'.format(job_data['id'])
+                            gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
                     else:
@@ -820,9 +835,10 @@ def train_job_others(shared_runtime_history,
                 saver.save(sess, checkpoint_file)
 
     # exceed the running slot and haven't achieve goal so put the job back to the queue
-    job_queue_others.put(job_data)
+    ml_workload_others.append(job_data)
 
     msg = 'job {} is finished the current running slot'.format(job_data['id'])
+    gpu_slot_others[gpu_device] = 0
     sem_others.release()
     return msg
 
@@ -891,7 +907,8 @@ if __name__ == "__main__":
     # dict for tracking accuracy with wall-time
     job_accuracy_history = dict()
 
-    proc_pool = mp.Pool(num_gpu, maxtasksperchild=1)
+    proc_pool_accuracy = mp.Pool(num_gpu, maxtasksperchild=1)
+    proc_pool_others = mp.Pool(num_gpu, maxtasksperchild=1)
 
     # init dicts
     for job in ml_workload:
@@ -916,12 +933,14 @@ if __name__ == "__main__":
         init_sub_runtime_list.append('0:' + proc_start_time)
         job_runtime_history[job_key] = init_sub_runtime_list
 
+    print('*********** start processing accuracy slo jobs ***********')
+
     while len(ml_workload_accuracy) != 0:
         results_accuracy = list()
         accuracy_job_num = len(ml_workload_accuracy)
         for idx in range(accuracy_job_num):
-            result = proc_pool.apply_async(train_job_accuracy, args=(job_runtime_history,
-                                                                     job_accuracy_history))
+            result = proc_pool_accuracy.apply_async(train_job_accuracy, args=(job_runtime_history,
+                                                                              job_accuracy_history))
             results_accuracy.append(result)
 
         for i in results_accuracy:
@@ -932,11 +951,13 @@ if __name__ == "__main__":
                 if i.successful():
                     print(i.get())
 
+    print('*********** start processing other slo jobs ***********')
+
     while not job_queue_others.empty():
         results_others = list()
         for idx in range(job_queue_others.qsize()):
-            result = proc_pool.apply_async(train_job_others, args=(job_runtime_history,
-                                                                   job_accuracy_history))
+            result = proc_pool_others.apply_async(train_job_others, args=(job_runtime_history,
+                                                                          job_accuracy_history))
             results_others.append(result)
 
         for i in results_others:
