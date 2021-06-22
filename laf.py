@@ -407,8 +407,8 @@ def train_job_others(shared_runtime_history,
 
     # get the job data from the queue
     try:
-        job_data = ml_workload_others.pop()
-    except IndexError:
+        job_data = job_queue_others.get_nowait()
+    except queue.Empty:
         return
 
     job_id = job_data['id']
