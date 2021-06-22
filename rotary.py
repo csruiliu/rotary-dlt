@@ -157,6 +157,7 @@ def train_job_trial(shared_runtime_history,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} reaches SLO'.format(job_id)
+                        sem_trial.release()
                         return msg_trial
 
                     if job_epoch_dict[job_name] >= job_slo_max_time:
@@ -169,6 +170,7 @@ def train_job_trial(shared_runtime_history,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} is finished'.format(job_id)
+                        sem_trial.release()
                         return msg_trial
 
                 elif job_slo == 'convergence':
@@ -184,6 +186,7 @@ def train_job_trial(shared_runtime_history,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} reaches the SLO'.format(job_id)
+                        sem_trial.release()
                         return msg_trial
 
                     if job_epoch_dict[job_name] >= job_slo_max_time:
@@ -196,6 +199,7 @@ def train_job_trial(shared_runtime_history,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} is finished'.format(job_id)
+                        sem_trial.release()
                         return msg_trial
 
                 elif job_slo == 'runtime':
@@ -210,6 +214,7 @@ def train_job_trial(shared_runtime_history,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} reaches the SLO'.format(job_id)
+                        sem_trial.release()
                         return msg_trial
                 else:
                     raise ValueError('the job objective type is not supported')
@@ -299,6 +304,7 @@ def train_job_trial(shared_runtime_history,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} reaches SLO'.format(job_id)
+                        sem_trial.release()
                         return msg_trial
 
                     if job_epoch_dict[job_name] >= job_slo_max_time:
@@ -311,6 +317,7 @@ def train_job_trial(shared_runtime_history,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} is finished'.format(job_id)
+                        sem_trial.release()
                         return msg_trial
 
                 elif job_slo == 'convergence':
@@ -326,6 +333,7 @@ def train_job_trial(shared_runtime_history,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} reaches the SLO'.format(job_id)
+                        sem_trial.release()
                         return msg_trial
 
                     if job_epoch_dict[job_name] >= job_slo_max_time:
@@ -338,6 +346,7 @@ def train_job_trial(shared_runtime_history,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} is finished'.format(job_id)
+                        sem_trial.release()
                         return msg_trial
 
                 elif job_slo == 'runtime':
@@ -352,6 +361,7 @@ def train_job_trial(shared_runtime_history,
                                           shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} reaches the SLO'.format(job_id)
+                        sem_trial.release()
                         return msg_trial
                 else:
                     raise ValueError('the job objective type is not supported')
@@ -457,6 +467,7 @@ def train_job_trial(shared_runtime_history,
                                           shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
                         msg_trial = 'job {} reaches SLO'.format(job_id)
+                        sem_trial.release()
                         return msg_trial
 
                     if job_epoch_dict[job_name] >= job_slo_max_time:
@@ -469,6 +480,7 @@ def train_job_trial(shared_runtime_history,
                                           shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
                         msg_trial = 'job {} is finished'.format(job_id)
+                        sem_trial.release()
                         return msg_trial
 
                 elif job_slo == 'convergence':
@@ -484,6 +496,7 @@ def train_job_trial(shared_runtime_history,
                                           shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
                         msg_trial = 'job {} reaches the SLO'.format(job_id)
+                        sem_trial.release()
                         return msg_trial
 
                     if job_epoch_dict[job_name] >= job_slo_max_time:
@@ -496,6 +509,7 @@ def train_job_trial(shared_runtime_history,
                                           shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
                         msg_trial = 'job {} is finished'.format(job_id)
+                        sem_trial.release()
                         return msg_trial
 
                 elif job_slo == 'runtime':
@@ -510,6 +524,7 @@ def train_job_trial(shared_runtime_history,
                                           shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
                         msg_trial = 'job {} reaches the SLO'.format(job_id)
+                        sem_trial.release()
                         return msg_trial
 
                 else:
@@ -665,6 +680,7 @@ def train_job(job_data,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} reaches the SLO'.format(job_id)
+                            sem_rotary.release()
                             return msg_slot
 
                         if job_epoch_dict[job_name] >= job_slo_max_time:
@@ -677,6 +693,7 @@ def train_job(job_data,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} is finished'.format(job_id)
+                            sem_rotary.release()
                             return msg_slot
 
                     elif job_slo == 'convergence':
@@ -692,6 +709,7 @@ def train_job(job_data,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} reaches the SLO'.format(job_id)
+                            sem_rotary.release()
                             return msg_slot
 
                         if job_epoch_dict[job_name] >= job_slo_max_time:
@@ -704,6 +722,7 @@ def train_job(job_data,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} is finished'.format(job_id)
+                            sem_rotary.release()
                             return msg_slot
 
                     elif job_slo == 'runtime':
@@ -718,6 +737,7 @@ def train_job(job_data,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} reaches the SLO'.format(job_id)
+                            sem_rotary.release()
                             return msg_slot
                     else:
                         raise ValueError('the job objective type is not supported')
@@ -807,6 +827,7 @@ def train_job(job_data,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} reaches the SLO'.format(job_id)
+                            sem_rotary.release()
                             return msg_slot
 
                         if job_epoch_dict[job_name] >= job_slo_max_time:
@@ -819,6 +840,7 @@ def train_job(job_data,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} is finished'.format(job_id)
+                            sem_rotary.release()
                             return msg_slot
 
                     elif job_slo == 'convergence':
@@ -834,6 +856,7 @@ def train_job(job_data,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} reaches the SLO'.format(job_id)
+                            sem_rotary.release()
                             return msg_slot
 
                         if job_epoch_dict[job_name] >= job_slo_max_time:
@@ -846,6 +869,7 @@ def train_job(job_data,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} is finished'.format(job_id)
+                            sem_rotary.release()
                             return msg_slot
 
                     elif job_slo == 'runtime':
@@ -860,6 +884,7 @@ def train_job(job_data,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} reaches the SLO'.format(job_id)
+                            sem_rotary.release()
                             return msg_slot
                     else:
                         raise ValueError('the job objective type is not supported')
@@ -969,6 +994,7 @@ def train_job(job_data,
                                               shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
                             msg_slot = 'job {} reaches the SLO'.format(job_id)
+                            sem_rotary.release()
                             return msg_slot
 
                         if job_epoch_dict[job_name] >= job_slo_max_time:
@@ -981,6 +1007,7 @@ def train_job(job_data,
                                               shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
                             msg_slot = 'job {} is finished'.format(job_id)
+                            sem_rotary.release()
                             return msg_slot
 
                     elif job_slo == 'convergence':
@@ -996,6 +1023,7 @@ def train_job(job_data,
                                               shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
                             msg_slot = 'job {} reaches the SLO'.format(job_id)
+                            sem_rotary.release()
                             return msg_slot
 
                         if job_epoch_dict[job_name] >= job_slo_max_time:
@@ -1008,6 +1036,7 @@ def train_job(job_data,
                                               shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
                             msg_slot = 'job {} is finished'.format(job_id)
+                            sem_rotary.release()
                             return msg_slot
 
                     elif job_slo == 'runtime':
@@ -1022,6 +1051,7 @@ def train_job(job_data,
                                               shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
                             msg_slot = 'job {} reaches the SLO'.format(job_id)
+                            sem_rotary.release()
                             return msg_slot
                     else:
                         raise ValueError('the job objective type is not supported')
@@ -1214,8 +1244,6 @@ if __name__ == "__main__":
         job_select = job_list_rotary[0]
 
         for idx in range(job_queue_anony.qsize()):
-            gpuid = idx % num_gpu
-
             r_score_mark = float('inf') if fairness else float('-inf')
 
             for job_ins in job_list_rotary:
@@ -1223,7 +1251,6 @@ if __name__ == "__main__":
 
                 job_ins_slo = job_ins['goal_type']
                 job_ins_slo_value = job_ins['goal_value']
-                job_ins_slo_max_time = job_ins['goal_value_extra']
 
                 if job_ins_slo == 'runtime':
                     current_epoch = job_epoch_dict[job_ins_key]
@@ -1231,6 +1258,7 @@ if __name__ == "__main__":
                     job_progress_dict[job_ins_key] = r_score
 
                 elif job_ins_slo == 'accuracy':
+                    job_ins_slo_max_time = job_ins['goal_value_extra']
                     current_epoch = job_epoch_dict[job_ins_key]
                     estimate_all_epoch = dl_estimator.predict_epoch(job_ins, job_ins_slo_value)
                     if estimate_all_epoch > job_ins_slo_max_time:
@@ -1240,6 +1268,7 @@ if __name__ == "__main__":
                     job_progress_dict[job_ins_key] = r_score
 
                 elif job_ins_slo == 'convergence':
+                    job_ins_slo_max_time = job_ins['goal_value_extra']
                     current_epoch = job_epoch_dict[job_ins_key]
                     current_accuracy = job_accuracy_dict[job_ins_key]
                     expected_accuracy = current_accuracy + job_ins_slo_value
