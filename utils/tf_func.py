@@ -5,7 +5,7 @@ import tensorflow as tf
 def initialize_config():
     config = tf.ConfigProto()
     config.allow_soft_placement = True
-    config.gpu_options.allow_growth = False
+    config.gpu_options.allow_growth = True
 
     return config
 

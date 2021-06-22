@@ -25,6 +25,10 @@ def log_end_eval(job_name, accuracy, device):
     print('====== [EVALUATION END] job {} accuracy:{} on device {} ======'.format(job_name, accuracy, device))
 
 
+def log_start_train(job_name, pid, device):
+    print('====== [TRAINING START] job {} at process {} on device {} ======'.format(job_name, pid, device))
+
+
 def log_get_job(job_name, pid, device):
     print('###### [GET JOB] running job {} at process {} on device {} ######'.format(job_name, pid, device))
 

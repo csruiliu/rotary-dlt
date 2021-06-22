@@ -14,24 +14,28 @@ import workload.tensorflow_nlp.tools.lmrd_reader as lmrd_reader
 from estimator.dl_estimator import DLEstimator
 from workload.workload_generator import WorkloadGenerator
 from utils.model_tool import build_cv_model, build_nlp_model
-from utils.log_func import log_time_accuracy, log_start_eval, log_end_eval, log_get_job
+from utils.log_func import log_time_accuracy, log_start_eval, log_end_eval, log_start_train, log_get_job
 from utils.tf_func import initialize_config, initialize_vars
 
 sem_trial = mp.Semaphore(cfg_rotary.num_gpu)
 sem_rotary = mp.Semaphore(cfg_rotary.num_gpu)
+gpu_slot_trial = mp.Array('i', [0] * cfg_rotary.num_gpu)
+gpu_slot_rotary = mp.Array('i', [0] * cfg_rotary.num_gpu)
 
 
-def train_job_trial(gpu_slot,
-                    shared_runtime_history,
+def train_job_trial(shared_runtime_history,
                     shared_accuracy_history):
     sem_trial.acquire()
     trial_slot_start_marker = timer()
 
     gpu_device = -1
-    for sidx, slot in enumerate(gpu_slot):
-        if slot == 0:
-            gpu_device = sidx
-            gpu_slot[sidx] = 1
+    while True:
+        gpu_device += 1
+        slot_idx = gpu_device % num_gpu
+        if gpu_slot_trial[slot_idx] == 0:
+            gpu_device = slot_idx
+            gpu_slot_trial[slot_idx] = 1
+            break
 
     try:
         job_data = job_queue_trial.get_nowait()
@@ -51,7 +55,9 @@ def train_job_trial(gpu_slot,
 
     job_slo = job_data['goal_type']
     job_slo_value = job_data['goal_value']
-    job_slo_max_time = job_data['goal_value_extra']
+    job_slo_max_time = -1
+    if job_slo == 'accuracy' or job_slo == 'convergence':
+        job_slo_max_time = job_data['goal_value_extra']
 
     if job_model == 'bert':
         # Params for bert model and tokenization
@@ -105,6 +111,7 @@ def train_job_trial(gpu_slot,
 
                 epochtime_start_marker = timer()
 
+                log_start_train(job_name, os.getpid(), assign_device)
                 logit.fit([train_input_ids, train_input_masks, train_segment_ids],
                           train_labels,
                           epochs=1,
@@ -248,7 +255,7 @@ def train_job_trial(gpu_slot,
                 sess.run(tf.global_variables_initializer())
 
                 epochtime_start_marker = timer()
-
+                log_start_train(job_name, os.getpid(), assign_device)
                 logit.fit(train_sentences_x,
                           udtb_reader.to_categorical(train_tags_y, len(tag2index)),
                           batch_size=train_batchsize,
@@ -394,7 +401,7 @@ def train_job_trial(gpu_slot,
                 num_batch = train_labels.shape[0] // train_batchsize
 
                 epochtime_start_marker = timer()
-
+                log_start_train(job_name, os.getpid(), assign_device)
                 for n in range(num_batch):
                     # print('step {} / {}'.format(n + 1, num_batch))
                     batch_offset = n * train_batchsize
@@ -517,13 +524,12 @@ def train_job_trial(gpu_slot,
                                   shared_accuracy_history)
 
     msg_trial = 'job {} is finished the current running slot'.format(job_id)
-    gpu_slot[gpu_device] = 0
+    gpu_slot_trial[gpu_device] = 0
     sem_trial.release()
     return msg_trial
 
 
-def train_job(gpu_slot,
-              job_data,
+def train_job(job_data,
               shared_runtime_history,
               shared_accuracy_history):
     sem_rotary.acquire()
@@ -531,10 +537,13 @@ def train_job(gpu_slot,
     slot_start_marker = timer()
 
     gpu_device = -1
-    for sidx, slot in enumerate(gpu_slot):
-        if slot == 0:
-            gpu_device = sidx
-            gpu_slot[sidx] = 1
+    while True:
+        gpu_device += 1
+        slot_idx = gpu_device % num_gpu
+        if gpu_slot_rotary[slot_idx] == 0:
+            gpu_device = slot_idx
+            gpu_slot_rotary[slot_idx] = 1
+            break
 
     # count the training time of this slot
     running_slot_time = 0
@@ -557,7 +566,9 @@ def train_job(gpu_slot,
 
     job_slo = job_data['goal_type']
     job_slo_value = job_data['goal_value']
-    job_slo_max_time = job_data['goal_value_extra']
+    job_slo_max_time = -1
+    if job_slo == 'accuracy' or job_slo == 'convergence':
+        job_slo_max_time = job_data['goal_value_extra']
 
     # handling different jobs
     if job_model == 'bert':
@@ -611,7 +622,7 @@ def train_job(gpu_slot,
                 # check if the total runtime is less than running_slot
                 while running_slot_time < running_slot:
                     epoch_start_marker = timer()
-
+                    log_start_train(job_name, os.getpid(), assign_device)
                     logit.fit([train_input_ids, train_input_masks, train_segment_ids],
                               train_labels,
                               epochs=1,
@@ -755,7 +766,7 @@ def train_job(gpu_slot,
                 # check if the total runtime is less than running_slot
                 while running_slot_time < running_slot:
                     epoch_start_marker = timer()
-
+                    log_start_train(job_name, os.getpid(), assign_device)
                     logit.fit(train_sentences_x,
                               udtb_reader.to_categorical(train_tags_y, len(tag2index)),
                               batch_size=train_batchsize,
@@ -904,7 +915,7 @@ def train_job(gpu_slot,
                 # check if the total runtime is less than running_slot
                 while running_slot_time < running_slot:
                     epoch_start_marker = timer()
-
+                    log_start_train(job_name, os.getpid(), assign_device)
                     for b in range(num_batch):
                         # print('step {} / {}'.format(i + 1, num_batch))
                         batch_offset = b * train_batchsize
@@ -1031,7 +1042,7 @@ def train_job(gpu_slot,
     job_queue_anony.put(job_anony)
 
     msg_slot = 'job {} is finished the current running slot'.format(job_id)
-    gpu_slot[gpu_device] = 0
+    gpu_slot_rotary[gpu_device] = 0
     sem_rotary.release()
     return msg_slot
 
@@ -1092,10 +1103,6 @@ if __name__ == "__main__":
 
     # list for getting the total parameters of each job
     ml_workload_shared = mp.Manager().list()
-
-    # shared array for marking gpu slot
-    gpu_slot_trial = mp.Array('i', [0]*num_gpu)
-    gpu_slot_rotary = mp.Array('i', [0] * num_gpu)
 
     # dict for storing job's progress
     job_progress_dict = mp.Manager().dict()
@@ -1160,10 +1167,19 @@ if __name__ == "__main__":
     # start the trial process
     #######################################################
 
+    results_trial = list()
     for idx in range(len(ml_workload)):
-        result = proc_pool.apply_async(train_job_trial, args=(gpu_slot_trial,
-                                                              job_runtime_history,
+        result = proc_pool.apply_async(train_job_trial, args=(job_runtime_history,
                                                               job_accuracy_history))
+        results_trial.append(result)
+
+    for i in results_trial:
+        i.wait()
+
+    for i in results_trial:
+        if i.ready():
+            if i.successful():
+                print(i.get())
 
     for key in job_accuracy_dict:
         print(key, '[accuracy]->', job_accuracy_dict[key])
@@ -1252,17 +1268,23 @@ if __name__ == "__main__":
                 msg = 'job has been handled by other GPU'
                 continue
 
-            proc_pool.apply_async(train_job, args=(gpu_slot_rotary,
-                                                   job_select,
-                                                   job_runtime_history,
-                                                   job_accuracy_history))
+            result = proc_pool.apply_async(train_job, args=(job_select,
+                                                            job_runtime_history,
+                                                            job_accuracy_history))
+            results_rotary.append(result)
+
+        for i in results_rotary:
+            i.wait()
+
+        for i in results_rotary:
+            if i.ready():
+                if i.successful():
+                    print(i.get())
 
         for key in job_progress_dict:
             if job_progress_dict[key] < threshold:
                 break
             fairness = False
-
-
 
     #######################################################
     # printout the log information
