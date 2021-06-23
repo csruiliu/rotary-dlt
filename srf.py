@@ -149,8 +149,8 @@ def train_job_runtime(shared_runtime_history,
                                           shared_accuracy_history)
                         # save the model as the job achieves SLO and exit the current process
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                        msg = 'job {} reaches SLO'.format(job_data['id'])
-                        gpu_slot_runtime[assign_device] = 0
+                        msg = 'job {} reaches SLO'.format(job_id)
+                        gpu_slot_runtime[gpu_device] = 0
                         sem_runtime.release()
                         return msg
 
@@ -232,8 +232,8 @@ def train_job_runtime(shared_runtime_history,
                                           shared_accuracy_history)
                         # save the model as the job achieves SLO and exit the current process
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                        msg = 'job {} reaches SLO'.format(job_data['id'])
-                        gpu_slot_runtime[assign_device] = 0
+                        msg = 'job {} reaches SLO'.format(job_id)
+                        gpu_slot_runtime[gpu_device] = 0
                         sem_runtime.release()
                         return msg
 
@@ -332,8 +332,8 @@ def train_job_runtime(shared_runtime_history,
                                           shared_accuracy_history)
                         # save the model as the job achieves SLO and exit the current process
                         saver.save(sess, checkpoint_file)
-                        msg = 'job {} reaches SLO'.format(job_data['id'])
-                        gpu_slot_runtime[assign_device] = 0
+                        msg = 'job {} reaches SLO'.format(job_id)
+                        gpu_slot_runtime[gpu_device] = 0
                         sem_runtime.release()
                         return msg
 
@@ -474,7 +474,7 @@ def train_job_others(shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                            msg = 'job {} reaches the SLO'.format(job_data['id'])
+                            msg = 'job {} reaches the SLO'.format(job_id)
                             gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
@@ -488,7 +488,7 @@ def train_job_others(shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                            msg = 'job {} is finished'.format(job_data['id'])
+                            msg = 'job {} is finished'.format(job_id)
                             gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
@@ -505,7 +505,7 @@ def train_job_others(shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                            msg = 'job {} reaches the SLO'.format(job_data['id'])
+                            msg = 'job {} reaches the SLO'.format(job_id)
                             gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
@@ -519,7 +519,7 @@ def train_job_others(shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                            msg = 'job {} is finished'.format(job_data['id'])
+                            msg = 'job {} is finished'.format(job_id)
                             gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
@@ -612,7 +612,7 @@ def train_job_others(shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                            msg = 'job {} reaches the SLO'.format(job_data['id'])
+                            msg = 'job {} reaches the SLO'.format(job_id)
                             gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
@@ -626,7 +626,7 @@ def train_job_others(shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                            msg = 'job {} is finished'.format(job_data['id'])
+                            msg = 'job {} is finished'.format(job_id)
                             gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
@@ -643,7 +643,7 @@ def train_job_others(shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                            msg = 'job {} reaches the SLO'.format(job_data['id'])
+                            msg = 'job {} reaches the SLO'.format(job_id)
                             gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
@@ -657,7 +657,7 @@ def train_job_others(shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                            msg = 'job {} is finished'.format(job_data['id'])
+                            msg = 'job {} is finished'.format(job_id)
                             gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
@@ -769,7 +769,7 @@ def train_job_others(shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
-                            msg = 'job {} reaches the SLO'.format(job_data['id'])
+                            msg = 'job {} reaches the SLO'.format(job_id)
                             gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
@@ -783,7 +783,7 @@ def train_job_others(shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
-                            msg = 'job {} is finished'.format(job_data['id'])
+                            msg = 'job {} is finished'.format(job_id)
                             gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
@@ -800,7 +800,7 @@ def train_job_others(shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
-                            msg = 'job {} reaches the SLO'.format(job_data['id'])
+                            msg = 'job {} reaches the SLO'.format(job_id)
                             gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
@@ -814,7 +814,7 @@ def train_job_others(shared_runtime_history,
                                               job_epoch_dict,
                                               shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
-                            msg = 'job {} is finished'.format(job_data['id'])
+                            msg = 'job {} is finished'.format(job_id)
                             gpu_slot_others[gpu_device] = 0
                             sem_others.release()
                             return msg
@@ -837,7 +837,7 @@ def train_job_others(shared_runtime_history,
     # exceed the running slot and haven't achieve goal so put the job back to the queue
     job_queue_others.put(job_data)
 
-    msg = 'job {} is finished the current running slot'.format(job_data['id'])
+    msg = 'job {} is finished the current running slot'.format(job_id)
     gpu_slot_others[gpu_device] = 0
     sem_others.release()
     return msg
@@ -942,8 +942,8 @@ if __name__ == "__main__":
 
     while len(ml_workload_runtime) != 0:
         results_runtime = list()
-        accuracy_job_num = len(ml_workload_runtime)
-        for idx in range(accuracy_job_num):
+        runtime_job_num = len(ml_workload_runtime)
+        for idx in range(runtime_job_num):
             result = proc_pool_runtime.apply_async(train_job_runtime, args=(job_runtime_history,
                                                                             job_accuracy_history))
             results_runtime.append(result)
