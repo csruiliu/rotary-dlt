@@ -1344,6 +1344,11 @@ if __name__ == "__main__":
                 fairness = True
                 break
 
+        if fairness:
+            print('||||||||||||||||||| USING FAIRNESS POLICY |||||||||||||||||||')
+        else:
+            print('||||||||||||||||||| USING AGGRESSIVE POLICY |||||||||||||||||||')
+
     #######################################################
     # printout the log information
     #######################################################
