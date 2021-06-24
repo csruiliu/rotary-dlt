@@ -1269,7 +1269,7 @@ if __name__ == "__main__":
     while not job_queue_anony.empty():
         results_rotary = list()
         job_select = job_list_rotary[0]
-        print('-------------------------------------: {}'.format(job_queue_anony.qsize()))
+        print('************* current rotary queue: {} *************'.format(job_queue_anony.qsize()))
         for idx in range(job_queue_anony.qsize()):
             r_score_mark = float('inf') if fairness else float('-inf')
 

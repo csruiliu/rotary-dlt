@@ -5,6 +5,186 @@ import numpy as np
 from estimator.dl_estimator import DLEstimator
 
 
+def eval_epoch_prediction():
+    test_workload = [{
+        "id": "1",
+        "model": "resnet",
+        "num_parameters": 11173962,
+        "batch_size": 32,
+        "opt": "SGD",
+        "learn_rate": 0.1,
+        "training_data": "cifar10",
+        "classes": 10
+    }]
+
+    test_job = {
+        "id": "1",
+        "model": "resnet",
+        "num_parameters": 11173962,
+        "batch_size": 32,
+        "opt": "SGD",
+        "learn_rate": 0.1,
+        "training_data": "cifar10",
+        "classes": 10
+    }
+
+    job_key = str(test_job['id']) + '-' + test_job['model']
+
+    dle.prepare_workload(test_workload)
+
+    epoch_estimate_zero = list()
+    for acc in real_accuracy:
+        epoch_estimate = dle.predict_epoch(test_job, acc)
+        epoch_estimate_zero.append(epoch_estimate)
+    epoch_estimate_zero = [round(item) for item in epoch_estimate_zero]
+    epoch_estimate_zero = [0 if i < 0 else i for i in epoch_estimate_zero]
+
+    ####################################
+
+    dle.add_actual_data(job_key=job_key,
+                        accuracy=0.4936999988555908,
+                        epoch=1)
+    epoch_estimate_one = list()
+    for acc in real_accuracy:
+        epoch_estimate = dle.predict_epoch(test_job, acc)
+        epoch_estimate_one.append(epoch_estimate)
+    epoch_estimate_one = [round(item) for item in epoch_estimate_one]
+    epoch_estimate_one = [0 if i < 0 else i for i in epoch_estimate_one]
+
+    ####################################
+
+    dle.add_actual_data(job_key=job_key,
+                        accuracy=0.613600004017353,
+                        epoch=3)
+    epoch_estimate_three = list()
+    for acc in real_accuracy:
+        epoch_estimate = dle.predict_epoch(test_job, acc)
+        epoch_estimate_three.append(epoch_estimate)
+    epoch_estimate_three = [round(item) for item in epoch_estimate_three]
+    epoch_estimate_three = [0 if i < 0 else i for i in epoch_estimate_three]
+
+    ####################################
+
+    dle.add_actual_data(job_key=job_key,
+                        accuracy=0.6697000038623809,
+                        epoch=5)
+    epoch_estimate_five = list()
+    for acc in real_accuracy:
+        epoch_estimate = dle.predict_epoch(test_job, acc)
+        epoch_estimate_five.append(epoch_estimate)
+    epoch_estimate_five = [round(item) for item in epoch_estimate_five]
+    epoch_estimate_five = [0 if i < 0 else i for i in epoch_estimate_five]
+
+    ####################################
+
+    dle.add_actual_data(job_key=job_key,
+                        accuracy=0.701600005030632,
+                        epoch=7)
+    epoch_estimate_seven = list()
+    for acc in real_accuracy:
+        epoch_estimate = dle.predict_epoch(test_job, acc)
+        epoch_estimate_seven.append(epoch_estimate)
+    epoch_estimate_seven = [round(item) for item in epoch_estimate_seven]
+    epoch_estimate_seven = [0 if i < 0 else i for i in epoch_estimate_seven]
+
+    return epoch_estimate_zero, epoch_estimate_one, epoch_estimate_three, epoch_estimate_five, epoch_estimate_seven
+
+
+def plot_figure(epoch_estimate_zero,
+                epoch_estimate_one,
+                epoch_estimate_three,
+                epoch_estimate_five,
+                epoch_estimate_seven):
+    fig = plt.figure(figsize=(6.5, 4))
+    ax = fig.gca()
+
+    plt.plot(np.arange(0, 11), np.arange(0, 11), linestyle='--', label='Ground-truth')
+    plt.plot(np.arange(0, 11),
+             [0, 0, 0, 1, 1, 2, 2] + epoch_estimate_zero[6:10],
+             marker='o',
+             markersize=4,
+             label='Estimate with archived data')
+    plt.plot(np.arange(0, 11),
+             [0] + epoch_estimate_one[0:10],
+             marker='^',
+             markersize=4,
+             label='Estimate with archived & 1st-epoch data')
+    plt.plot(np.arange(0, 11),
+             [0] + epoch_estimate_three[0:10],
+             marker='*',
+             markersize=6,
+             label='Estimate with archived & 3rd-epoch data')
+    plt.plot(np.arange(0, 11),
+             [0] + epoch_estimate_five[0:10],
+             marker='D',
+             markersize=4,
+             label='Estimate with archived & 5th-epoch data')
+    plt.plot(np.arange(0, 11),
+             [0] + epoch_estimate_seven[0:10],
+             marker='s',
+             markersize=4,
+             label='Estimate with archived & 7th-epoch data')
+
+    plt.xticks(range(0, 11), ['0%', '49%', '57%', '61%', '65%', '67%', '69%', '70%', '70%', '70%', '70%'])
+    plt.yticks(range(0, 11), range(0, 11))
+
+    plt.ylabel("Training Epoch", fontsize=16)
+    plt.xlabel("Training Accuracy", fontsize=16)
+
+    ax.tick_params(axis='y', direction='in', labelsize=16)
+    ax.tick_params(axis='x', direction='in', labelsize=13, pad=6)
+    ax.grid(which='major', axis='x', linestyle='--')
+    ax.spines["top"].set_linewidth(2)
+    ax.spines["left"].set_linewidth(2)
+    ax.spines["right"].set_linewidth(2)
+    ax.spines["bottom"].set_linewidth(2)
+
+    plt.legend(loc='upper left', fontsize=9)
+    # plt.grid(True, linewidth=1, linestyle='--')
+    plt.savefig(outpath, format='pdf', bbox_inches='tight', pad_inches=0.05)
+
+
+if __name__ == "__main__":
+    outpath = '/home/ruiliu/Development/dl-estimator.pdf'
+
+    real_accuracy = [
+        0.4936999988555908,
+        0.5672000032663346,
+        0.613600004017353,
+        0.6527000042796135,
+        0.6697000038623809,
+        0.6856000030040741,
+        0.701600005030632,
+        0.700500001758337,
+        0.7007000043988227,
+        0.6969000053405762,
+        0.704100002348423,
+        0.7104000025987625,
+        0.7022000008821487,
+        0.7142000058293343,
+        0.711000003516674
+    ]
+
+    dle = DLEstimator(topk=10, poly_deg=3)
+
+    # read all the accuracy file
+    for f in os.listdir('./knowledgebase'):
+        model_acc_file = os.getcwd() + '/knowledgebase/' + f
+        dle.import_accuracy_dataset(model_acc_file)
+
+    (epoch_estimate_zero,
+     epoch_estimate_one,
+     epoch_estimate_three,
+     epoch_estimate_five,
+     epoch_estimate_seven) = eval_epoch_prediction()
+
+    plot_figure(epoch_estimate_zero,
+                epoch_estimate_one,
+                epoch_estimate_three,
+                epoch_estimate_five,
+                epoch_estimate_seven)
+
+'''
 def eval_accuracy_prediction():
     test_workload = [{
         "id": "1",
@@ -27,7 +207,7 @@ def eval_accuracy_prediction():
         "training_data": "cifar",
         "classes": 10
     }
-
+    
     real_accuracy = [
         0.4936999988555908,
         0.5672000032663346,
@@ -382,68 +562,4 @@ def eval_accuracy_prediction():
     plt.legend(loc='upper center', bbox_to_anchor=(-0.16, 2.7), ncol=4, fontsize=38)
 
     plt.savefig(outpath, format='pdf', bbox_inches='tight', pad_inches=0.05)
-
-
-def eval_epoch_prediction():
-    test_workload = [{
-        "id": "1",
-        "model": "mobilenet",
-        "num_parameters": 2141234,
-        "batch_size": 32,
-        "opt": "SGD",
-        "learn_rate": 0.01,
-        "training_data": "cifar",
-        "classes": 10
-    }]
-
-    test_job = {
-        "id": "1",
-        "model": "mobilenet",
-        "num_parameters": 2141234,
-        "batch_size": 32,
-        "opt": "SGD",
-        "learn_rate": 0.01,
-        "training_data": "cifar",
-        "classes": 10
-    }
-
-    real_accuracy = [
-        0.4936999988555908,
-        0.5672000032663346,
-        0.613600004017353,
-        0.6527000042796135,
-        0.6697000038623809,
-        0.6856000030040741,
-        0.701600005030632,
-        0.700500001758337,
-        0.7007000043988227,
-        0.6969000053405762,
-        0.704100002348423,
-        0.7104000025987625,
-        0.7022000008821487,
-        0.7142000058293343,
-        0.711000003516674
-    ]
-
-    job_key = str(test_job['id']) + '-' + test_job['model']
-
-    dle.prepare_workload(test_workload)
-
-    epoch_estimate, coefs = dle.predict_epoch(test_job, 0.613600004017353)
-
-    print(epoch_estimate)
-
-
-if __name__ == "__main__":
-    outpath = '/home/ruiliu/Development/dl-estimator.pdf'
-
-    topk = 10
-
-    dle = DLEstimator(topk)
-
-    # read all the accuracy file
-    for f in os.listdir('./knowledgebase'):
-        model_acc_file = os.getcwd() + '/knowledgebase/' + f
-        dle.import_accuracy_dataset(model_acc_file)
-
-    eval_epoch_prediction()
+'''
