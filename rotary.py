@@ -423,7 +423,6 @@ def train_job_trial(shared_runtime_history,
                 epochtime_start_marker = timer()
                 log_start_train(job_name, os.getpid(), assign_device)
                 for n in range(num_batch):
-                    # print('step {} / {}'.format(n + 1, num_batch))
                     batch_offset = n * train_batchsize
                     batch_end = (n + 1) * train_batchsize
 
@@ -438,7 +437,6 @@ def train_job_trial(shared_runtime_history,
                 eval_batch_size = 50
                 num_batch_eval = eval_labels.shape[0] // eval_batch_size
                 for ne in range(num_batch_eval):
-                    # print('evaluation step %d / %d' % (ne + 1, num_batch_eval))
                     batch_offset = ne * eval_batch_size
                     batch_end = (ne + 1) * eval_batch_size
                     eval_feature_batch = eval_feature[batch_offset:batch_end]
@@ -771,7 +769,7 @@ def train_job(job_data,
                     slot_end_marker = timer()
                     running_slot_time = slot_end_marker - slot_start_marker
 
-            logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
+                logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
 
     elif job_model == 'lstm' or job_model == 'bilstm':
         (train_sentences_x,
@@ -967,7 +965,6 @@ def train_job(job_data,
                     epoch_start_marker = timer()
                     log_start_train(job_name, os.getpid(), assign_device)
                     for b in range(num_batch):
-                        # print('step {} / {}'.format(i + 1, num_batch))
                         batch_offset = b * train_batchsize
                         batch_end = (b + 1) * train_batchsize
 
@@ -981,7 +978,6 @@ def train_job(job_data,
                     eval_batch_size = 50
                     num_batch_eval = eval_labels.shape[0] // eval_batch_size
                     for be in range(num_batch_eval):
-                        # print('evaluation step %d / %d' % (i + 1, num_batch_eval))
                         batch_offset = be * eval_batch_size
                         batch_end = (be + 1) * eval_batch_size
                         eval_feature_batch = eval_feature[batch_offset:batch_end]
@@ -1095,13 +1091,13 @@ def train_job(job_data,
                     slot_end_marker = timer()
                     running_slot_time = slot_end_marker - slot_start_marker
 
-            saver.save(sess, checkpoint_file)
+                saver.save(sess, checkpoint_file)
 
     # exceed the running slot and haven't achieve goal so put the job back to the queue
     job_list_rotary.append(job_data)
     job_queue_anony.put(job_anony)
-
     msg_slot = 'job {} is finished the current running slot'.format(job_id)
+
     gpu_slot_rotary[gpu_device] = 0
     sem_rotary.release()
     return msg_slot
@@ -1273,7 +1269,7 @@ if __name__ == "__main__":
     while not job_queue_anony.empty():
         results_rotary = list()
         job_select = job_list_rotary[0]
-
+        print('-------------------------------------: {}'.format(job_queue_anony.qsize()))
         for idx in range(job_queue_anony.qsize()):
             r_score_mark = float('inf') if fairness else float('-inf')
 
@@ -1325,7 +1321,8 @@ if __name__ == "__main__":
             try:
                 job_list_rotary.remove(job_select)
             except ValueError:
-                msg = 'job has been handled by other GPU'
+                msg_err = 'job has been handled by other GPU'
+                print(msg_err)
                 continue
 
             result = proc_pool_rotary.apply_async(train_job, args=(job_select,
@@ -1341,10 +1338,11 @@ if __name__ == "__main__":
                 if i.successful():
                     print(i.get())
 
+        fairness = False
         for key in job_progress_dict:
             if job_progress_dict[key] < threshold:
+                fairness = True
                 break
-            fairness = False
 
     #######################################################
     # printout the log information
