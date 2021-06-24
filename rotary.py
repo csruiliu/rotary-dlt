@@ -1263,9 +1263,7 @@ if __name__ == "__main__":
     # start the rotary process
     #######################################################
 
-    threshold = 0.3
     fairness = True
-
     while not job_queue_anony.empty():
         results_rotary = list()
         job_select = job_list_rotary[0]
@@ -1338,11 +1336,22 @@ if __name__ == "__main__":
                 if i.successful():
                     print(i.get())
 
+        '''
         fairness = False
+        threshold = 0
         for key in job_progress_dict:
             if job_progress_dict[key] < threshold:
                 fairness = True
                 break
+        '''
+        threshold = 0.5
+        progress_count = 0
+        for key in job_progress_dict:
+            if job_progress_dict[key] > threshold:
+                progress_count += 1
+
+        if progress_count >= cfg_rotary.dlt_workload_size:
+            fairness = False
 
         if fairness:
             print('||||||||||||||||||| USING FAIRNESS POLICY |||||||||||||||||||')
