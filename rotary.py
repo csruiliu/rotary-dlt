@@ -1344,13 +1344,14 @@ if __name__ == "__main__":
                 fairness = True
                 break
         '''
-        threshold = 0.5
+        progress_threshold = 0.5
         progress_count = 0
+        job_threshold = cfg_rotary.dlt_workload_size / 2
         for key in job_progress_dict:
-            if job_progress_dict[key] > threshold:
+            if job_progress_dict[key] > progress_threshold:
                 progress_count += 1
 
-        if progress_count >= cfg_rotary.dlt_workload_size:
+        if progress_count >= job_threshold:
             fairness = False
 
         if fairness:
