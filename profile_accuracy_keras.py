@@ -40,7 +40,7 @@ def load_dataset(directory):
 
 # Download and process the dataset files.
 def download_and_load_datasets(force_download=False):
-    if not os.path.exists('/tank/local/ruiliu/datasets/aclImdb.tar.gz'):
+    if not os.path.exists('/tank/local/ruiliu/dataset/aclImdb.tar.gz'):
         dataset = tf.keras.utils.get_file(
             fname="aclImdb.tar.gz",
             origin="http://ai.stanford.edu/~amaas/data/sentiment/aclImdb_v1.tar.gz",
@@ -48,7 +48,7 @@ def download_and_load_datasets(force_download=False):
             cache_dir='/tank/local/ruiliu/'
         )
     else:
-        dataset = '/tank/local/ruiliu/datasets/aclImdb.tar.gz'
+        dataset = '/tank/local/ruiliu/dataset/aclImdb.tar.gz'
 
     train_df = load_dataset(os.path.join(os.path.dirname(dataset), "aclImdb", "train"))
     test_df = load_dataset(os.path.join(os.path.dirname(dataset), "aclImdb", "test"))
@@ -269,9 +269,11 @@ if __name__ == "__main__":
             hist = logit.fit([train_input_ids, train_input_masks, train_segment_ids],
                              train_labels,
                              epochs=args.epoch,
-                             batch_size=args.batch_size)
+                             batch_size=args.batch_size,
+                             verbose=0)
 
-            acc_record_list = hist.history['accuracy']
+            acc_record_list = hist.history['acc']
+            acc_record_list = [float(item) for item in acc_record_list]
 
             # scores = logit.evaluate([test_input_ids, test_input_masks, test_segment_ids], test_labels)
             # scores = logit.evaluate([train_input_ids, train_input_masks, train_segment_ids], train_labels)
@@ -386,7 +388,7 @@ if __name__ == "__main__":
                          batch_size=args.batch_size,
                          epochs=args.epoch)
 
-        acc_record_list = hist.history['accuracy']
+        acc_record_list = hist.history['acc']
         acc_record_list = [float(item) for item in acc_record_list]
 
     else:

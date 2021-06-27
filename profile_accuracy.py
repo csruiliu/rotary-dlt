@@ -22,7 +22,7 @@ from workload.tensorflow_cifar.models.vgg import VGG
 from workload.tensorflow_cifar.models.xception import Xception
 from workload.tensorflow_cifar.models.zfnet import ZFNet
 
-from workload.tensorflow_cifar.tools.dataset_loader import load_cifar10_keras
+from workload.tensorflow_cifar.tools.cifar_reader import load_cifar10_keras
 from workload.tensorflow_cifar.tools.model_tools import train_model
 from workload.tensorflow_cifar.tools.model_tools import evaluate_model
 
