@@ -14,7 +14,7 @@ import workload.tensorflow_nlp.tools.lmrd_reader as lmrd_reader
 from estimator.dl_estimator import DLEstimator
 from workload.workload_generator import WorkloadGenerator
 from utils.model_tool import build_cv_model, build_nlp_model
-from utils.log_func import log_time_accuracy, log_start_eval, log_end_eval, log_start_train, log_get_job
+from utils.log_func import log_time_accuracy, log_start_eval, log_end_eval, log_start_train, log_get_job, log_counter, log_time
 from utils.tf_func import initialize_config, initialize_vars
 
 sem_trial = mp.Semaphore(cfg_rotary.num_gpu)
@@ -1140,7 +1140,7 @@ if __name__ == "__main__":
                            cfg_rotary.random_seed)
 
     ml_workload = wg.generate_workload()
-
+    # ml_workload = wg.generate_test_workload()
     for i in ml_workload:
         print(i)
 
@@ -1160,8 +1160,6 @@ if __name__ == "__main__":
     # list for getting the total parameters of each job
     ml_workload_shared = mp.Manager().list()
 
-    # dict for storing job's progress
-    job_progress_dict = mp.Manager().dict()
     # dict for storing job's current accuracy
     job_accuracy_dict = mp.Manager().dict()
     # dict for storing job's overall running time
@@ -1177,6 +1175,8 @@ if __name__ == "__main__":
     # dict for storing the time of a single training epoch of each job
     job_epochtime_dict = mp.Manager().dict()
 
+    # dict for storing job's progress
+    job_progress_dict = dict()
     # dict for tracking epochs with wall-time
     job_runtime_history = dict()
     # dict for tracking accuracy with wall-time
@@ -1268,8 +1268,9 @@ if __name__ == "__main__":
         results_rotary = list()
         job_select = job_list_rotary[0]
         print('************* current rotary queue: {} *************'.format(job_queue_anony.qsize()))
-        for idx in range(job_queue_anony.qsize()):
+        for idx in range(num_gpu):
             r_score_mark = float('inf') if fairness else float('-inf')
+            r_score = 0
 
             for job_ins in job_list_rotary:
                 job_ins_key = str(job_ins['id']) + '-' + job_ins['model']
@@ -1285,7 +1286,7 @@ if __name__ == "__main__":
                 elif job_ins_slo == 'accuracy':
                     job_ins_slo_max_time = job_ins['goal_value_extra']
                     current_epoch = job_epoch_dict[job_ins_key]
-                    estimate_all_epoch = dl_estimator.predict_epoch(job_ins, job_ins_slo_value)
+                    estimate_all_epoch = round(dl_estimator.predict_epoch(job_ins, job_ins_slo_value))
                     if estimate_all_epoch > job_ins_slo_max_time:
                         r_score = current_epoch / job_ins_slo_max_time
                     else:
@@ -1297,11 +1298,15 @@ if __name__ == "__main__":
                     current_epoch = job_epoch_dict[job_ins_key]
                     current_accuracy = job_accuracy_dict[job_ins_key]
                     expected_accuracy = current_accuracy + job_ins_slo_value
-                    estimate_all_epoch = dl_estimator.predict_epoch(job_ins, expected_accuracy)
-                    if estimate_all_epoch > job_ins_slo_max_time:
-                        r_score = current_epoch / job_ins_slo_max_time
+                    estimate_all_epoch = round(dl_estimator.predict_epoch(job_ins, expected_accuracy))
+                    if estimate_all_epoch <= 0:
+                        r_score = 1
                     else:
-                        r_score = current_epoch / estimate_all_epoch if estimate_all_epoch != 0 else 0
+                        if estimate_all_epoch > job_ins_slo_max_time:
+                            r_score = current_epoch / job_ins_slo_max_time
+                        else:
+                            r_score = current_epoch / estimate_all_epoch
+
                     job_progress_dict[job_ins_key] = r_score
 
                 else:
@@ -1315,6 +1320,8 @@ if __name__ == "__main__":
                     if r_score_mark <= r_score:
                         r_score_mark = r_score
                         job_select = job_ins
+
+            print('$$$$$ JOB SELECTION: {} $$$$$'.format(job_select))
 
             try:
                 job_list_rotary.remove(job_select)
@@ -1336,23 +1343,20 @@ if __name__ == "__main__":
                 if i.successful():
                     print(i.get())
 
-        '''
+        print('-------------------------------------------')
+        for key in job_progress_dict:
+            print('{}:{}'.format(key, job_progress_dict[key]))
+        print('-------------------------------------------')
+        for job in job_list_rotary:
+            print('JOB: {}'.format(job))
+        print('-------------------------------------------')
+
         fairness = False
-        threshold = 0
+        threshold = 0.5
         for key in job_progress_dict:
             if job_progress_dict[key] < threshold:
                 fairness = True
                 break
-        '''
-        progress_threshold = 0.5
-        progress_count = 0
-        job_threshold = cfg_rotary.dlt_workload_size / 2
-        for key in job_progress_dict:
-            if job_progress_dict[key] > progress_threshold:
-                progress_count += 1
-
-        if progress_count >= job_threshold:
-            fairness = False
 
         if fairness:
             print('||||||||||||||||||| USING FAIRNESS POLICY |||||||||||||||||||')
@@ -1388,3 +1392,6 @@ if __name__ == "__main__":
 
     proc_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print('============= the whole exp finish at: {}===================='.format(proc_end_time))
+
+    print('total log count: {}'.format(log_counter.value))
+    print('log time: {}'.format(log_time.value))
