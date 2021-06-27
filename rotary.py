@@ -1140,7 +1140,7 @@ if __name__ == "__main__":
                            cfg_rotary.random_seed)
 
     ml_workload = wg.generate_workload()
-    # ml_workload = wg.generate_test_workload()
+
     for i in ml_workload:
         print(i)
 
@@ -1342,7 +1342,7 @@ if __name__ == "__main__":
             if i.ready():
                 if i.successful():
                     print(i.get())
-
+        '''
         print('-------------------------------------------')
         for key in job_progress_dict:
             print('{}:{}'.format(key, job_progress_dict[key]))
@@ -1350,11 +1350,13 @@ if __name__ == "__main__":
         for job in job_list_rotary:
             print('JOB: {}'.format(job))
         print('-------------------------------------------')
+        '''
 
         fairness = False
         threshold = 0.5
-        for key in job_progress_dict:
-            if job_progress_dict[key] < threshold:
+        for job in job_list_rotary:
+            job_key = str(job['id']) + '-' + job['model']
+            if job_progress_dict[job_key] < threshold:
                 fairness = True
                 break
 
