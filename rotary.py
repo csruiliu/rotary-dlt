@@ -13,8 +13,8 @@ import workload.tensorflow_nlp.tools.udtb_reader as udtb_reader
 import workload.tensorflow_nlp.tools.lmrd_reader as lmrd_reader
 from estimator.dl_estimator import DLEstimator
 from workload.workload_generator import WorkloadGenerator
+import utils.log_func as log_func
 from utils.model_tool import build_cv_model, build_nlp_model
-from utils.log_func import log_time_accuracy, log_start_eval, log_end_eval, log_start_train, log_get_job, log_counter, log_time
 from utils.tf_func import initialize_config, initialize_vars
 
 sem_trial = mp.Semaphore(cfg_rotary.num_gpu)
@@ -47,7 +47,7 @@ def train_job_trial(shared_runtime_history,
     job_name = str(job_id) + '-' + job_model
 
     assign_device = '/gpu:' + str(gpu_device)
-    log_get_job(job_name, os.getpid(), assign_device)
+    log_func.log_get_job(job_name, os.getpid(), assign_device)
 
     model_opt = job_data['opt']
     model_learn_rate = job_data['learn_rate']
@@ -111,7 +111,7 @@ def train_job_trial(shared_runtime_history,
 
                 epochtime_start_marker = timer()
 
-                log_start_train(job_name, os.getpid(), assign_device)
+                log_func.log_start_train(job_name, os.getpid(), assign_device)
                 logit.fit([train_input_ids, train_input_masks, train_segment_ids],
                           train_labels,
                           epochs=1,
@@ -119,14 +119,14 @@ def train_job_trial(shared_runtime_history,
                           verbose=0)
 
                 # start evaluation phrase
-                log_start_eval(job_name, os.getpid(), assign_device)
+                log_func.log_start_eval(job_name, os.getpid(), assign_device)
                 scores = logit.evaluate([train_input_ids[0:offset],
                                          train_input_masks[0:offset],
                                          train_segment_ids[0:offset]],
                                         train_labels[0:offset],
                                         verbose=0)
                 cur_accuracy = scores[1]
-                log_end_eval(job_name, cur_accuracy, assign_device)
+                log_func.log_end_eval(job_name, cur_accuracy, assign_device)
 
                 pre_accuracy = job_accuracy_dict[job_name]
 
@@ -150,11 +150,11 @@ def train_job_trial(shared_runtime_history,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        log_time_accuracy(job_name,
-                                          cur_accuracy,
-                                          shared_runtime_history,
-                                          job_epoch_dict,
-                                          shared_accuracy_history)
+                        log_func.log_time_accuracy(job_name,
+                                                   cur_accuracy,
+                                                   shared_runtime_history,
+                                                   job_epoch_dict,
+                                                   shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} reaches SLO'.format(job_id)
                         gpu_slot_trial[gpu_device] = 0
@@ -164,11 +164,11 @@ def train_job_trial(shared_runtime_history,
                     if job_epoch_dict[job_name] >= job_slo_max_time:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                        log_time_accuracy(job_name,
-                                          cur_accuracy,
-                                          shared_runtime_history,
-                                          job_epoch_dict,
-                                          shared_accuracy_history)
+                        log_func.log_time_accuracy(job_name,
+                                                   cur_accuracy,
+                                                   shared_runtime_history,
+                                                   job_epoch_dict,
+                                                   shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} is finished'.format(job_id)
                         gpu_slot_trial[gpu_device] = 0
@@ -181,11 +181,11 @@ def train_job_trial(shared_runtime_history,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        log_time_accuracy(job_name,
-                                          cur_accuracy,
-                                          shared_runtime_history,
-                                          job_epoch_dict,
-                                          shared_accuracy_history)
+                        log_func.log_time_accuracy(job_name,
+                                                   cur_accuracy,
+                                                   shared_runtime_history,
+                                                   job_epoch_dict,
+                                                   shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} reaches the SLO'.format(job_id)
                         gpu_slot_trial[gpu_device] = 0
@@ -195,11 +195,11 @@ def train_job_trial(shared_runtime_history,
                     if job_epoch_dict[job_name] >= job_slo_max_time:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                        log_time_accuracy(job_name,
-                                          cur_accuracy,
-                                          shared_runtime_history,
-                                          job_epoch_dict,
-                                          shared_accuracy_history)
+                        log_func.log_time_accuracy(job_name,
+                                                   cur_accuracy,
+                                                   shared_runtime_history,
+                                                   job_epoch_dict,
+                                                   shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} is finished'.format(job_id)
                         gpu_slot_trial[gpu_device] = 0
@@ -211,11 +211,11 @@ def train_job_trial(shared_runtime_history,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        log_time_accuracy(job_name,
-                                          cur_accuracy,
-                                          shared_runtime_history,
-                                          job_epoch_dict,
-                                          shared_accuracy_history)
+                        log_func.log_time_accuracy(job_name,
+                                                   cur_accuracy,
+                                                   shared_runtime_history,
+                                                   job_epoch_dict,
+                                                   shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} reaches the SLO'.format(job_id)
                         gpu_slot_trial[gpu_device] = 0
@@ -226,11 +226,11 @@ def train_job_trial(shared_runtime_history,
 
                 # save the model and exit the trial slot
                 logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                log_time_accuracy(job_name,
-                                  cur_accuracy,
-                                  shared_runtime_history,
-                                  job_epoch_dict,
-                                  shared_accuracy_history)
+                log_func.log_time_accuracy(job_name,
+                                           cur_accuracy,
+                                           shared_runtime_history,
+                                           job_epoch_dict,
+                                           shared_accuracy_history)
 
     elif job_model == 'lstm' or job_model == 'bilstm':
         (train_sentences_x,
@@ -265,7 +265,7 @@ def train_job_trial(shared_runtime_history,
                 sess.run(tf.global_variables_initializer())
 
                 epochtime_start_marker = timer()
-                log_start_train(job_name, os.getpid(), assign_device)
+                log_func.log_start_train(job_name, os.getpid(), assign_device)
                 logit.fit(train_sentences_x,
                           udtb_reader.to_categorical(train_tags_y, len(tag2index)),
                           batch_size=train_batchsize,
@@ -273,12 +273,12 @@ def train_job_trial(shared_runtime_history,
                           verbose=0)
 
                 # start evaluation phrase
-                log_start_eval(job_name, os.getpid(), assign_device)
+                log_func.log_start_eval(job_name, os.getpid(), assign_device)
                 scores = logit.evaluate(val_sentences_x,
                                         udtb_reader.to_categorical(val_tags_y, len(tag2index)),
                                         verbose=0)
                 cur_accuracy = scores[1]
-                log_end_eval(job_name, cur_accuracy, assign_device)
+                log_func.log_end_eval(job_name, cur_accuracy, assign_device)
 
                 pre_accuracy = job_accuracy_dict[job_name]
 
@@ -302,11 +302,11 @@ def train_job_trial(shared_runtime_history,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        log_time_accuracy(job_name,
-                                          cur_accuracy,
-                                          shared_runtime_history,
-                                          job_epoch_dict,
-                                          shared_accuracy_history)
+                        log_func.log_time_accuracy(job_name,
+                                                   cur_accuracy,
+                                                   shared_runtime_history,
+                                                   job_epoch_dict,
+                                                   shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} reaches SLO'.format(job_id)
                         gpu_slot_trial[gpu_device] = 0
@@ -316,11 +316,11 @@ def train_job_trial(shared_runtime_history,
                     if job_epoch_dict[job_name] >= job_slo_max_time:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                        log_time_accuracy(job_name,
-                                          cur_accuracy,
-                                          shared_runtime_history,
-                                          job_epoch_dict,
-                                          shared_accuracy_history)
+                        log_func.log_time_accuracy(job_name,
+                                                   cur_accuracy,
+                                                   shared_runtime_history,
+                                                   job_epoch_dict,
+                                                   shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} is finished'.format(job_id)
                         gpu_slot_trial[gpu_device] = 0
@@ -333,11 +333,11 @@ def train_job_trial(shared_runtime_history,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        log_time_accuracy(job_name,
-                                          cur_accuracy,
-                                          shared_runtime_history,
-                                          job_epoch_dict,
-                                          shared_accuracy_history)
+                        log_func.log_time_accuracy(job_name,
+                                                   cur_accuracy,
+                                                   shared_runtime_history,
+                                                   job_epoch_dict,
+                                                   shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} reaches the SLO'.format(job_id)
                         gpu_slot_trial[gpu_device] = 0
@@ -347,11 +347,11 @@ def train_job_trial(shared_runtime_history,
                     if job_epoch_dict[job_name] >= job_slo_max_time:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                        log_time_accuracy(job_name,
-                                          cur_accuracy,
-                                          shared_runtime_history,
-                                          job_epoch_dict,
-                                          shared_accuracy_history)
+                        log_func.log_time_accuracy(job_name,
+                                                   cur_accuracy,
+                                                   shared_runtime_history,
+                                                   job_epoch_dict,
+                                                   shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} is finished'.format(job_id)
                         gpu_slot_trial[gpu_device] = 0
@@ -363,11 +363,11 @@ def train_job_trial(shared_runtime_history,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        log_time_accuracy(job_name,
-                                          cur_accuracy,
-                                          shared_runtime_history,
-                                          job_epoch_dict,
-                                          shared_accuracy_history)
+                        log_func.log_time_accuracy(job_name,
+                                                   cur_accuracy,
+                                                   shared_runtime_history,
+                                                   job_epoch_dict,
+                                                   shared_accuracy_history)
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg_trial = 'job {} reaches the SLO'.format(job_id)
                         gpu_slot_trial[gpu_device] = 0
@@ -378,11 +378,11 @@ def train_job_trial(shared_runtime_history,
 
                 # save the model and exit the trial slot
                 logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
-                log_time_accuracy(job_name,
-                                  cur_accuracy,
-                                  shared_runtime_history,
-                                  job_epoch_dict,
-                                  shared_accuracy_history)
+                log_func.log_time_accuracy(job_name,
+                                           cur_accuracy,
+                                           shared_runtime_history,
+                                           job_epoch_dict,
+                                           shared_accuracy_history)
 
     else:
         img_w = 32
@@ -421,7 +421,7 @@ def train_job_trial(shared_runtime_history,
                 num_batch = train_labels.shape[0] // train_batchsize
 
                 epochtime_start_marker = timer()
-                log_start_train(job_name, os.getpid(), assign_device)
+                log_func.log_start_train(job_name, os.getpid(), assign_device)
                 for n in range(num_batch):
                     batch_offset = n * train_batchsize
                     batch_end = (n + 1) * train_batchsize
@@ -432,7 +432,7 @@ def train_job_trial(shared_runtime_history,
                     sess.run(train_op, feed_dict={feature_ph: train_data_batch, label_ph: train_label_batch})
 
                 # start evaluation phrase
-                log_start_eval(job_name, os.getpid(), assign_device)
+                log_func.log_start_eval(job_name, os.getpid(), assign_device)
                 acc_sum = 0
                 eval_batch_size = 50
                 num_batch_eval = eval_labels.shape[0] // eval_batch_size
@@ -446,7 +446,7 @@ def train_job_trial(shared_runtime_history,
                     acc_sum += acc_batch
 
                 cur_accuracy = acc_sum / num_batch_eval
-                log_end_eval(job_name, cur_accuracy, assign_device)
+                log_func.log_end_eval(job_name, cur_accuracy, assign_device)
 
                 pre_accuracy = job_accuracy_dict[job_name]
 
@@ -468,11 +468,11 @@ def train_job_trial(shared_runtime_history,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        log_time_accuracy(job_name,
-                                          cur_accuracy,
-                                          shared_runtime_history,
-                                          job_epoch_dict,
-                                          shared_accuracy_history)
+                        log_func.log_time_accuracy(job_name,
+                                                   cur_accuracy,
+                                                   shared_runtime_history,
+                                                   job_epoch_dict,
+                                                   shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
                         msg_trial = 'job {} reaches SLO'.format(job_id)
                         gpu_slot_trial[gpu_device] = 0
@@ -482,11 +482,11 @@ def train_job_trial(shared_runtime_history,
                     if job_epoch_dict[job_name] >= job_slo_max_time:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                        log_time_accuracy(job_name,
-                                          cur_accuracy,
-                                          shared_runtime_history,
-                                          job_epoch_dict,
-                                          shared_accuracy_history)
+                        log_func.log_time_accuracy(job_name,
+                                                   cur_accuracy,
+                                                   shared_runtime_history,
+                                                   job_epoch_dict,
+                                                   shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
                         msg_trial = 'job {} is finished'.format(job_id)
                         gpu_slot_trial[gpu_device] = 0
@@ -499,11 +499,11 @@ def train_job_trial(shared_runtime_history,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        log_time_accuracy(job_name,
-                                          cur_accuracy,
-                                          shared_runtime_history,
-                                          job_epoch_dict,
-                                          shared_accuracy_history)
+                        log_func.log_time_accuracy(job_name,
+                                                   cur_accuracy,
+                                                   shared_runtime_history,
+                                                   job_epoch_dict,
+                                                   shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
                         msg_trial = 'job {} reaches the SLO'.format(job_id)
                         gpu_slot_trial[gpu_device] = 0
@@ -513,11 +513,11 @@ def train_job_trial(shared_runtime_history,
                     if job_epoch_dict[job_name] >= job_slo_max_time:
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                        log_time_accuracy(job_name,
-                                          cur_accuracy,
-                                          shared_runtime_history,
-                                          job_epoch_dict,
-                                          shared_accuracy_history)
+                        log_func.log_time_accuracy(job_name,
+                                                   cur_accuracy,
+                                                   shared_runtime_history,
+                                                   job_epoch_dict,
+                                                   shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
                         msg_trial = 'job {} is finished'.format(job_id)
                         gpu_slot_trial[gpu_device] = 0
@@ -529,11 +529,11 @@ def train_job_trial(shared_runtime_history,
                         end_time_overall = timer()
                         job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                         job_attain_dict[job_name] = 1
-                        log_time_accuracy(job_name,
-                                          cur_accuracy,
-                                          shared_runtime_history,
-                                          job_epoch_dict,
-                                          shared_accuracy_history)
+                        log_func.log_time_accuracy(job_name,
+                                                   cur_accuracy,
+                                                   shared_runtime_history,
+                                                   job_epoch_dict,
+                                                   shared_accuracy_history)
                         saver.save(sess, checkpoint_file)
                         msg_trial = 'job {} reaches the SLO'.format(job_id)
                         gpu_slot_trial[gpu_device] = 0
@@ -545,11 +545,11 @@ def train_job_trial(shared_runtime_history,
 
                 # save the model and exit the trial slot
                 saver.save(sess, checkpoint_file)
-                log_time_accuracy(job_name,
-                                  cur_accuracy,
-                                  shared_runtime_history,
-                                  job_epoch_dict,
-                                  shared_accuracy_history)
+                log_func.log_time_accuracy(job_name,
+                                           cur_accuracy,
+                                           shared_runtime_history,
+                                           job_epoch_dict,
+                                           shared_accuracy_history)
 
     msg_trial = 'job {} is finished the current running slot'.format(job_id)
     gpu_slot_trial[gpu_device] = 0
@@ -586,7 +586,7 @@ def train_job(job_data,
     job_model = job_data['model']
     job_name = str(job_id) + '-' + job_model
     assign_device = '/gpu:' + str(gpu_device)
-    log_get_job(job_name, os.getpid(), assign_device)
+    log_func.log_get_job(job_name, os.getpid(), assign_device)
 
     model_opt = job_data['opt']
     model_learn_rate = job_data['learn_rate']
@@ -650,7 +650,7 @@ def train_job(job_data,
                 # check if the total runtime is less than running_slot
                 while running_slot_time < running_slot:
                     epoch_start_marker = timer()
-                    log_start_train(job_name, os.getpid(), assign_device)
+                    log_func.log_start_train(job_name, os.getpid(), assign_device)
                     logit.fit([train_input_ids, train_input_masks, train_segment_ids],
                               train_labels,
                               epochs=1,
@@ -658,14 +658,14 @@ def train_job(job_data,
                               verbose=0)
 
                     # start evaluation phrase
-                    log_start_eval(job_name, os.getpid(), assign_device)
+                    log_func.log_start_eval(job_name, os.getpid(), assign_device)
                     scores = logit.evaluate([train_input_ids[0:offset],
                                              train_input_masks[0:offset],
                                              train_segment_ids[0:offset]],
                                             train_labels[0:offset],
                                             verbose=0)
                     cur_accuracy = scores[1]
-                    log_end_eval(job_name, cur_accuracy, assign_device)
+                    log_func.log_end_eval(job_name, cur_accuracy, assign_device)
 
                     pre_accuracy = job_accuracy_dict[job_name]
 
@@ -686,11 +686,11 @@ def train_job(job_data,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
-                            log_time_accuracy(job_name,
-                                              cur_accuracy,
-                                              shared_runtime_history,
-                                              job_epoch_dict,
-                                              shared_accuracy_history)
+                            log_func.log_time_accuracy(job_name,
+                                                       cur_accuracy,
+                                                       shared_runtime_history,
+                                                       job_epoch_dict,
+                                                       shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} reaches the SLO'.format(job_id)
                             gpu_slot_rotary[gpu_device] = 0
@@ -700,11 +700,11 @@ def train_job(job_data,
                         if job_epoch_dict[job_name] >= job_slo_max_time:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                            log_time_accuracy(job_name,
-                                              cur_accuracy,
-                                              shared_runtime_history,
-                                              job_epoch_dict,
-                                              shared_accuracy_history)
+                            log_func.log_time_accuracy(job_name,
+                                                       cur_accuracy,
+                                                       shared_runtime_history,
+                                                       job_epoch_dict,
+                                                       shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} is finished'.format(job_id)
                             gpu_slot_rotary[gpu_device] = 0
@@ -717,11 +717,11 @@ def train_job(job_data,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
-                            log_time_accuracy(job_name,
-                                              cur_accuracy,
-                                              shared_runtime_history,
-                                              job_epoch_dict,
-                                              shared_accuracy_history)
+                            log_func.log_time_accuracy(job_name,
+                                                       cur_accuracy,
+                                                       shared_runtime_history,
+                                                       job_epoch_dict,
+                                                       shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} reaches the SLO'.format(job_id)
                             gpu_slot_rotary[gpu_device] = 0
@@ -731,11 +731,11 @@ def train_job(job_data,
                         if job_epoch_dict[job_name] >= job_slo_max_time:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                            log_time_accuracy(job_name,
-                                              cur_accuracy,
-                                              shared_runtime_history,
-                                              job_epoch_dict,
-                                              shared_accuracy_history)
+                            log_func.log_time_accuracy(job_name,
+                                                       cur_accuracy,
+                                                       shared_runtime_history,
+                                                       job_epoch_dict,
+                                                       shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} is finished'.format(job_id)
                             gpu_slot_rotary[gpu_device] = 0
@@ -747,11 +747,11 @@ def train_job(job_data,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
-                            log_time_accuracy(job_name,
-                                              cur_accuracy,
-                                              shared_runtime_history,
-                                              job_epoch_dict,
-                                              shared_accuracy_history)
+                            log_func.log_time_accuracy(job_name,
+                                                       cur_accuracy,
+                                                       shared_runtime_history,
+                                                       job_epoch_dict,
+                                                       shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} reaches the SLO'.format(job_id)
                             gpu_slot_rotary[gpu_device] = 0
@@ -760,11 +760,11 @@ def train_job(job_data,
                     else:
                         raise ValueError('the job objective type is not supported')
 
-                    log_time_accuracy(job_name,
-                                      cur_accuracy,
-                                      shared_runtime_history,
-                                      job_epoch_dict,
-                                      shared_accuracy_history)
+                    log_func.log_time_accuracy(job_name,
+                                               cur_accuracy,
+                                               shared_runtime_history,
+                                               job_epoch_dict,
+                                               shared_accuracy_history)
 
                     slot_end_marker = timer()
                     running_slot_time = slot_end_marker - slot_start_marker
@@ -804,7 +804,7 @@ def train_job(job_data,
                 # check if the total runtime is less than running_slot
                 while running_slot_time < running_slot:
                     epoch_start_marker = timer()
-                    log_start_train(job_name, os.getpid(), assign_device)
+                    log_func.log_start_train(job_name, os.getpid(), assign_device)
                     logit.fit(train_sentences_x,
                               udtb_reader.to_categorical(train_tags_y, len(tag2index)),
                               batch_size=train_batchsize,
@@ -812,12 +812,12 @@ def train_job(job_data,
                               verbose=0)
 
                     # start evaluation phrase
-                    log_start_eval(job_name, os.getpid(), assign_device)
+                    log_func.log_start_eval(job_name, os.getpid(), assign_device)
                     scores = logit.evaluate(val_sentences_x,
                                             udtb_reader.to_categorical(val_tags_y, len(tag2index)),
                                             verbose=0)
                     cur_accuracy = scores[1]
-                    log_end_eval(job_name, cur_accuracy, assign_device)
+                    log_func.log_end_eval(job_name, cur_accuracy, assign_device)
 
                     pre_accuracy = job_accuracy_dict[job_name]
 
@@ -838,11 +838,11 @@ def train_job(job_data,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
-                            log_time_accuracy(job_name,
-                                              cur_accuracy,
-                                              shared_runtime_history,
-                                              job_epoch_dict,
-                                              shared_accuracy_history)
+                            log_func.log_time_accuracy(job_name,
+                                                       cur_accuracy,
+                                                       shared_runtime_history,
+                                                       job_epoch_dict,
+                                                       shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} reaches the SLO'.format(job_id)
                             gpu_slot_rotary[gpu_device] = 0
@@ -852,11 +852,11 @@ def train_job(job_data,
                         if job_epoch_dict[job_name] >= job_slo_max_time:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                            log_time_accuracy(job_name,
-                                              cur_accuracy,
-                                              shared_runtime_history,
-                                              job_epoch_dict,
-                                              shared_accuracy_history)
+                            log_func.log_time_accuracy(job_name,
+                                                       cur_accuracy,
+                                                       shared_runtime_history,
+                                                       job_epoch_dict,
+                                                       shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} is finished'.format(job_id)
                             gpu_slot_rotary[gpu_device] = 0
@@ -869,11 +869,11 @@ def train_job(job_data,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
-                            log_time_accuracy(job_name,
-                                              cur_accuracy,
-                                              shared_runtime_history,
-                                              job_epoch_dict,
-                                              shared_accuracy_history)
+                            log_func.log_time_accuracy(job_name,
+                                                       cur_accuracy,
+                                                       shared_runtime_history,
+                                                       job_epoch_dict,
+                                                       shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} reaches the SLO'.format(job_id)
                             gpu_slot_rotary[gpu_device] = 0
@@ -883,11 +883,11 @@ def train_job(job_data,
                         if job_epoch_dict[job_name] >= job_slo_max_time:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                            log_time_accuracy(job_name,
-                                              cur_accuracy,
-                                              shared_runtime_history,
-                                              job_epoch_dict,
-                                              shared_accuracy_history)
+                            log_func.log_time_accuracy(job_name,
+                                                       cur_accuracy,
+                                                       shared_runtime_history,
+                                                       job_epoch_dict,
+                                                       shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} is finished'.format(job_id)
                             gpu_slot_rotary[gpu_device] = 0
@@ -899,11 +899,11 @@ def train_job(job_data,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
-                            log_time_accuracy(job_name,
-                                              cur_accuracy,
-                                              shared_runtime_history,
-                                              job_epoch_dict,
-                                              shared_accuracy_history)
+                            log_func.log_time_accuracy(job_name,
+                                                       cur_accuracy,
+                                                       shared_runtime_history,
+                                                       job_epoch_dict,
+                                                       shared_accuracy_history)
                             logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                             msg_slot = 'job {} reaches the SLO'.format(job_id)
                             gpu_slot_rotary[gpu_device] = 0
@@ -912,11 +912,11 @@ def train_job(job_data,
                     else:
                         raise ValueError('the job objective type is not supported')
 
-                    log_time_accuracy(job_name,
-                                      cur_accuracy,
-                                      shared_runtime_history,
-                                      job_epoch_dict,
-                                      shared_accuracy_history)
+                    log_func.log_time_accuracy(job_name,
+                                               cur_accuracy,
+                                               shared_runtime_history,
+                                               job_epoch_dict,
+                                               shared_accuracy_history)
 
                     slot_end_marker = timer()
                     running_slot_time = slot_end_marker - slot_start_marker
@@ -963,7 +963,7 @@ def train_job(job_data,
                 # check if the total runtime is less than running_slot
                 while running_slot_time < running_slot:
                     epoch_start_marker = timer()
-                    log_start_train(job_name, os.getpid(), assign_device)
+                    log_func.log_start_train(job_name, os.getpid(), assign_device)
                     for b in range(num_batch):
                         batch_offset = b * train_batchsize
                         batch_end = (b + 1) * train_batchsize
@@ -973,7 +973,7 @@ def train_job(job_data,
 
                         sess.run(train_op, feed_dict={feature_ph: train_data_batch, label_ph: train_label_batch})
 
-                    log_start_eval(job_name, os.getpid(), assign_device)
+                    log_func.log_start_eval(job_name, os.getpid(), assign_device)
                     acc_sum = 0
                     eval_batch_size = 50
                     num_batch_eval = eval_labels.shape[0] // eval_batch_size
@@ -987,7 +987,7 @@ def train_job(job_data,
                         acc_sum += acc_batch
 
                     cur_accuracy = acc_sum / num_batch_eval
-                    log_end_eval(job_name, cur_accuracy, assign_device)
+                    log_func.log_end_eval(job_name, cur_accuracy, assign_device)
 
                     pre_accuracy = job_accuracy_dict[job_name]
 
@@ -1008,11 +1008,11 @@ def train_job(job_data,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
-                            log_time_accuracy(job_name,
-                                              cur_accuracy,
-                                              shared_runtime_history,
-                                              job_epoch_dict,
-                                              shared_accuracy_history)
+                            log_func.log_time_accuracy(job_name,
+                                                       cur_accuracy,
+                                                       shared_runtime_history,
+                                                       job_epoch_dict,
+                                                       shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
                             msg_slot = 'job {} reaches the SLO'.format(job_id)
                             gpu_slot_rotary[gpu_device] = 0
@@ -1022,11 +1022,11 @@ def train_job(job_data,
                         if job_epoch_dict[job_name] >= job_slo_max_time:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                            log_time_accuracy(job_name,
-                                              cur_accuracy,
-                                              shared_runtime_history,
-                                              job_epoch_dict,
-                                              shared_accuracy_history)
+                            log_func.log_time_accuracy(job_name,
+                                                       cur_accuracy,
+                                                       shared_runtime_history,
+                                                       job_epoch_dict,
+                                                       shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
                             msg_slot = 'job {} is finished'.format(job_id)
                             gpu_slot_rotary[gpu_device] = 0
@@ -1039,11 +1039,11 @@ def train_job(job_data,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
-                            log_time_accuracy(job_name,
-                                              cur_accuracy,
-                                              shared_runtime_history,
-                                              job_epoch_dict,
-                                              shared_accuracy_history)
+                            log_func.log_time_accuracy(job_name,
+                                                       cur_accuracy,
+                                                       shared_runtime_history,
+                                                       job_epoch_dict,
+                                                       shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
                             msg_slot = 'job {} reaches the SLO'.format(job_id)
                             gpu_slot_rotary[gpu_device] = 0
@@ -1053,11 +1053,11 @@ def train_job(job_data,
                         if job_epoch_dict[job_name] >= job_slo_max_time:
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
-                            log_time_accuracy(job_name,
-                                              cur_accuracy,
-                                              shared_runtime_history,
-                                              job_epoch_dict,
-                                              shared_accuracy_history)
+                            log_func.log_time_accuracy(job_name,
+                                                       cur_accuracy,
+                                                       shared_runtime_history,
+                                                       job_epoch_dict,
+                                                       shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
                             msg_slot = 'job {} is finished'.format(job_id)
                             gpu_slot_rotary[gpu_device] = 0
@@ -1069,11 +1069,11 @@ def train_job(job_data,
                             end_time_overall = timer()
                             job_completion_time_dict[job_name] = end_time_overall - start_time_overall
                             job_attain_dict[job_name] = 1
-                            log_time_accuracy(job_name,
-                                              cur_accuracy,
-                                              shared_runtime_history,
-                                              job_epoch_dict,
-                                              shared_accuracy_history)
+                            log_func.log_time_accuracy(job_name,
+                                                       cur_accuracy,
+                                                       shared_runtime_history,
+                                                       job_epoch_dict,
+                                                       shared_accuracy_history)
                             saver.save(sess, checkpoint_file)
                             msg_slot = 'job {} reaches the SLO'.format(job_id)
                             gpu_slot_rotary[gpu_device] = 0
@@ -1082,11 +1082,11 @@ def train_job(job_data,
                     else:
                         raise ValueError('the job objective type is not supported')
 
-                    log_time_accuracy(job_name,
-                                      cur_accuracy,
-                                      shared_runtime_history,
-                                      job_epoch_dict,
-                                      shared_accuracy_history)
+                    log_func.log_time_accuracy(job_name,
+                                               cur_accuracy,
+                                               shared_runtime_history,
+                                               job_epoch_dict,
+                                               shared_accuracy_history)
 
                     slot_end_marker = timer()
                     running_slot_time = slot_end_marker - slot_start_marker
@@ -1269,6 +1269,7 @@ if __name__ == "__main__":
         job_select = job_list_rotary[0]
         print('************* current rotary queue: {} *************'.format(job_queue_anony.qsize()))
         for idx in range(num_gpu):
+            rotary_proc_start_time = timer()
             r_score_mark = float('inf') if fairness else float('-inf')
             r_score = 0
 
@@ -1323,6 +1324,9 @@ if __name__ == "__main__":
 
             print('$$$$$ JOB SELECTION: {} $$$$$'.format(job_select))
 
+            rotary_proc_end_time = timer()
+            log_func.rotary_time.value += rotary_proc_end_time - rotary_proc_start_time
+
             try:
                 job_list_rotary.remove(job_select)
             except ValueError:
@@ -1342,15 +1346,6 @@ if __name__ == "__main__":
             if i.ready():
                 if i.successful():
                     print(i.get())
-        '''
-        print('-------------------------------------------')
-        for key in job_progress_dict:
-            print('{}:{}'.format(key, job_progress_dict[key]))
-        print('-------------------------------------------')
-        for job in job_list_rotary:
-            print('JOB: {}'.format(job))
-        print('-------------------------------------------')
-        '''
 
         fairness = False
         threshold = 0.5
@@ -1395,5 +1390,6 @@ if __name__ == "__main__":
     proc_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print('============= the whole exp finish at: {}===================='.format(proc_end_time))
 
-    print('total log count: {}'.format(log_counter.value))
-    print('log time: {}'.format(log_time.value))
+    print('total log count: {}'.format(log_func.log_counter.value))
+    print('log time: {}'.format(log_func.log_time.value))
+    print('rotary time: {}'.format(log_func.rotary_time.value))

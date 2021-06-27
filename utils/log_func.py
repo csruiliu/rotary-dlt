@@ -4,6 +4,7 @@ import multiprocessing as mp
 
 log_counter = mp.Value('i', 0)
 log_time = mp.Value('d', 0)
+rotary_time = mp.Value('d', 0)
 
 
 def log_time_accuracy(job_instance_key,
