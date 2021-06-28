@@ -207,6 +207,27 @@ class WorkloadGenerator:
         return ml_workload
 
     @staticmethod
+    def generate_test_workload_tiny():
+        ml_workload = [{'id': 0, 'model': 'inception', 'batch_size': 32, 'training_data': 'cifar10', 'opt': 'Adagrad',
+                        'learn_rate': 0.001, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 3},
+                       {'id': 1, 'model': 'mobilenet_v2', 'batch_size': 32, 'training_data': 'cifar10', 'opt': 'Adam',
+                        'learn_rate': 0.001, 'goal_type': 'runtime', 'goal_value': 3},
+                       {'id': 2, 'model': 'shufflenet_v2', 'batch_size': 32, 'training_data': 'cifar10', 'opt': 'SGD',
+                        'learn_rate': 0.001, 'goal_type': 'accuracy', 'goal_value': 0.86, 'goal_value_extra': 3},
+                       {'id': 3, 'model': 'bert', 'batch_size': 64, 'training_data': 'stanford-lmrd', 'opt': 'Adam',
+                        'learn_rate': 0.0001, 'goal_type': 'convergence', 'goal_value': 0.05, 'goal_value_extra': 3},
+                       {'id': 4, 'model': 'bilstm', 'batch_size': 256, 'training_data': 'udtreebank', 'opt': 'Adam',
+                        'learn_rate': 1e-05, 'goal_type': 'runtime', 'goal_value': 5},
+                       {'id': 5, 'model': 'lstm', 'batch_size': 256, 'training_data': 'udtreebank', 'opt': 'Adagrad',
+                        'learn_rate': 0.001, 'goal_type': 'accuracy', 'goal_value': 0.96, 'goal_value_extra': 5},
+                       {'id': 6, 'model': 'resnet', 'batch_size': 32, 'training_data': 'cifar10', 'opt': 'Adagrad',
+                        'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 3},
+                       {'id': 7, 'model': 'vgg', 'batch_size': 32, 'training_data': 'cifar10', 'opt': 'Adagrad',
+                        'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 3}]
+
+        return ml_workload
+
+    @staticmethod
     def generate_test_workload_ten():
         ml_workload = [{'id': 0, 'model': 'inception', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'Adagrad',
                         'learn_rate': 0.001, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 5},
