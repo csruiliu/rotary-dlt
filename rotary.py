@@ -1152,7 +1152,7 @@ if __name__ == "__main__":
                            cfg_rotary.random_seed)
 
     ml_workload = wg.generate_workload()
-    
+
     for i in ml_workload:
         print(i)
 
