@@ -187,11 +187,11 @@ class WorkloadGenerator:
 
     @staticmethod
     def generate_test_workload():
-        ml_workload = [{'id': 0, 'model': 'inception', 'batch_size': 8, 'training_data': 'cifar10', 'opt': 'Adagrad',
+        ml_workload = [{'id': 0, 'model': 'lenet', 'batch_size': 8, 'training_data': 'cifar10', 'opt': 'Adagrad',
                         'learn_rate': 0.001, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 5},
-                       {'id': 1, 'model': 'mobilenet_v2', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'Adam',
+                       {'id': 1, 'model': 'mobilenet', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'Adam',
                         'learn_rate': 0.001, 'goal_type': 'runtime', 'goal_value': 40},
-                       {'id': 2, 'model': 'shufflenet_v2', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'SGD',
+                       {'id': 2, 'model': 'shufflenet', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'SGD',
                         'learn_rate': 0.001, 'goal_type': 'accuracy', 'goal_value': 0.86, 'goal_value_extra': 5},
                        {'id': 3, 'model': 'bert', 'batch_size': 32, 'training_data': 'stanford-lmrd', 'opt': 'Adagrad',
                         'learn_rate': 0.0001, 'goal_type': 'convergence', 'goal_value': 0.05, 'goal_value_extra': 5},
