@@ -4,7 +4,7 @@ import operator
 
 
 class DLEstimator:
-    def __init__(self, topk=5, poly_deg=4):
+    def __init__(self, topk=5, poly_deg=3):
         # the list for all models' accuracy in the knowledgebase
         self.acc_model_list = list()
 
