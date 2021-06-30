@@ -27,8 +27,8 @@ class WorkloadGenerator:
         self._runtime_ratio = runtime_ratio
         self._random_seed = random_seed
 
-        self._cv_model_light_list = ['mobilenet', 'mobilenet_v2', 'squeezenet']
-        self._cv_model_med_list = ['shufflenet', 'resnet', 'resnext']
+        self._cv_model_light_list = ['inception', 'mobilenet', 'mobilenet_v2', 'squeezenet']
+        self._cv_model_med_list = ['shufflenet', 'shufflenet_v2', 'resnet', 'resnext']
         self._cv_model_heavy_list = ['lenet', 'vgg', 'alexnet', 'densenet']
         self._nlp_model_light_list = ['lstm']
         self._nlp_model_med_list = ['bilstm']
@@ -56,8 +56,8 @@ class WorkloadGenerator:
 
         self._max_epoch_list = [5, 10, 15, 20, 25, 30]
 
-        self._cv_batch_size_list = [2, 4, 8]
-        self._nlp_batch_size_list = [32, 64]
+        self._cv_batch_size_list = [2, 4, 8, 16, 32]
+        self._nlp_batch_size_list = [32, 64, 128, 256]
         self._bert_batch_size_list = [32, 64]
 
         self._opt_list = ['SGD', 'Adam', 'Adagrad', 'Momentum']
@@ -184,182 +184,3 @@ class WorkloadGenerator:
 
             workload.append(job)
         return workload
-
-    @staticmethod
-    def generate_test_workload():
-        ml_workload = [{'id': 0, 'model': 'lenet', 'batch_size': 8, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 0.001, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 5},
-                       {'id': 1, 'model': 'mobilenet', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'Adam',
-                        'learn_rate': 0.001, 'goal_type': 'runtime', 'goal_value': 40},
-                       {'id': 2, 'model': 'shufflenet', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'SGD',
-                        'learn_rate': 0.001, 'goal_type': 'accuracy', 'goal_value': 0.86, 'goal_value_extra': 5},
-                       {'id': 3, 'model': 'bert', 'batch_size': 32, 'training_data': 'stanford-lmrd', 'opt': 'Adagrad',
-                        'learn_rate': 0.0001, 'goal_type': 'convergence', 'goal_value': 0.05, 'goal_value_extra': 5},
-                       {'id': 4, 'model': 'bilstm', 'batch_size': 128, 'training_data': 'udtreebank', 'opt': 'Adam',
-                        'learn_rate': 1e-05, 'goal_type': 'runtime', 'goal_value': 10},
-                       {'id': 5, 'model': 'lstm', 'batch_size': 32, 'training_data': 'udtreebank', 'opt': 'Adagrad',
-                        'learn_rate': 0.001, 'goal_type': 'accuracy', 'goal_value': 0.96, 'goal_value_extra': 5},
-                       {'id': 6, 'model': 'resnet', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'SGD',
-                        'learn_rate': 0.0001, 'goal_type': 'convergence', 'goal_value': 0.0005, 'goal_value_extra': 30},
-                       {'id': 7, 'model': 'vgg', 'batch_size': 4, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 10}]
-
-        return ml_workload
-
-    @staticmethod
-    def generate_test_workload_tiny():
-        ml_workload = [{'id': 0, 'model': 'inception', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 0.001, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 3},
-                       {'id': 1, 'model': 'mobilenet_v2', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'Adam',
-                        'learn_rate': 0.001, 'goal_type': 'runtime', 'goal_value': 3},
-                       {'id': 2, 'model': 'shufflenet_v2', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'SGD',
-                        'learn_rate': 0.001, 'goal_type': 'accuracy', 'goal_value': 0.86, 'goal_value_extra': 3},
-                       {'id': 3, 'model': 'bert', 'batch_size': 64, 'training_data': 'stanford-lmrd', 'opt': 'Adam',
-                        'learn_rate': 0.0001, 'goal_type': 'convergence', 'goal_value': 0.05, 'goal_value_extra': 3},
-                       {'id': 4, 'model': 'bilstm', 'batch_size': 256, 'training_data': 'udtreebank', 'opt': 'Adam',
-                        'learn_rate': 1e-05, 'goal_type': 'runtime', 'goal_value': 5},
-                       {'id': 5, 'model': 'lstm', 'batch_size': 256, 'training_data': 'udtreebank', 'opt': 'Adagrad',
-                        'learn_rate': 0.001, 'goal_type': 'accuracy', 'goal_value': 0.96, 'goal_value_extra': 5},
-                       {'id': 6, 'model': 'resnet', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 3},
-                       {'id': 7, 'model': 'vgg', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 3}]
-
-        return ml_workload
-
-    @staticmethod
-    def generate_test_workload_ten():
-        ml_workload = [{'id': 0, 'model': 'inception', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 0.001, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 5},
-                       {'id': 1, 'model': 'mobilenet_v2', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'Adam',
-                        'learn_rate': 0.001, 'goal_type': 'runtime', 'goal_value': 40},
-                       {'id': 2, 'model': 'vgg', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 10},
-                       {'id': 3, 'model': 'shufflenet_v2', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'SGD',
-                        'learn_rate': 0.001, 'goal_type': 'accuracy', 'goal_value': 0.86, 'goal_value_extra': 5},
-                       {'id': 4, 'model': 'resnet', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'SGD',
-                        'learn_rate': 0.0001, 'goal_type': 'convergence', 'goal_value': 0.0005, 'goal_value_extra': 30},
-                       {'id': 5, 'model': 'bert', 'batch_size': 32, 'training_data': 'stanford-lmrd', 'opt': 'Adagrad',
-                        'learn_rate': 1e-05, 'goal_type': 'convergence', 'goal_value': 0.05, 'goal_value_extra': 5},
-                       {'id': 6, 'model': 'mobilenet_v2', 'batch_size': 8, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 1e-05, 'goal_type': 'convergence', 'goal_value': 0.0005, 'goal_value_extra': 20},
-                       {'id': 7, 'model': 'resnext', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'Momentum',
-                        'learn_rate': 0.001, 'goal_type': 'accuracy', 'goal_value': 0.98, 'goal_value_extra': 15},
-                       {'id': 8, 'model': 'mobilenet_v2', 'batch_size': 4, 'training_data': 'cifar10',
-                        'opt': 'Momentum', 'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.005,
-                        'goal_value_extra': 10},
-                       {'id': 9, 'model': 'lstm', 'batch_size': 32, 'training_data': 'udtreebank', 'opt': 'Adam',
-                        'learn_rate': 0.1, 'goal_type': 'convergence', 'goal_value': 0.005, 'goal_value_extra': 25}]
-        return ml_workload
-
-    @staticmethod
-    def generate_test_workload_twenty():
-        ml_workload = [{'id': 0, 'model': 'inception', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 0.001, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 5},
-                       {'id': 1, 'model': 'mobilenet_v2', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'Adam',
-                        'learn_rate': 0.001, 'goal_type': 'runtime', 'goal_value': 40},
-                       {'id': 2, 'model': 'vgg', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 10},
-                       {'id': 3, 'model': 'shufflenet_v2', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'SGD',
-                        'learn_rate': 0.001, 'goal_type': 'accuracy', 'goal_value': 0.86, 'goal_value_extra': 5},
-                       {'id': 4, 'model': 'resnet', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'SGD',
-                        'learn_rate': 0.0001, 'goal_type': 'convergence', 'goal_value': 0.0005, 'goal_value_extra': 30},
-                       {'id': 5, 'model': 'bert', 'batch_size': 32, 'training_data': 'stanford-lmrd', 'opt': 'Adagrad',
-                        'learn_rate': 1e-05, 'goal_type': 'convergence', 'goal_value': 0.05, 'goal_value_extra': 5},
-                       {'id': 6, 'model': 'mobilenet_v2', 'batch_size': 8, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 1e-05, 'goal_type': 'convergence', 'goal_value': 0.0005, 'goal_value_extra': 20},
-                       {'id': 7, 'model': 'resnext', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'Momentum',
-                        'learn_rate': 0.001, 'goal_type': 'accuracy', 'goal_value': 0.98, 'goal_value_extra': 15},
-                       {'id': 8, 'model': 'mobilenet_v2', 'batch_size': 4, 'training_data': 'cifar10',
-                        'opt': 'Momentum', 'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.005,
-                        'goal_value_extra': 10},
-                       {'id': 9, 'model': 'lstm', 'batch_size': 32, 'training_data': 'udtreebank', 'opt': 'Adam',
-                        'learn_rate': 0.1, 'goal_type': 'convergence', 'goal_value': 0.005, 'goal_value_extra': 25},
-                       {'id': 10, 'model': 'mobilenet_v2', 'batch_size': 4, 'training_data': 'cifar10',
-                        'opt': 'Momentum', 'learn_rate': 0.0001, 'goal_type': 'runtime', 'goal_value': 30},
-                       {'id': 11, 'model': 'shufflenet_v2', 'batch_size': 16, 'training_data': 'cifar10',
-                        'opt': 'Momentum', 'learn_rate': 0.0001, 'goal_type': 'convergence', 'goal_value': 0.001,
-                        'goal_value_extra': 30},
-                       {'id': 12, 'model': 'bert', 'batch_size': 64, 'training_data': 'stanford-lmrd', 'opt': 'Adagrad',
-                        'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.0005, 'goal_value_extra': 5},
-                       {'id': 13, 'model': 'densenet', 'batch_size': 8, 'training_data': 'cifar10', 'opt': 'Momentum',
-                        'learn_rate': 0.1, 'goal_type': 'convergence', 'goal_value': 0.01, 'goal_value_extra': 30},
-                       {'id': 14, 'model': 'shufflenet', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'SGD',
-                        'learn_rate': 0.1, 'goal_type': 'accuracy', 'goal_value': 0.98, 'goal_value_extra': 15},
-                       {'id': 15, 'model': 'resnext', 'batch_size': 4, 'training_data': 'cifar10', 'opt': 'SGD',
-                        'learn_rate': 0.0001, 'goal_type': 'accuracy', 'goal_value': 0.82, 'goal_value_extra': 25},
-                       {'id': 16, 'model': 'lstm', 'batch_size': 32, 'training_data': 'udtreebank', 'opt': 'Adagrad',
-                        'learn_rate': 0.001, 'goal_type': 'accuracy', 'goal_value': 0.96, 'goal_value_extra': 5},
-                       {'id': 17, 'model': 'resnext', 'batch_size': 4, 'training_data': 'cifar10', 'opt': 'SGD',
-                        'learn_rate': 0.1, 'goal_type': 'convergence', 'goal_value': 0.005, 'goal_value_extra': 15},
-                       {'id': 18, 'model': 'densenet', 'batch_size': 4, 'training_data': 'cifar10', 'opt': 'Momentum',
-                        'learn_rate': 0.001, 'goal_type': 'runtime', 'goal_value': 10},
-                       {'id': 19, 'model': 'bert', 'batch_size': 64, 'training_data': 'stanford-lmrd',
-                        'opt': 'Momentum', 'learn_rate': 0.1, 'goal_type': 'runtime', 'goal_value': 3}]
-        return ml_workload
-
-    @staticmethod
-    def generate_test_workload_thirty():
-        ml_workload = [{'id': 0, 'model': 'inception', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 0.001, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 5},
-                       {'id': 1, 'model': 'mobilenet_v2', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'Adam',
-                        'learn_rate': 0.001, 'goal_type': 'runtime', 'goal_value': 40},
-                       {'id': 2, 'model': 'vgg', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 10},
-                       {'id': 3, 'model': 'shufflenet_v2', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'SGD',
-                        'learn_rate': 0.001, 'goal_type': 'accuracy', 'goal_value': 0.86, 'goal_value_extra': 5},
-                       {'id': 4, 'model': 'resnet', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'SGD',
-                        'learn_rate': 0.0001, 'goal_type': 'convergence', 'goal_value': 0.0005, 'goal_value_extra': 30},
-                       {'id': 5, 'model': 'bert', 'batch_size': 32, 'training_data': 'stanford-lmrd', 'opt': 'Adagrad',
-                        'learn_rate': 1e-05, 'goal_type': 'convergence', 'goal_value': 0.05, 'goal_value_extra': 5},
-                       {'id': 6, 'model': 'mobilenet_v2', 'batch_size': 8, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 1e-05, 'goal_type': 'convergence', 'goal_value': 0.0005, 'goal_value_extra': 20},
-                       {'id': 7, 'model': 'resnext', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'Momentum',
-                        'learn_rate': 0.001, 'goal_type': 'accuracy', 'goal_value': 0.98, 'goal_value_extra': 15},
-                       {'id': 8, 'model': 'mobilenet_v2', 'batch_size': 4, 'training_data': 'cifar10',
-                        'opt': 'Momentum', 'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.005,
-                        'goal_value_extra': 10},
-                       {'id': 9, 'model': 'lstm', 'batch_size': 32, 'training_data': 'udtreebank', 'opt': 'Adam',
-                        'learn_rate': 0.1, 'goal_type': 'convergence', 'goal_value': 0.005, 'goal_value_extra': 25},
-                       {'id': 10, 'model': 'mobilenet_v2', 'batch_size': 4, 'training_data': 'cifar10',
-                        'opt': 'Momentum', 'learn_rate': 0.0001, 'goal_type': 'runtime', 'goal_value': 30},
-                       {'id': 11, 'model': 'shufflenet_v2', 'batch_size': 16, 'training_data': 'cifar10',
-                        'opt': 'Momentum', 'learn_rate': 0.0001, 'goal_type': 'convergence', 'goal_value': 0.001,
-                        'goal_value_extra': 30},
-                       {'id': 12, 'model': 'bert', 'batch_size': 64, 'training_data': 'stanford-lmrd', 'opt': 'Adagrad',
-                        'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.0005, 'goal_value_extra': 5},
-                       {'id': 13, 'model': 'densenet', 'batch_size': 8, 'training_data': 'cifar10', 'opt': 'Momentum',
-                        'learn_rate': 0.1, 'goal_type': 'convergence', 'goal_value': 0.01, 'goal_value_extra': 30},
-                       {'id': 14, 'model': 'shufflenet', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'SGD',
-                        'learn_rate': 0.1, 'goal_type': 'accuracy', 'goal_value': 0.98, 'goal_value_extra': 15},
-                       {'id': 15, 'model': 'resnext', 'batch_size': 4, 'training_data': 'cifar10', 'opt': 'SGD',
-                        'learn_rate': 0.0001, 'goal_type': 'accuracy', 'goal_value': 0.82, 'goal_value_extra': 25},
-                       {'id': 16, 'model': 'lstm', 'batch_size': 32, 'training_data': 'udtreebank', 'opt': 'Adagrad',
-                        'learn_rate': 0.001, 'goal_type': 'accuracy', 'goal_value': 0.96, 'goal_value_extra': 5},
-                       {'id': 17, 'model': 'resnext', 'batch_size': 4, 'training_data': 'cifar10', 'opt': 'SGD',
-                        'learn_rate': 0.1, 'goal_type': 'convergence', 'goal_value': 0.005, 'goal_value_extra': 15},
-                       {'id': 18, 'model': 'densenet', 'batch_size': 4, 'training_data': 'cifar10', 'opt': 'Momentum',
-                        'learn_rate': 0.001, 'goal_type': 'runtime', 'goal_value': 10},
-                       {'id': 19, 'model': 'bert', 'batch_size': 64, 'training_data': 'stanford-lmrd',
-                        'opt': 'Momentum', 'learn_rate': 0.1, 'goal_type': 'runtime', 'goal_value': 3},
-                       {'id': 20, 'model': 'mobilenet_v2', 'batch_size': 4, 'training_data': 'cifar10', 'opt': 'SGD',
-                        'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.01, 'goal_value_extra': 20},
-                       {'id': 21, 'model': 'lenet', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'Adam',
-                        'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.001, 'goal_value_extra': 15},
-                       {'id': 22, 'model': 'vgg', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'SGD',
-                        'learn_rate': 0.1, 'goal_type': 'runtime', 'goal_value': 5},
-                       {'id': 23, 'model': 'densenet', 'batch_size': 16, 'training_data': 'cifar10', 'opt': 'SGD',
-                        'learn_rate': 0.001, 'goal_type': 'runtime', 'goal_value': 20},
-                       {'id': 24, 'model': 'mobilenet', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'Adam',
-                        'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.0001, 'goal_value_extra': 20},
-                       {'id': 25, 'model': 'shufflenet', 'batch_size': 4, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 1e-05, 'goal_type': 'accuracy', 'goal_value': 0.96, 'goal_value_extra': 5},
-                       {'id': 26, 'model': 'squeezenet', 'batch_size': 2, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 0.01, 'goal_type': 'convergence', 'goal_value': 0.001, 'goal_value_extra': 25},
-                       {'id': 27, 'model': 'bert', 'batch_size': 64, 'training_data': 'stanford-lmrd', 'opt': 'Adam',
-                        'learn_rate': 0.0001, 'goal_type': 'convergence', 'goal_value': 0.05, 'goal_value_extra': 5},
-                       {'id': 28, 'model': 'lenet', 'batch_size': 8, 'training_data': 'cifar10', 'opt': 'Adagrad',
-                        'learn_rate': 0.001, 'goal_type': 'convergence', 'goal_value': 0.001, 'goal_value_extra': 5},
-                       {'id': 29, 'model': 'bilstm', 'batch_size': 128, 'training_data': 'udtreebank', 'opt': 'Adam',
-                        'learn_rate': 1e-05, 'goal_type': 'runtime', 'goal_value': 10}]
-        return ml_workload
