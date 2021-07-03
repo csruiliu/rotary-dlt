@@ -40,7 +40,7 @@ def train_job_runtime(shared_runtime_history,
             gpu_slot_runtime[slot_idx] = 1
             break
 
-    ml_workload_runtime.sort(key=compared_item, reverse=True)
+    ml_workload_runtime.sort(key=compared_item)
     try:
         job_data = ml_workload_runtime.pop()
     except IndexError:

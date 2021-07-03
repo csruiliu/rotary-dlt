@@ -40,7 +40,7 @@ def train_job_accuracy(shared_runtime_history,
             gpu_slot_accuracy[slot_idx] = 1
             break
 
-    ml_workload_accuracy.sort(key=compared_item, reverse=True)
+    ml_workload_accuracy.sort(key=compared_item)
     try:
         job_data = ml_workload_accuracy.pop()
     except IndexError:
