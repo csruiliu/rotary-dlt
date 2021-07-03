@@ -1,1 +1,1 @@
-# SLO-aware Resource Sharing for Heterogeneous Deep Learning Workload #
+# Resource Arbitration for Deep Learning Training #
