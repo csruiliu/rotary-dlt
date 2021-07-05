@@ -4,7 +4,6 @@
 *.md
 *.png
 *.pdf
-!survey_report.pdf
 *.jpg
 *.pyc
 
