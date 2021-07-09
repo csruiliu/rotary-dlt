@@ -2,10 +2,8 @@ local_path:
   dataset_imagenet_t50k_img_raw: /home/ruiliu/Development/dataset/imagenet50k
   dataset_imagenet_t50k_label: /home/ruiliu/Development/dataset/imagenet50k-label.txt
   dataset_imagenet_t10k_img_raw: /home/ruiliu/Development/dataset/imagenet10k
-  dataset_imagenet_t10k_img_bin: /home/ruiliu/Development/dataset/imagenet10k.bin
   dataset_imagenet_t10k_label: /home/ruiliu/Development/dataset/imagenet10k-label.txt
   dataset_imagenet_t1k_img_raw: /home/ruiliu/Development/dataset/imagenet1k
-  dataset_imagenet_t1k_img_bin: /home/ruiliu/Development/dataset/imagenet1k.bin
   dataset_imagenet_t1k_label: /home/ruiliu/Development/dataset/imagenet1k-label.txt
   dataset_mnist_train_img: /home/ruiliu/Development/dataset/mnist/mnist-train-images.idx3-ubyte
   dataset_mnist_train_label: /home/ruiliu/Development/dataset/mnist/mnist-train-labels.idx1-ubyte
@@ -21,10 +19,8 @@ cluster_path:
   dataset_imagenet_t50k_img_raw: /tank/local/ruiliu/dataset/imagenet50k
   dataset_imagenet_t50k_label: /tank/local/ruiliu/dataset/imagenet50k-label.txt
   dataset_imagenet_t10k_img_raw: /tank/local/ruiliu/dataset/imagenet10k
-  dataset_imagenet_t10k_img_bin: /tank/local/ruiliu/dataset/imagenet10k.bin
   dataset_imagenet_t10k_label: /tank/local/ruiliu/dataset/imagenet10k-label.txt
   dataset_imagenet_t1k_img_raw: /tank/local/ruiliu/dataset/imagenet1k
-  dataset_imagenet_t1k_img_bin: /tank/local/ruiliu/dataset/imagenet1k.bin
   dataset_imagenet_t1k_label: /tank/local/ruiliu/dataset/imagenet1k-label.txt
   dataset_mnist_train_img: /tank/local/ruiliu/dataset/mnist-train-images.idx3-ubyte
   dataset_mnist_train_label: /tank/local/ruiliu/dataset/mnist-train-labels.idx1-ubyte
