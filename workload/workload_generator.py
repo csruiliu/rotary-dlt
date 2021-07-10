@@ -4,39 +4,32 @@ import numpy as np
 class WorkloadGenerator:
     def __init__(self,
                  workload_size,
-                 cv_light_ratio,
-                 cv_med_ratio,
-                 cv_heavy_ratio,
-                 nlp_light_ratio,
-                 nlp_med_ratio,
-                 nlp_heavy_ratio,
+                 residual_ratio,
+                 mobile_ratio,
+                 lstm_ratio,
+                 bert_ratio,
+                 others_ratio,
                  convergence_ratio,
                  accuracy_ratio,
                  runtime_ratio,
                  random_seed):
 
         self._workload_size = workload_size
-        self._cv_light_ratio = cv_light_ratio
-        self._cv_med_ratio = cv_med_ratio
-        self._cv_heavy_ratio = cv_heavy_ratio
-        self._nlp_light_ratio = nlp_light_ratio
-        self._nlp_med_ratio = nlp_med_ratio
-        self._nlp_heavy_ratio = nlp_heavy_ratio
+        self._residual_ratio = residual_ratio
+        self._mobile_ratio = mobile_ratio
+        self._lstm_ratio = lstm_ratio
+        self._bert_ratio = bert_ratio
+        self._others_ratio = others_ratio
         self._convergence_ratio = convergence_ratio
         self._accuracy_ratio = accuracy_ratio
         self._runtime_ratio = runtime_ratio
         self._random_seed = random_seed
 
-        self._cv_model_light_list = ['inception', 'mobilenet', 'mobilenet_v2', 'squeezenet']
-        self._cv_model_med_list = ['shufflenet', 'shufflenet_v2', 'resnet', 'resnext']
-        self._cv_model_heavy_list = ['lenet', 'vgg', 'alexnet', 'densenet']
-        self._nlp_model_light_list = ['lstm']
-        self._nlp_model_med_list = ['bilstm']
-        self._nlp_model_heavy_list = ['bert']
-
-        self._cv_mdoel_list = self._cv_model_light_list + self._cv_model_med_list + self._cv_model_heavy_list
-        self._lstm_model_list = self._nlp_model_light_list + self._nlp_model_med_list
-        self._bert_model_list = self._nlp_model_heavy_list
+        self._residual_model_list = ['resnet', 'resnext', 'densenet', 'shufflenet', 'shufflenet_v2']
+        self._mobile_model_list = ['mobilenet', 'mobilenet_v2', 'efficientnet']
+        self._lstm_model_list = ['lstm', 'bilstm']
+        self._bert_model_list = ['bert']
+        self._others_model_list = ['alexnet', 'squeezenet', 'vgg', 'zfnet', 'lenet', 'inception']
 
         self._convergence_list = [('convergence', 0.05), ('convergence', 0.01),
                                   ('convergence', 0.005), ('convergence', 0.001),
@@ -110,16 +103,14 @@ class WorkloadGenerator:
     def generate_workload(self):
         np.random.seed(self._random_seed)
 
-        cv_light_num = round(self._cv_light_ratio * self._workload_size)
-        cv_med_num = round(self._cv_med_ratio * self._workload_size)
-        cv_heavy_num = round(self._cv_heavy_ratio * self._workload_size)
+        residual_model_num = round(self._residual_ratio * self._workload_size)
+        mobile_model_num = round(self._mobile_ratio * self._workload_size)
+        lstm_model_num = round(self._lstm_ratio * self._workload_size)
+        bert_model_num = round(self._bert_ratio * self._workload_size)
+        others_model_num = round(self._others_ratio * self._workload_size)
 
-        nlp_light_num = round(self._nlp_light_ratio * self._workload_size)
-        nlp_med_num = round(self._nlp_med_ratio * self._workload_size)
-        nlp_heavy_num = round(self._nlp_heavy_ratio * self._workload_size)
-
-        assert (cv_light_num + cv_med_num + cv_heavy_num +
-                nlp_light_num + nlp_med_num + nlp_heavy_num) == self._workload_size
+        assert (residual_model_num + mobile_model_num + lstm_model_num +
+                bert_model_num + others_model_num) == self._workload_size
 
         convergence_num = round(self._convergence_ratio * self._workload_size)
         accuracy_num = round(self._accuracy_ratio * self._workload_size)
@@ -127,19 +118,18 @@ class WorkloadGenerator:
 
         assert convergence_num + accuracy_num + runtime_num == self._workload_size
 
-        cv_light_list = self._random_selection(self._cv_model_light_list, cv_light_num)
-        cv_med_list = self._random_selection(self._cv_model_med_list, cv_med_num)
-        cv_heavy_list = self._random_selection(self._cv_model_heavy_list, cv_heavy_num)
-
-        nlp_light_list = self._random_selection(self._nlp_model_light_list, nlp_light_num)
-        nlp_med_list = self._random_selection(self._nlp_model_med_list, nlp_med_num)
-        nlp_heavy_list = self._random_selection(self._nlp_model_heavy_list, nlp_heavy_num)
+        residual_model_select = self._random_selection(self._residual_model_list, residual_model_num)
+        mobile_model_select = self._random_selection(self._mobile_model_list, mobile_model_num)
+        lstm_model_select = self._random_selection(self._lstm_model_list, lstm_model_num)
+        bert_model_select = self._random_selection(self._bert_model_list, bert_model_num)
+        others_model_select = self._random_selection(self._others_model_list, others_model_num)
 
         convergence_list = self._random_selection(self._convergence_list, convergence_num)
         accuracy_list = self._random_selection(self._accuracy_list, accuracy_num)
         runtime_list = self._runtime_selection(self._runtime_list, runtime_num)
 
-        model_select_list = cv_light_list + cv_med_list + cv_heavy_list + nlp_light_list + nlp_med_list + nlp_heavy_list
+        model_select_list = (residual_model_select + mobile_model_select + lstm_model_select +
+                             bert_model_select + others_model_select)
         np.random.shuffle(model_select_list)
 
         objective_list = convergence_list + accuracy_list + runtime_list
@@ -149,23 +139,19 @@ class WorkloadGenerator:
         for oidx, obj in enumerate(objective_list):
             job = dict()
             job['id'] = oidx
-
             job['model'] = model_select_list[oidx]
-            if job['model'] in self._cv_mdoel_list:
-                job['batch_size'] = np.random.choice(self._cv_batch_size_list, size=1)[0]
-                job['training_data'] = 'cifar10'
-            elif job['model'] in self._lstm_model_list:
+            if job['model'] in self._lstm_model_list:
                 job['batch_size'] = np.random.choice(self._nlp_batch_size_list, size=1)[0]
                 job['training_data'] = 'udtreebank'
             elif job['model'] in self._bert_model_list:
                 job['batch_size'] = np.random.choice(self._bert_batch_size_list, size=1)[0]
                 job['training_data'] = 'stanford-lmrd'
             else:
-                raise ValueError('model is not supported')
+                job['batch_size'] = np.random.choice(self._cv_batch_size_list, size=1)[0]
+                job['training_data'] = 'cifar10'
 
             job['opt'] = np.random.choice(self._opt_list, size=1)[0]
             job['learn_rate'] = np.random.choice(self._learn_rate_list, size=1)[0]
-
             job['goal_type'] = obj[0]
 
             if job['goal_type'] == 'runtime':
@@ -177,10 +163,7 @@ class WorkloadGenerator:
                     job['goal_value'] = obj[1]
             else:
                 job['goal_value'] = obj[1]
-                if job['model'] in self._bert_model_list:
-                    job['goal_value_extra'] = 5
-                else:
-                    job['goal_value_extra'] = np.random.choice(self._max_epoch_list)
+                job['goal_value_extra'] = np.random.choice(self._max_epoch_list)
 
             workload.append(job)
         return workload

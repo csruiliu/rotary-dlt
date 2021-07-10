@@ -1122,19 +1122,16 @@ if __name__ == "__main__":
     num_gpu = cfg_rotary.num_gpu
     running_slot = cfg_rotary.running_slot
 
-    assert cfg_rotary.cv_light_ratio + cfg_rotary.cv_med_ratio + cfg_rotary.cv_heavy_ratio == 1
-
     #######################################################
     # generate the workload
     #######################################################
 
     wg = WorkloadGenerator(cfg_rotary.dlt_workload_size,
-                           cfg_rotary.dlt_cv_light_ratio,
-                           cfg_rotary.dlt_cv_med_ratio,
-                           cfg_rotary.dlt_cv_heavy_ratio,
-                           cfg_rotary.dlt_nlp_light_ratio,
-                           cfg_rotary.dlt_nlp_med_ratio,
-                           cfg_rotary.dlt_nlp_heavy_ratio,
+                           cfg_rotary.dlt_residual_ratio,
+                           cfg_rotary.dlt_mobile_ratio,
+                           cfg_rotary.dlt_lstm_ratio,
+                           cfg_rotary.dlt_bert_ratio,
+                           cfg_rotary.dlt_others_ratio,
                            cfg_rotary.convergence_ratio,
                            cfg_rotary.accuracy_ratio,
                            cfg_rotary.runtime_ratio,
