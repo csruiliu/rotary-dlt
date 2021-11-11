@@ -1,0 +1,17 @@
+{
+  "dataset_imagenet_t50k_img_raw": "/tank/local/ruiliu/dataset/imagenet50k",
+  "dataset_imagenet_t50k_label": "/tank/local/ruiliu/dataset/imagenet50k-label.txt",
+  "dataset_imagenet_t10k_img_raw": "/tank/local/ruiliu/dataset/imagenet10k",
+  "dataset_imagenet_t10k_label": "/tank/local/ruiliu/dataset/imagenet10k-label.txt",
+  "dataset_imagenet_t1k_img_raw": "/tank/local/ruiliu/dataset/imagenet1k",
+  "dataset_imagenet_t1k_label": "/tank/local/ruiliu/dataset/imagenet1k-label.txt",
+  "dataset_mnist_train_img": "/tank/local/ruiliu/dataset/mnist/mnist-train-images.idx3-ubyte",
+  "dataset_mnist_train_label": "/tank/local/ruiliu/dataset/mnist/mnist-train-labels.idx1-ubyte",
+  "dataset_mnist_t10k_img": "/tank/local/ruiliu/dataset/mnist/mnist-t10k-images.idx3-ubyte",
+  "dataset_mnist_t10k_label": "/tank/local/ruiliu/dataset/mnist/mnist-t10k-labels.idx1-ubyte",
+  "dataset_cifar_10_path": "/tank/local/ruiliu/dataset/cifar-10",
+  "profile_path": "/tank/local/ruiliu/rotary/profile-result",
+  "multidevices_time_dataset_path": "/tank/local/ruiliu/rotary/dataset_model_steptime_multidevices.json",
+  "accuracy_dataset_path": "/tank/local/ruiliu/rotary/dataset_model_accuracy.json",
+  "ckpt_save_path": "/tank/local/ruiliu/rotary/model_ckpt"
+}
