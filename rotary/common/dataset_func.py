@@ -7,7 +7,6 @@ from keras.utils import to_categorical
 import config.config_parameter as cfg_para
 import config.config_path as cfg_path
 
-
 ##################################################
 # return train data according to dataset name
 ##################################################
