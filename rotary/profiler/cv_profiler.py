@@ -4,23 +4,37 @@ from timeit import default_timer as timer
 import os
 import tensorflow as tf
 
-from rotary.common.dataset_func import load_cifar10_keras
+from rotary.models.cv.alexnet import AlexNet
+from rotary.models.cv.vgg import VGG
+from rotary.models.cv.zfnet import ZFNet
+from rotary.models.cv.lenet import LeNet
+from rotary.models.cv.resnet import ResNet
+from rotary.models.cv.xception import Xception
+from rotary.models.cv.squeezenet import SqueezeNet
+from rotary.models.cv.shufflenet_v2 import ShuffleNetV2
+from rotary.models.cv.shufflenet import ShuffleNet
+from rotary.models.cv.efficientnet import EfficientNet
+from rotary.models.cv.inception import Inception
+from rotary.models.cv.densenet import DenseNet
+from rotary.models.cv.mobilenet import MobileNet
+from rotary.models.cv.mobilenet_v2 import MobileNetV2
+from rotary.models.cv.resnext import ResNeXt
+
+import rotary.reader.cifar_reader as cifar_reader
 
 
 class CVProfiler:
-
     def __init__(self,
                  model_name,
-                 model_instance,
                  dataset,
                  batch_size,
                  optimizer,
                  learning_rate,
                  epoch,
                  profile_metric,
-                 output_dir):
+                 output_dir,
+                 *args, **kwargs):
         self.model_name = model_name
-        self.model_instance = model_instance
         self.dataset = dataset
         self.batch_size = batch_size
         self.optimizer = optimizer
@@ -28,6 +42,25 @@ class CVProfiler:
         self.epoch = epoch
         self.profile_metric = profile_metric
         self.output_dir = output_dir
+
+        if model_name == 'resnext':
+            self.model_card = kwargs['model_card']
+            if self.model_card is None:
+                raise ValueError('model cardinality is missing')
+        elif model_name == 'shufflenetv2':
+            self.model_complex = kwargs['model_complex']
+            if self.model_complex is None:
+                raise ValueError('model complexity is missing')
+        elif model_name == 'shufflenet':
+            self.model_group = kwargs['model_group']
+            if self.model_group is None:
+                raise ValueError('model group is missing')
+        elif model_name in ['densenet', 'resnet', 'vgg']:
+            self.model_layer = kwargs['model_layer']
+            if self.model_layer is None:
+                raise ValueError('model layer is missing')
+        else:
+            pass
 
         if self.dataset == 'cifar10':
             self.img_h = 32
@@ -41,7 +74,43 @@ class CVProfiler:
                 self.train_label,
                 self.eval_feature,
                 self.eval_label
-            ) = load_cifar10_keras()
+            ) = cifar_reader.load_cifar10_keras()
+
+    def build_model(self):
+        if self.model_name == 'alexnet':
+            model = AlexNet(self.num_output_classes)
+        elif self.model_name == 'densenet':
+            model = DenseNet(self.model_layer, self.num_output_classes)
+        elif self.model_name == 'efficientnet':
+            model = EfficientNet(self.num_output_classes)
+        elif self.model_name == 'inception':
+            model = Inception(self.num_output_classes)
+        elif self.model_name == 'lenet':
+            model = LeNet(self.num_output_classes)
+        elif self.model_name == 'mobilenet':
+            model = MobileNet(self.num_output_classes)
+        elif self.model_name == 'mobilenetv2':
+            model = MobileNetV2(self.num_output_classes)
+        elif self.model_name == 'resnet':
+            model = ResNet(self.model_layer, self.num_output_classes)
+        elif self.model_name == 'resnext':
+            model = ResNeXt(self.model_card, self.num_output_classes)
+        elif self.model_name == 'shufflenet':
+            model = ShuffleNet(self.model_group, self.num_output_classes)
+        elif self.model_name == 'shufflenetv2':
+            model = ShuffleNetV2(self.model_complex, self.num_output_classes)
+        elif self.model_name == 'squeezenet':
+            model = SqueezeNet(self.num_output_classes)
+        elif self.model_name == 'vgg':
+            model = VGG(self.model_layer, self.num_output_classes)
+        elif self.model_name == 'xception':
+            model = Xception(self.num_output_classes)
+        elif self.model_name == 'zfnet':
+            model = ZFNet(self.num_output_classes)
+        else:
+            raise ValueError('model is unsupported')
+
+        return model
 
     def train_model(self, logit):
         cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(self.train_label, logit)
@@ -72,9 +141,10 @@ class CVProfiler:
         return eval_op
 
     def run(self):
+        model_arch = self.build_model()
         feature_ph = tf.placeholder(tf.float32, [None, self.img_h, self.img_w, self.img_chn])
         label_ph = tf.placeholder(tf.int32, [None, self.num_output_classes])
-        model_logit = self.model_instance.build(feature_ph)
+        model_logit = model_arch.build(feature_ph)
 
         train_op = self.train_model(model_logit)
         eval_op = self.evaluate_model(model_logit)
