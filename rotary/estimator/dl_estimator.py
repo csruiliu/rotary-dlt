@@ -66,9 +66,18 @@ class DLEstimator:
         job_predict_info['epoch'].append(epoch)
 
     def predict(self, input_model_dict, input_x, mode):
+        """
+            :parameter
+            input_model_dict: the architecture and hyperparameters of the input model
+            input_x: the x of a linear model for prediction, e.g., accuracy or epoch
+            mode: predicting 'accuracy' or 'epoch'
+
+            if predicting accuracy, input_x is $epoch, mode='accuracy'.
+            if predicting epoch, input_x is $accuracy, mode='epoch'.
+        """
         job_key = str(input_model_dict['id']) + '-' + input_model_dict['model']
 
-        if job_key in self._job_predict_dict[job_key]:
+        if job_key in self._job_predict_dict:
             # if the job_key exists, get the predict info
             job_predict_info = self._job_predict_dict[job_key]
             accuracy_list = job_predict_info['accuracy']
