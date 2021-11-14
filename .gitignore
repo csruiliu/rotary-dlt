@@ -1,4 +1,7 @@
 
+# pdf
+*.pdf
+
 # generated folders
 **/model_ckpt/
 
