@@ -31,12 +31,10 @@ class DLEstimator:
                 4. same optimizer
                 Otherwise, set the similarity as -1
             '''
-            if (
-                    center_model['training_data'] == candidate['training_data'] and
-                    center_model['learn_rate'] == candidate['learn_rate'] and
-                    center_model['opt'] == candidate['opt'] and
-                    center_model['batch_size'] == candidate['batch_size']
-                ):
+            if (center_model['training_data'] == candidate['training_data'] and
+                center_model['learn_rate'] == candidate['learn_rate'] and
+                center_model['opt'] == candidate['opt'] and
+                center_model['batch_size'] == candidate['batch_size']):
 
                 max_x = max([center_model['num_parameters'], candidate['num_parameters']])
                 diff_x = np.abs(center_model['num_parameters'] - candidate['num_parameters'])
@@ -129,7 +127,7 @@ class DLEstimator:
 
             acc_estimation = np.polyval(coefs, input_x)
 
-            return acc_estimation, coefs
+            return acc_estimation
 
         elif mode == 'epoch':
             coefs = np.polyfit(x=np.asarray(accuracy_list),
@@ -139,7 +137,10 @@ class DLEstimator:
 
             epoch_estimation = np.polyval(coefs, input_x)
 
-            return epoch_estimation, coefs
+            return epoch_estimation
 
         else:
             raise ValueError('Predication ')
+
+    def get_knowledge_list(self):
+        return self._knowledge_list
