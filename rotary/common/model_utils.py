@@ -1,24 +1,24 @@
 import tensorflow as tf
 
-from workload.tensorflow_cifar.models.resnet import ResNet
-from workload.tensorflow_cifar.models.densenet import DenseNet
-from workload.tensorflow_cifar.models.mobilenet_v2 import MobileNetV2
-from workload.tensorflow_cifar.models.mobilenet import MobileNet
-from workload.tensorflow_cifar.models.vgg import VGG
-from workload.tensorflow_cifar.models.lenet import LeNet
-from workload.tensorflow_cifar.models.inception import Inception
-from workload.tensorflow_cifar.models.alexnet import AlexNet
-from workload.tensorflow_cifar.models.resnext import ResNeXt
-from workload.tensorflow_cifar.models.xception import Xception
-from workload.tensorflow_cifar.models.squeezenet import SqueezeNet
-from workload.tensorflow_cifar.models.zfnet import ZFNet
-from workload.tensorflow_cifar.models.efficientnet import EfficientNet
-from workload.tensorflow_cifar.models.shufflenet import ShuffleNet
-from workload.tensorflow_cifar.models.shufflenet_v2 import ShuffleNetV2
+from rotary.models.cv.resnet import ResNet
+from rotary.models.cv.densenet import DenseNet
+from rotary.models.cv.mobilenet_v2 import MobileNetV2
+from rotary.models.cv.mobilenet import MobileNet
+from rotary.models.cv.vgg import VGG
+from rotary.models.cv.lenet import LeNet
+from rotary.models.cv.inception import Inception
+from rotary.models.cv.alexnet import AlexNet
+from rotary.models.cv.resnext import ResNeXt
+from rotary.models.cv.xception import Xception
+from rotary.models.cv.squeezenet import SqueezeNet
+from rotary.models.cv.zfnet import ZFNet
+from rotary.models.cv.efficientnet import EfficientNet
+from rotary.models.cv.shufflenet import ShuffleNet
+from rotary.models.cv.shufflenet_v2 import ShuffleNetV2
 
-from workload.tensorflow_nlp.models.bert import BERT
-from workload.tensorflow_nlp.models.lstm import LSTMNet
-from workload.tensorflow_nlp.models.bi_lstm import BiLSTM
+from rotary.models.nlp.bert import BERT
+from rotary.models.nlp.lstm import LSTMNet
+from rotary.models.nlp.bi_lstm import BiLSTM
 
 
 def build_nlp_model(model_type,
