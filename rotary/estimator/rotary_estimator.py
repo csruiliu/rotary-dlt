@@ -3,7 +3,7 @@ import json
 import operator
 
 
-class DLEstimator:
+class RotaryEstimator:
     def __init__(self, topk=5, poly_deg=3):
         # the list for storing the training information in the knowledgebase
         self._knowledge_list = list()
