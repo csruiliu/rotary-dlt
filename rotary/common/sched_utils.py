@@ -32,3 +32,7 @@ def init_tf_vars(sess):
     sess.run(tf.global_variables_initializer())
     sess.run(tf.tables_initializer())
     tf.keras.backend.set_session(sess)
+
+
+def compared_item(item):
+    return item['goal_value']
