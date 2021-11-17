@@ -12,4 +12,6 @@ class JobSLO:
 
 class SchedType:
     SCHED_ACCURACY = 'acc'
+    SCHED_CONVERGENCE = 'converge'
+    SCHED_RUNTIME = 'runtime'
     SCHED_OTHERS = 'others'

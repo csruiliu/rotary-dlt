@@ -2,7 +2,6 @@ import numpy as np
 import tensorflow as tf
 
 import rotary.reader.lmrd_reader as lmrd_reader
-from rotary.common.model_utils import build_nlp_model
 
 
 def get_bert_dataset(max_seq_length=128):
