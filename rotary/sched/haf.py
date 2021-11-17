@@ -427,13 +427,20 @@ class HAF:
                     self.job_dict_accuracy[job_name] = cur_accuracy
 
                     # decision phrase
-                    job_progress = self.check_job_progress_others(job_name,
-                                                                  job_slo,
-                                                                  job_slo_value,
-                                                                  job_slo_max_time,
-                                                                  pre_accuracy,
-                                                                  cur_accuracy,
-                                                                  gpu_device)
+                    if mode == SchedType.SCHED_ACCURACY:
+                        job_progress = self.check_job_progress_accuracy(job_name,
+                                                                        cur_accuracy,
+                                                                        job_slo_value,
+                                                                        job_slo_max_time,
+                                                                        gpu_device)
+                    else:
+                        job_progress = self.check_job_progress_others(job_name,
+                                                                      job_slo,
+                                                                      job_slo_value,
+                                                                      job_slo_max_time,
+                                                                      pre_accuracy,
+                                                                      cur_accuracy,
+                                                                      gpu_device)
                     if job_progress == JobStatus.COMPLETE_ATTAIN:
                         logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
                         msg = 'job {} reaches SLO'.format(job_id)
@@ -556,13 +563,20 @@ class HAF:
                         self.job_dict_accuracy[job_name] = cur_accuracy
 
                         # decision phrase
-                        job_progress = self.check_job_progress_others(job_name,
-                                                                      job_slo,
-                                                                      job_slo_value,
-                                                                      job_slo_max_time,
-                                                                      pre_accuracy,
-                                                                      cur_accuracy,
-                                                                      gpu_device)
+                        if mode == SchedType.SCHED_ACCURACY:
+                            job_progress = self.check_job_progress_accuracy(job_name,
+                                                                            cur_accuracy,
+                                                                            job_slo_value,
+                                                                            job_slo_max_time,
+                                                                            gpu_device)
+                        else:
+                            job_progress = self.check_job_progress_others(job_name,
+                                                                          job_slo,
+                                                                          job_slo_value,
+                                                                          job_slo_max_time,
+                                                                          pre_accuracy,
+                                                                          cur_accuracy,
+                                                                          gpu_device)
                         if job_progress == JobStatus.COMPLETE_ATTAIN:
                             saver.save(sess, checkpoint_file)
                             msg = 'job {} reaches SLO'.format(job_id)
