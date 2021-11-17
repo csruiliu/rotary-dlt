@@ -24,7 +24,6 @@ class HAF:
                  para_file,
                  knowledgebase_path,
                  ml_workload):
-
         # path config
         self.path_file = path_file
         self.para_file = para_file
@@ -166,7 +165,6 @@ class HAF:
                                     job_slo_value,
                                     job_slo_max_time,
                                     gpu_device):
-
         log_time_accuracy(job_name,
                           current_accuracy,
                           self.job_history_accuracy,
@@ -191,7 +189,6 @@ class HAF:
                                   pre_accuracy,
                                   cur_accuracy,
                                   gpu_device):
-
         log_time_accuracy(job_name,
                           cur_accuracy,
                           self.job_history_accuracy,
@@ -223,7 +220,6 @@ class HAF:
                          gpu_device,
                          process_start_marker,
                          mode):
-
         # init the time counter for a slot
         running_slot_time = 0
 
@@ -354,7 +350,6 @@ class HAF:
                          gpu_device,
                          process_start_marker,
                          mode):
-
         # init the time counter for a slot
         running_slot_time = 0
 
@@ -462,7 +457,6 @@ class HAF:
                        gpu_device,
                        process_start_marker,
                        mode):
-
         # init the time counter for a slot
         running_slot_time = 0
 
@@ -740,4 +734,3 @@ class HAF:
 
         proc_end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print('============= the whole exp finish at: {}===================='.format(proc_end_time))
-
