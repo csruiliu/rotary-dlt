@@ -177,7 +177,7 @@ class HAF:
 
         if self.job_dict_epoch[job_name] >= job_slo_max_time:
             self.complete_job_accuracy(job_name, gpu_device, attain=0)
-            return JobStatus.COMPLETE_ATTAIN
+            return JobStatus.COMPLETE_UNATTAIN
 
         return JobStatus.INCOMPLETE
 
