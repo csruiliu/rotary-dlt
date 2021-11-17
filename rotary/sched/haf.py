@@ -174,12 +174,11 @@ class HAF:
         if self.job_dict_accuracy[job_name] >= job_slo_value:
             self.complete_job_accuracy(job_name, gpu_device, attain=1)
             return JobStatus.COMPLETE_ATTAIN
-
-        if self.job_dict_epoch[job_name] >= job_slo_max_time:
+        elif self.job_dict_epoch[job_name] >= job_slo_max_time:
             self.complete_job_accuracy(job_name, gpu_device, attain=0)
             return JobStatus.COMPLETE_UNATTAIN
-
-        return JobStatus.INCOMPLETE
+        else:
+            return JobStatus.INCOMPLETE
 
     def check_job_progress_others(self, 
                                   job_name,
@@ -205,7 +204,6 @@ class HAF:
                 return JobStatus.COMPLETE_UNATTAIN
             else:
                 return JobStatus.INCOMPLETE
-
         elif job_slo == 'runtime':
             if self.job_dict_epoch[job_name] >= job_slo_value:
                 self.complete_job_others(job_name, gpu_device, attain=1)
