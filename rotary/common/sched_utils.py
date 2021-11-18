@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-import rotary.reader.lmrd_reader as lmrd_reader
+from rotary.reader import lmrd_reader
 
 
 def get_bert_dataset(max_seq_length=128):
@@ -14,6 +14,24 @@ def get_bert_dataset(max_seq_length=128):
     train_label = train_df["polarity"].tolist()
 
     return train_text, train_label
+
+
+def prepare_bert_dataset(bert_path, tf_sess, train_text, train_label, max_seq_length):
+    # Instantiate tokenizer
+    tokenizer = lmrd_reader.create_tokenizer_from_hub_module(bert_path, tf_sess)
+    # Convert data to InputExample format
+    train_examples = lmrd_reader.convert_text_to_examples(train_text, train_label)
+    # Convert to features
+    (
+        train_input_ids,
+        train_input_masks,
+        train_segment_ids,
+        train_labels,
+    ) = lmrd_reader.convert_examples_to_features(tokenizer,
+                                                 train_examples,
+                                                 max_seq_length)
+
+    return train_input_ids, train_input_masks, train_segment_ids, train_labels
 
 
 # init the config for training

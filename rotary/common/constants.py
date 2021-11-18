@@ -15,3 +15,5 @@ class SchedType:
     SCHED_CONVERGENCE = 'converge'
     SCHED_RUNTIME = 'runtime'
     SCHED_OTHERS = 'others'
+    SCHED_TRIAL = 'trial'
+    SCHED_ROTARY = 'rotary'

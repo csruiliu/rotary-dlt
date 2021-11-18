@@ -42,13 +42,14 @@ def build_nlp_model(model_type,
 
 
 def build_cv_model(job_data,
-                   opt,
-                   lr,
                    n_class,
                    feature,
                    label):
 
     model_type = job_data['model']
+    opt = job_data['opt']
+    lr = job_data['learn_rate']
+
     if model_type == 'alexnet':
         model = AlexNet(num_classes=n_class)
     elif model_type == 'densenet':
