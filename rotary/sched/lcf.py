@@ -6,11 +6,15 @@ import multiprocessing as mp
 from timeit import default_timer as timer
 
 from rotary.common.constants import JobSLO, JobStatus, SchedType
-from rotary.common.sched_utils import get_bert_dataset, init_tf_config, init_tf_vars, compared_item
 from rotary.common.property_utils import PropertyUtils
 from rotary.common.log_utils import log_get_job, log_train_job, log_eval_job, log_time_accuracy
 from rotary.common.model_utils import build_cv_model, build_nlp_model
-import rotary.reader.lmrd_reader as lmrd_reader
+from rotary.common.sched_utils import (init_tf_config,
+                                       init_tf_vars,
+                                       compared_item,
+                                       get_bert_dataset,
+                                       prepare_bert_dataset)
+
 import rotary.reader.udtb_reader as udtb_reader
 import rotary.reader.cifar_reader as cifar_reader
 
@@ -126,24 +130,6 @@ class LCF:
             init_sub_runtime_list = mp.Manager().list()
             init_sub_runtime_list.append('0:' + proc_start_time)
             self.job_history_runtime[job_key] = init_sub_runtime_list
-
-    @staticmethod
-    def get_bert_dataset(bert_path, tf_sess, train_text, train_label, max_seq_length):
-        # Instantiate tokenizer
-        tokenizer = lmrd_reader.create_tokenizer_from_hub_module(bert_path, tf_sess)
-        # Convert data to InputExample format
-        train_examples = lmrd_reader.convert_text_to_examples(train_text, train_label)
-        # Convert to features
-        (
-            train_input_ids,
-            train_input_masks,
-            train_segment_ids,
-            train_labels,
-        ) = lmrd_reader.convert_examples_to_features(tokenizer,
-                                                     train_examples,
-                                                     max_seq_length)
-
-        return train_input_ids, train_input_masks, train_segment_ids, train_labels
 
     def complete_job_convergence(self, job_name, gpu_device, attain):
         end_time_overall = timer()
@@ -261,7 +247,7 @@ class LCF:
                         train_input_masks,
                         train_segment_ids,
                         train_labels
-                    ) = self.get_bert_dataset(bert_path, sess, train_text, train_label, max_seq_length)
+                    ) = prepare_bert_dataset(bert_path, sess, train_text, train_label, max_seq_length)
 
                     model = build_nlp_model(model_type=job_data['model'],
                                             max_length=128,
@@ -499,8 +485,6 @@ class LCF:
                 feature_ph = tf.placeholder(tf.float32, [None, 32, 32, 3])
                 label_ph = tf.placeholder(tf.int64, [None, 10])
                 train_op, eval_op, total_parameters = build_cv_model(job_data,
-                                                                     job_data['opt'],
-                                                                     job_data['learn_rate'],
                                                                      n_class=10,
                                                                      feature=feature_ph,
                                                                      label=label_ph)
@@ -518,8 +502,8 @@ class LCF:
 
                     num_batch = train_labels.shape[0] // train_batchsize
 
-                    preparation_end_marker = timer()
                     # add the preparation time for this process
+                    preparation_end_marker = timer()
                     self.job_dict_runtime[job_name] += preparation_end_marker - process_start_marker
 
                     # check if the total runtime is less than running_slot
