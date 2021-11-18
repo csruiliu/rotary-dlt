@@ -6,11 +6,15 @@ import multiprocessing as mp
 from timeit import default_timer as timer
 
 from rotary.common.constants import JobStatus, JobSLO, SchedType
-from rotary.common.sched_utils import init_tf_config, init_tf_vars, get_bert_dataset, compared_item
 from rotary.common.property_utils import PropertyUtils
 from rotary.common.log_utils import log_get_job, log_train_job, log_eval_job, log_time_accuracy
 from rotary.common.model_utils import build_cv_model, build_nlp_model
-import rotary.reader.lmrd_reader as lmrd_reader
+from rotary.common.sched_utils import (init_tf_config,
+                                       init_tf_vars,
+                                       compared_item,
+                                       get_bert_dataset,
+                                       prepare_bert_dataset)
+
 import rotary.reader.udtb_reader as udtb_reader
 import rotary.reader.cifar_reader as cifar_reader
 
@@ -127,24 +131,6 @@ class HAF:
             init_sub_runtime_list.append('0:' + proc_start_time)
             self.job_history_runtime[job_key] = init_sub_runtime_list
 
-    @staticmethod
-    def get_bert_dataset(bert_path, tf_sess, train_text, train_label, max_seq_length):
-        # Instantiate tokenizer
-        tokenizer = lmrd_reader.create_tokenizer_from_hub_module(bert_path, tf_sess)
-        # Convert data to InputExample format
-        train_examples = lmrd_reader.convert_text_to_examples(train_text, train_label)
-        # Convert to features
-        (
-            train_input_ids,
-            train_input_masks,
-            train_segment_ids,
-            train_labels,
-        ) = lmrd_reader.convert_examples_to_features(tokenizer,
-                                                     train_examples,
-                                                     max_seq_length)
-
-        return train_input_ids, train_input_masks, train_segment_ids, train_labels
-
     def complete_job_accuracy(self, job_name, gpu_device, attain):
         end_time_overall = timer()
         self.job_dict_completion_time[job_name] = end_time_overall - self.start_time_overall
@@ -260,7 +246,7 @@ class HAF:
                         train_input_masks,
                         train_segment_ids,
                         train_labels
-                    ) = self.get_bert_dataset(bert_path, sess, train_text, train_label, max_seq_length)
+                    ) = prepare_bert_dataset(bert_path, sess, train_text, train_label, max_seq_length)
 
                     model = build_nlp_model(model_type=job_data['model'],
                                             max_length=128,
