@@ -2,7 +2,8 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-from rotary.estimator.dl_estimator import DLEstimator
+from rotary.estimator.rotary_estimator import RotaryEstimator
+from rotary.estimator.relaqs_estimator import ReLAQSEstimator
 
 
 def plot_accuracy_prediction(predict_acc_results,
@@ -20,12 +21,12 @@ def plot_accuracy_prediction(predict_acc_results,
              predict_acc_results,
              linestyle='--',
              marker='^',
-             label='Predict')
+             label='Predict--Rotary')
     plt.plot(np.arange(1, epoch_predict_baseline + 1),
              predict_acc_results_baseline,
              linestyle='--',
              marker='p',
-             label='Predict Baseline')
+             label='Predict--ReLAQS')
     plt.plot(np.arange(1, epoch_real + 1),
              real_acc_results,
              linestyle='-',
@@ -46,7 +47,7 @@ def plot_accuracy_prediction(predict_acc_results,
     ax.spines["bottom"].set_linewidth(2)
 
     plt.legend(loc='upper left', fontsize=9)
-    plt.savefig(output_path, format='pdf', bbox_inches='tight', pad_inches=0.05)
+    plt.savefig(output_path, format='png', bbox_inches='tight', pad_inches=0.05)
 
 
 def main():
@@ -142,16 +143,16 @@ def main():
     # init estimator
     #######################################################
 
-    dle = DLEstimator(topk=5, poly_deg=3)
-    dle_baseline = DLEstimator(topk=5, poly_deg=1)
+    rotary_estimator = RotaryEstimator(topk=5, poly_deg=3)
+    relaqs_estimator = ReLAQSEstimator()
 
     knowledgebase_path = '/home/ruiliu/Development/rotary/knowledgebase'
 
     # import all the accuracy files
     for f in os.listdir(knowledgebase_path):
         archive_file = knowledgebase_path + '/' + f
-        dle.import_knowledge_archive(archive_file)
-        dle_baseline.import_knowledge_archive(archive_file)
+        rotary_estimator.import_knowledge_archive(archive_file)
+        relaqs_estimator.import_knowledge_archive(archive_file)
 
     #######################################################
     # prediction
@@ -178,8 +179,8 @@ def main():
     '''
 
     for e in np.arange(0, cv_epoch):
-        cv_acc_estimate.append(dle.predict(test_cv_job, input_x=e, mode='accuracy'))
-        cv_acc_estimate_baseline.append(dle_baseline.predict(test_cv_job, input_x=e, mode='accuracy'))
+        cv_acc_estimate.append(rotary_estimator.predict(test_cv_job, input_x=e, mode='accuracy'))
+        cv_acc_estimate_baseline.append(relaqs_estimator.predict(test_cv_job, input_x=e, mode='accuracy'))
 
     '''
     dle.import_knowledge_realtime(job_key=bert_job_key,
@@ -191,31 +192,31 @@ def main():
                                   epoch=5)
     '''
 
-    dle.import_knowledge_realtime(job_key=cv_job_key,
-                                  accuracy=0.5867000034451485,
-                                  epoch=3)
+    rotary_estimator.import_knowledge_realtime(job_key=cv_job_key,
+                                               accuracy=0.5867000034451485,
+                                               epoch=3)
 
-    dle.import_knowledge_realtime(job_key=cv_job_key,
-                                  accuracy=0.6882000038027763,
-                                  epoch=6)
+    rotary_estimator.import_knowledge_realtime(job_key=cv_job_key,
+                                               accuracy=0.6882000038027763,
+                                               epoch=6)
 
-    dle.import_knowledge_realtime(job_key=cv_job_key,
-                                  accuracy=0.7315000009536743,
-                                  epoch=9)
+    rotary_estimator.import_knowledge_realtime(job_key=cv_job_key,
+                                               accuracy=0.7315000009536743,
+                                               epoch=9)
 
-    dle.import_knowledge_realtime(job_key=cv_job_key,
-                                  accuracy=0.7363000032305718,
-                                  epoch=12)
+    rotary_estimator.import_knowledge_realtime(job_key=cv_job_key,
+                                               accuracy=0.7363000032305718,
+                                               epoch=12)
 
     cv_acc_estimate = list()
     for e in np.arange(0, cv_epoch):
-        cv_acc_estimate.append(dle.predict(test_cv_job, input_x=e, mode='accuracy'))
+        cv_acc_estimate.append(rotary_estimator.predict(test_cv_job, input_x=e, mode='accuracy'))
 
     #######################################################
     # plot figure
     #######################################################
 
-    out_path = '/home/ruiliu/Development/rotary/dl-estimator.pdf'
+    out_path = '/home/ruiliu/Development/rotary/dl-estimator.png'
     plot_accuracy_prediction(cv_acc_estimate,
                              cv_acc_estimate_baseline,
                              test_cv_job_acc,
