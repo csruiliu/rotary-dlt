@@ -2,21 +2,26 @@
 
 A system can arbitrate and orchestrate resource for iterative jobs. 
 
-## Workload
+## Components
+
+### Workload
 
 Under the `workload` directory, `workload_generator.py` will generate the metadata of workloads. The `tensorflow_cifar` and `tensorflow_nlp` stores the source code of CV and NLP models, respectively. 
 
-## Models
+### Models
 
 The `models` directory includes the source code of some widely used CV and NLP models.
 
-## Profiler
+### Profiler
 
 Under the `profiler` directory, measuring the training time and accuracy for CV and NLP models 
 
-## Sched
+### Scheduler
 
 We have various mechanisms, including Highest Accuracy First (HAF), Least Convergence First (LCF), Shortest Runtime First (SRF)
 
+## Running
+
+Running `build-intall-rotary.sh` can generate rotary wheel file and install it using pip.
 
 
