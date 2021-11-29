@@ -5,6 +5,7 @@ import tensorflow as tf
 import multiprocessing as mp
 from timeit import default_timer as timer
 
+from rotary.estimator.relaqs_estimator import ReLAQSEstimator
 from rotary.estimator.rotary_estimator import RotaryEstimator
 from rotary.common.constants import JobSLO, JobStatus, SchedType
 from rotary.common.property_utils import PropertyUtils
@@ -24,11 +25,19 @@ class Rotary:
                  path_file,
                  para_file,
                  knowledgebase_path,
+                 estimator,
                  ml_workload):
         # path config
         self.path_file = path_file
         self.para_file = para_file
         self.knowledgebase_path = knowledgebase_path
+
+        if estimator == 'rotary':
+            self.estimator = RotaryEstimator(topk=5, poly_deg=3)
+        elif estimator == 'relaqs':
+            self.estimator = ReLAQSEstimator()
+        else:
+            raise ValueError('estimator name is not recognized')
 
         path_cfg = PropertyUtils.load_property_file(self.path_file)
         para_cfg = PropertyUtils.load_property_file(self.para_file)
@@ -141,10 +150,10 @@ class Rotary:
             init_sub_runtime_list.append('0:' + proc_start_time)
             self.job_history_runtime[job_item_key] = init_sub_runtime_list
 
-        self.rotary_estimator = RotaryEstimator(topk=5)
+        # self.rotary_estimator = RotaryEstimator(topk=5)
         for f in os.listdir(knowledgebase_path):
             model_acc_file = knowledgebase_path + '/' + f
-            self.rotary_estimator.import_knowledge_archive(model_acc_file)
+            self.estimator.import_knowledge_archive(model_acc_file)
 
     def complete_job(self, job_name, gpu_device, attain, mode):
         end_time_overall = timer()
@@ -289,9 +298,10 @@ class Rotary:
                     self.job_dict_accuracy[job_name] = cur_accuracy
 
                     # add current results
-                    self.rotary_estimator.import_knowledge_realtime(job_name,
-                                                                    cur_accuracy,
-                                                                    self.job_dict_epoch[job_name])
+                    if isinstance(self.estimator, RotaryEstimator):
+                        self.estimator.import_knowledge_realtime(job_name,
+                                                                 cur_accuracy,
+                                                                 self.job_dict_epoch[job_name])
 
                     job_progress = self.check_job_progress(job_name,
                                                            job_slo,
@@ -401,9 +411,10 @@ class Rotary:
                     self.job_dict_accuracy[job_name] = cur_accuracy
 
                     # add current results
-                    self.rotary_estimator.import_knowledge_realtime(job_name,
-                                                                    cur_accuracy,
-                                                                    self.job_dict_epoch[job_name])
+                    if isinstance(self.estimator, RotaryEstimator):
+                        self.estimator.import_knowledge_realtime(job_name,
+                                                                 cur_accuracy,
+                                                                 self.job_dict_epoch[job_name])
 
                     job_progress = self.check_job_progress(job_name,
                                                            job_slo,
@@ -532,9 +543,10 @@ class Rotary:
                     self.job_dict_accuracy[job_name] = cur_accuracy
 
                     # add current results
-                    self.rotary_estimator.import_knowledge_realtime(job_name,
-                                                                    cur_accuracy,
-                                                                    self.job_dict_epoch[job_name])
+                    if isinstance(self.estimator, RotaryEstimator):
+                        self.estimator.import_knowledge_realtime(job_name,
+                                                                 cur_accuracy,
+                                                                 self.job_dict_epoch[job_name])
 
                     job_progress = self.check_job_progress(job_name,
                                                            job_slo,
@@ -717,7 +729,7 @@ class Rotary:
                     elif job_ins_slo == 'accuracy':
                         job_ins_slo_max_time = job_ins['goal_value_extra']
                         current_epoch = self.job_dict_epoch[job_ins_key]
-                        estimate_all_epoch = round(self.rotary_estimator.predict(job_ins, job_ins_slo_value, 'epoch'))
+                        estimate_all_epoch = round(self.estimator.predict(job_ins, job_ins_slo_value, 'epoch'))
                         if estimate_all_epoch > job_ins_slo_max_time:
                             r_score = current_epoch / job_ins_slo_max_time
                         else:
@@ -729,7 +741,7 @@ class Rotary:
                         current_epoch = self.job_dict_epoch[job_ins_key]
                         current_accuracy = self.job_dict_accuracy[job_ins_key]
                         expected_accuracy = current_accuracy + job_ins_slo_value
-                        estimate_all_epoch = round(self.rotary_estimator.predict(job_ins, expected_accuracy, 'epoch'))
+                        estimate_all_epoch = round(self.estimator.predict(job_ins, expected_accuracy, 'epoch'))
                         if estimate_all_epoch <= 0:
                             r_score = 1
                         else:
