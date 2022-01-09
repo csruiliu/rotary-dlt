@@ -1,6 +1,6 @@
 import os
 import logging
-from timeit import default_timer as timer
+from time import perf_counter
 from datetime import datetime
 import multiprocessing as mp
 
@@ -57,7 +57,7 @@ def log_time_accuracy(job_instance_key,
                       shared_accuracy_dict):
     log_counter.value += 1
     if log_counter.value == 1:
-        start_time = timer()
+        start_time = perf_counter()
     now_time_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     sub_runtime_list = shared_time_dict[job_instance_key]
@@ -69,7 +69,7 @@ def log_time_accuracy(job_instance_key,
     shared_accuracy_dict[job_instance_key] = sub_accuracy_list
 
     if log_counter.value == 1:
-        end_time = timer()
+        end_time = perf_counter()
         log_time.value = end_time - start_time
 
 

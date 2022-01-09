@@ -3,7 +3,7 @@ import queue
 from datetime import datetime
 import tensorflow as tf
 import multiprocessing as mp
-from timeit import default_timer as timer
+from time import perf_counter
 
 from rotary.common.constants import JobStatus, JobSLO, SchedType
 from rotary.common.property_utils import PropertyUtils
@@ -72,7 +72,7 @@ class HAF:
         self.gpu_slot_accuracy = mp.Array('i', [0] * self.num_gpu)
         self.gpu_slot_others = mp.Array('i', [0] * self.num_gpu)
 
-        self.start_time_overall = timer()
+        self.start_time_overall = perf_counter()
 
         # list with runtime-slo jobs only
         self.ml_workload_accuracy = mp.Manager().list()
@@ -132,14 +132,14 @@ class HAF:
             self.job_history_runtime[job_key] = init_sub_runtime_list
 
     def complete_job_accuracy(self, job_name, gpu_device, attain):
-        end_time_overall = timer()
+        end_time_overall = perf_counter()
         self.job_dict_completion_time[job_name] = end_time_overall - self.start_time_overall
         self.job_dict_attainment[job_name] = attain
         self.gpu_slot_accuracy[gpu_device] = 0
         self.sem_accuracy.release()
 
     def complete_job_others(self, job_name, gpu_device, attain):
-        end_time_overall = timer()
+        end_time_overall = perf_counter()
         self.job_dict_completion_time[job_name] = end_time_overall - self.start_time_overall
         self.job_dict_attainment[job_name] = attain
         self.gpu_slot_others[gpu_device] = 0
@@ -263,11 +263,11 @@ class HAF:
                     init_tf_vars(sess)
 
                     # add the preparation time for this process
-                    preparation_end_marker = timer()
+                    preparation_end_marker = perf_counter()
                     self.job_dict_runtime[job_name] += preparation_end_marker - process_start_marker
 
                     while running_slot_time < self.running_slot:
-                        epoch_start_marker = timer()
+                        epoch_start_marker = perf_counter()
                         log_train_job(job_name, os.getpid(), assign_device)
                         logit.fit([train_input_ids, train_input_masks, train_segment_ids],
                                   train_labels,
@@ -285,7 +285,7 @@ class HAF:
                         cur_accuracy = scores[1]
                         pre_accuracy = self.job_dict_accuracy[job_name]
 
-                        epoch_end_marker = timer()
+                        epoch_end_marker = perf_counter()
 
                         # tracking time and accuracy
                         self.job_dict_runtime[job_name] += epoch_end_marker - epoch_start_marker
@@ -319,7 +319,7 @@ class HAF:
                             pass
 
                         if mode == SchedType.SCHED_OTHERS:
-                            slot_end_marker = timer()
+                            slot_end_marker = perf_counter()
                             running_slot_time = slot_end_marker - process_start_marker
 
                     logit.save(model_ckpt_save_path + '/' + job_name + '.h5')
@@ -381,12 +381,12 @@ class HAF:
                 sess.run(tf.global_variables_initializer())
 
                 # add the preparation time for this process
-                preparation_end_marker = timer()
+                preparation_end_marker = perf_counter()
                 self.job_dict_runtime[job_name] += preparation_end_marker - process_start_marker
 
                 # check if the total runtime is less than running_slot
                 while running_slot_time < self.running_slot:
-                    epoch_start_marker = timer()
+                    epoch_start_marker = perf_counter()
 
                     logit.fit(train_sentences_x,
                               udtb_reader.to_categorical(train_tags_y, len(tag2index)),
@@ -403,7 +403,7 @@ class HAF:
 
                     pre_accuracy = self.job_dict_accuracy[job_name]
 
-                    epoch_end_marker = timer()
+                    epoch_end_marker = perf_counter()
 
                     # tracking the time and accuracy
                     self.job_dict_runtime[job_name] += epoch_end_marker - epoch_start_marker
@@ -437,7 +437,7 @@ class HAF:
                         pass
 
                     if mode == SchedType.SCHED_OTHERS:
-                        slot_end_marker = timer()
+                        slot_end_marker = perf_counter()
                         running_slot_time = slot_end_marker - process_start_marker
 
                 # save the model/job since the job has run for the current slot but doesn't achieve SLO
@@ -504,13 +504,13 @@ class HAF:
 
                     num_batch = train_labels.shape[0] // train_batchsize
 
-                    preparation_end_marker = timer()
+                    preparation_end_marker = perf_counter()
                     # add the prepare time for this process
                     self.job_dict_runtime[job_name] += preparation_end_marker - process_start_marker
 
                     # check if the total runtime is less than running_slot
                     while running_slot_time < self.running_slot:
-                        epoch_start_marker = timer()
+                        epoch_start_marker = perf_counter()
                         log_train_job(job_name, os.getpid(), assign_device)
                         for b in range(num_batch):
                             batch_offset = b * train_batchsize
@@ -539,7 +539,7 @@ class HAF:
 
                         pre_accuracy = self.job_dict_accuracy[job_name]
 
-                        epoch_end_marker = timer()
+                        epoch_end_marker = perf_counter()
 
                         # tracking the time and accuracy
                         self.job_dict_runtime[job_name] += epoch_end_marker - epoch_start_marker
@@ -573,7 +573,7 @@ class HAF:
                             pass
 
                         if mode == SchedType.SCHED_OTHERS:
-                            slot_end_marker = timer()
+                            slot_end_marker = perf_counter()
                             running_slot_time = slot_end_marker - process_start_marker
 
                     # save the model/job since the job has run for the current slot but doesn't achieve SLO
@@ -586,7 +586,7 @@ class HAF:
 
     def process_job_accuracy(self):
         self.sem_accuracy.acquire()
-        process_start_marker = timer()
+        process_start_marker = perf_counter()
 
         gpu_device = -1
         while True:
@@ -625,7 +625,7 @@ class HAF:
 
     def process_job_others(self):
         self.sem_others.acquire()
-        process_start_marker = timer()
+        process_start_marker = perf_counter()
 
         gpu_device = -1
         while True:

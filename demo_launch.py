@@ -1,6 +1,4 @@
 import argparse
-from datetime import datetime
-from timeit import default_timer as timer
 
 from rotary.common.property_utils import PropertyUtils
 from rotary.common.workload_generator import WorkloadGenerator

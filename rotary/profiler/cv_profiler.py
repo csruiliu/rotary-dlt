@@ -1,8 +1,8 @@
 import numpy as np
 import json
-from timeit import default_timer as timer
 import os
 import tensorflow as tf
+import time
 
 from rotary.models.cv.alexnet import AlexNet
 from rotary.models.cv.vgg import VGG
@@ -183,7 +183,7 @@ class CVProfiler:
             # train the model
             for e in range(self.epoch):
 
-                start_time = timer()
+                start_time = time.perf_counter()
 
                 # shuffle the training data
                 shf_indices = np.arange(num_feature)
@@ -208,7 +208,7 @@ class CVProfiler:
                 else:
                     print('no train feature left for this epoch')
 
-                end_time = timer()
+                end_time = time.perf_counter()
                 step_time = end_time - start_time
                 time_record_list.append(step_time)
 
