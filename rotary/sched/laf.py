@@ -19,9 +19,9 @@ import rotary.reader.udtb_reader as udtb_reader
 import rotary.reader.cifar_reader as cifar_reader
 
 
-class HAF:
+class LAF:
     ###############################
-    # Highest Accuracy First
+    # Lowest Accuracy First
     ###############################
     def __init__(self,
                  path_file,

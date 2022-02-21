@@ -4,8 +4,8 @@ from rotary.common.property_utils import PropertyUtils
 from rotary.common.workload_generator import WorkloadGenerator
 from rotary.sched.rotary import Rotary
 from rotary.sched.srf import SRF
-from rotary.sched.lcf import LCF
-from rotary.sched.haf import HAF
+from rotary.sched.bcf import BCF
+from rotary.sched.laf import LAF
 
 
 def main():
@@ -16,7 +16,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-s', '--schedule', action='store', type=str,
-                        choices=['haf', 'lcf', 'srf', 'rotary'],
+                        choices=['laf', 'bcf', 'srf', 'rotary'],
                         required=True,
                         help='indicate schedule mechanism')
 
@@ -68,12 +68,12 @@ def main():
     for i in ml_workload:
         print(i)
 
-    if sched_name == 'haf':
-        sched = HAF(path_file, para_file, knowledgebase_folder, ml_workload)
+    if sched_name == 'laf':
+        sched = LAF(path_file, para_file, knowledgebase_folder, ml_workload)
     elif sched_name == 'srf':
         sched = SRF(path_file, para_file, knowledgebase_folder, ml_workload)
-    elif sched_name == 'lcf':
-        sched = LCF(path_file, para_file, knowledgebase_folder, ml_workload)
+    elif sched_name == 'bcf':
+        sched = BCF(path_file, para_file, knowledgebase_folder, ml_workload)
     else:
         sched = Rotary(path_file, para_file, knowledgebase_folder, ml_workload, 'rotary')
 

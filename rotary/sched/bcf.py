@@ -19,9 +19,9 @@ import rotary.reader.udtb_reader as udtb_reader
 import rotary.reader.cifar_reader as cifar_reader
 
 
-class LCF:
+class BCF:
     ###############################
-    # Least Convergence First
+    # Biggest Convergence First
     ###############################
     def __init__(self,
                  path_file,
@@ -591,6 +591,7 @@ class LCF:
                 self.gpu_slot_convergence[slot_idx] = 1
                 break
 
+        # the biggest
         self.ml_workload_convergence.sort(key=compared_item, reverse=True)
 
         try:
