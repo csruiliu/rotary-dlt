@@ -258,6 +258,15 @@ class Rotary:
                                         lr=job_data['learn_rate'])
                 logit, _ = model.build()
 
+                total_params = 0
+                for v in tf.trainable_variables():
+                    shape = v.get_shape()
+                    count = 1
+                    for dim in shape:
+                        count *= dim.value
+                        total_params += count
+                print("Total Params:%d" % total_params)
+
                 # load the checkpoint if it exists
                 if os.path.exists(model_ckpt_save_path + '/' + job_name + '.h5'):
                     logit.load_weights(model_ckpt_save_path + '/' + job_name + '.h5')
@@ -380,6 +389,15 @@ class Rotary:
             with tf.Session(config=init_tf_config()) as sess:
                 sess.run(tf.global_variables_initializer())
 
+                total_params = 0
+                for v in tf.trainable_variables():
+                    shape = v.get_shape()
+                    count = 1
+                    for dim in shape:
+                        count *= dim.value
+                        total_params += count
+                print("Total Params:%d" % total_params)
+
                 # add the prepare time for this process
                 preparation_end_marker = perf_counter()
                 self.job_dict_runtime[job_name] += preparation_end_marker - process_start_marker
@@ -499,6 +517,15 @@ class Rotary:
                     saver.restore(sess, checkpoint_file)
                 else:
                     sess.run(tf.global_variables_initializer())
+
+                total_params = 0
+                for v in tf.trainable_variables():
+                    shape = v.get_shape()
+                    count = 1
+                    for dim in shape:
+                        count *= dim.value
+                        total_params += count
+                print("Total Params:%d" % total_params)
 
                 num_batch = train_labels.shape[0] // train_batchsize
 
