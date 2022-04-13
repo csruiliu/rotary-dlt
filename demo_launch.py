@@ -27,9 +27,9 @@ def main():
     # get parameters from configuration
     #######################################################
 
-    path_file = '/home/ruiliu/Development/rotary/config/local_path_file.json'
-    para_file = '/home/ruiliu/Development/rotary/config/para_file.json'
-    knowledgebase_folder = '/home/ruiliu/Development/rotary/knowledgebase'
+    path_file = '/home/ruiliu/Develop/rotary-dlt/config/local_path_file.json'
+    para_file = '/home/ruiliu/Develop/rotary-dlt/config/para_file.json'
+    knowledgebase_folder = '/home/ruiliu/Develop/rotary-dlt/knowledgebase'
 
     para_cfg = PropertyUtils.load_property_file(properties_file=para_file)
 
@@ -64,9 +64,6 @@ def main():
                            random_seed)
 
     ml_workload = wg.generate_workload()
-
-    for i in ml_workload:
-        print(i)
 
     if sched_name == 'laf':
         sched = LAF(path_file, para_file, knowledgebase_folder, ml_workload)

@@ -485,8 +485,6 @@ class LAF:
                 feature_ph = tf.placeholder(tf.float32, [None, 32, 32, 3])
                 label_ph = tf.placeholder(tf.int64, [None, 10])
                 train_op, eval_op, total_parameters = build_cv_model(job_data,
-                                                                     job_data['opt'],
-                                                                     job_data['learn_rate'],
                                                                      n_class=10,
                                                                      feature=feature_ph,
                                                                      label=label_ph)

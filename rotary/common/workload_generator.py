@@ -31,19 +31,20 @@ class WorkloadGenerator:
         self._bert_model_list = ['bert']
         self._others_model_list = ['alexnet', 'squeezenet', 'vgg', 'zfnet', 'lenet', 'inception']
 
-        self._convergence_list = [('convergence', 0.05), ('convergence', 0.01),
-                                  ('convergence', 0.005), ('convergence', 0.001),
-                                  ('convergence', 0.0005), ('convergence', 0.0001)]
+        self._convergence_list = [('convergence', 0.05), ('convergence', 0.03), ('convergence', 0.01),
+                                  ('convergence', 0.005), ('convergence', 0.003), ('convergence', 0.001),
+                                  ('convergence', 0.0005), ('convergence', 0.0003), ('convergence', 0.0001),
+                                  ('convergence', 0.00005), ('convergence', 0.00003), ('convergence', 0.00001)]
 
-        self._accuracy_list = [('accuracy', 0.8), ('accuracy', 0.82), ('accuracy', 0.84), ('accuracy', 0.86),
-                               ('accuracy', 0.88), ('accuracy', 0.9), ('accuracy', 0.92), ('accuracy', 0.94),
-                               ('accuracy', 0.96), ('accuracy', 0.98), ('accuracy', 0.99)]
+        self._accuracy_list = [('accuracy', 0.7), ('accuracy', 0.72), ('accuracy', 0.74), ('accuracy', 0.76),
+                               ('accuracy', 0.78), ('accuracy', 0.8), ('accuracy', 0.82), ('accuracy', 0.84),
+                               ('accuracy', 0.86), ('accuracy', 0.88), ('accuracy', 0.9), ('accuracy', 0.92)]
 
         self._runtime_list = [('runtime', 5),
                               ('runtime', 10),
-                              ('runtime', 20),
                               ('runtime', 30),
-                              ('runtime', 40)]
+                              ('runtime', 50),
+                              ('runtime', 100)]
 
         self._pretrain_runtime_list = [1, 2, 3, 4, 5]
 

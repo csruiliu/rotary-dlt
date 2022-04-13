@@ -661,7 +661,7 @@ class Rotary:
                                 process_start_marker,
                                 mode=SchedType.SCHED_ROTARY)
 
-        # exceed the running slot and haven't achieve goal so put the job back to the queue
+        # exceed the running slot and haven't achieved goal so put the job back to the queue
         self.job_list_rotary.append(job_data)
         self.job_queue_anony.put(job_anony)
         msg_slot = 'job {} is finished the current running slot'.format(job_id)
