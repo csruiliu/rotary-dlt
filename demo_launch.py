@@ -72,7 +72,7 @@ def main():
     elif sched_name == 'bcf':
         sched = BCF(path_file, para_file, knowledgebase_folder, ml_workload)
     else:
-        sched = Rotary(path_file, para_file, knowledgebase_folder, ml_workload, 'rotary')
+        sched = Rotary(path_file, para_file, knowledgebase_folder, ml_workload)
 
     sched.run()
 
