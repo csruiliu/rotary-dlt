@@ -4,8 +4,8 @@ A resource arbitration system for deep learning training jobs, build on top of T
 
 ## Prerequisite
 
-+ Python: 3.7+
-+ TensorFlow: 1.15+
++ Python: 3.7
++ TensorFlow: 1.15
 
 Other dependencies can be found in `Pipfile`
 
